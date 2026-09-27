@@ -911,32 +911,33 @@ function PurchasePrintModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white text-slate-900 w-full max-w-3xl rounded-2xl shadow-2xl p-8 space-y-6 my-8">
+    <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
+      <div className="bg-white text-slate-900 w-full max-w-3xl rounded-2xl border border-slate-200 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
         
         {/* Top Action Bar (hidden in print) */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200 print:hidden">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="bg-slate-950 text-white px-4 py-3 flex justify-between items-center gap-4 flex-shrink-0 border-b border-slate-800 no-print">
+          <span className="font-bold text-xs sm:text-sm flex items-center gap-2">
+            <Printer className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             Purchase Receipt / Stock Inward Voucher
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="px-4 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
             >
-              <Printer className="w-4 h-4" /> Print Voucher
+              <Printer className="w-3.5 h-3.5" /> প্রিন্ট করুন (Print)
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              className="text-slate-400 hover:text-white font-bold bg-white/10 hover:bg-white/20 w-7 h-7 rounded-full flex items-center justify-center text-sm cursor-pointer transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Printable Area */}
-        <div className="space-y-6">
+        <div id="printable-area" className="overflow-y-auto flex-1 p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-6">
           {/* Header */}
           <div className="flex justify-between items-start border-b pb-4 border-slate-200">
             <div>

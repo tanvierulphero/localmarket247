@@ -1706,30 +1706,32 @@ export default function FieldDispatchManager({
 
       {/* 11. PRINTABLE COMPREHENSIVE FULL PERIOD STATEMENT MODAL */}
       {isPrintingFullReport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl overflow-hidden my-8">
-            <div className="bg-slate-800 text-white p-4 flex justify-between items-center print:hidden">
-              <span className="font-bold text-xs flex items-center gap-2">
-                <Printer className="w-4 h-4 text-emerald-400" />
-                ফিল্ড সার্ভিস ও খরচের পূর্ণাঙ্গ স্টেটমেন্ট প্রিন্ট ভিউ
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs print:bg-transparent print:p-0 no-print-backdrop">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+            
+            {/* Modal Actions Header */}
+            <div className="bg-slate-950 text-white px-4 py-3 flex justify-between items-center gap-4 flex-shrink-0 border-b border-slate-800 no-print">
+              <span className="font-bold text-xs sm:text-sm flex items-center gap-2">
+                <Printer className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                পূর্ণাঙ্গ স্টেটমেন্ট / Full Period Statement
               </span>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
                 >
-                  <Printer className="w-3.5 h-3.5" /> প্রিন্ট করুন
+                  <Printer className="w-3.5 h-3.5" /> প্রিন্ট করুন (Print)
                 </button>
                 <button
                   onClick={() => setIsPrintingFullReport(false)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                  className="text-slate-400 hover:text-white font-bold bg-white/10 hover:bg-white/20 w-7 h-7 rounded-full flex items-center justify-center text-sm cursor-pointer transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            <div className="p-8 space-y-6 text-slate-800 bg-white" id="full-statement-print">
+            <div className="overflow-y-auto flex-1 p-8 space-y-6 text-slate-800 bg-white print:overflow-visible print:p-0" id="printable-area">
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
                 <div>
                   <Logo />

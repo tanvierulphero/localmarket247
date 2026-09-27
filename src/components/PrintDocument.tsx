@@ -189,19 +189,19 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
 
   return (
     <div className="bg-slate-100 min-h-screen py-6 px-2 sm:px-4 flex flex-col items-center">
-      {/* Top action bar, hidden in print mode */}
-      <div className="w-full max-w-4xl bg-white rounded-xl shadow-sm border border-slate-200 p-3 sm:p-4 mb-4 flex flex-wrap gap-3 items-center justify-between no-print">
+      {/* Top action bar, hidden in print mode - sticky to ensure it is always accessible */}
+      <div className="w-full max-w-4xl bg-white/95 backdrop-blur-xs rounded-xl shadow-md border border-slate-200 p-3 sm:p-4 mb-4 flex flex-wrap gap-3 items-center justify-between no-print sticky top-2 z-40">
         <div className="flex items-center gap-2">
           {onBack && (
             <button
               onClick={onBack}
-              className="px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer animate-fade-in"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to List
             </button>
           )}
-          <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+          <span className="text-xs font-bold text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
             {getDocTitle()} : <span className="font-mono text-blue-900 font-extrabold">{document.docNumber}</span>
           </span>
         </div>
