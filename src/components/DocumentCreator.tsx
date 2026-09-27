@@ -57,6 +57,7 @@ export default function DocumentCreator({
   const [vatEnabled, setVatEnabled] = useState(true);
   const [taxRate, setTaxRate] = useState(settings.taxRate);
   const [discount, setDiscount] = useState(0);
+  const [hasDiscount, setHasDiscount] = useState(false);
   const [terms, setTerms] = useState(settings.terms);
   const [signatureName, setSignatureName] = useState(settings.signatureName);
   const [signatureLabel, setSignatureLabel] = useState(settings.signatureLabel);
@@ -78,6 +79,7 @@ export default function DocumentCreator({
       setTaxRate(editingDocument.taxRate);
       setVatEnabled(editingDocument.vatEnabled !== false && editingDocument.vatEnabled !== 0);
       setDiscount(editingDocument.discount);
+      setHasDiscount(editingDocument.discount > 0);
       setTerms(editingDocument.terms);
       setSignatureName(editingDocument.signatureName);
       setSignatureLabel(editingDocument.signatureLabel);
@@ -86,6 +88,8 @@ export default function DocumentCreator({
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       setDate(dateStr);
+      setDiscount(0);
+      setHasDiscount(false);
       
       // Default 1 month due date for invoices
       const defaultDue = new Date();
@@ -815,18 +819,47 @@ export default function DocumentCreator({
                 )}
               </div>
 
-              {/* Special Discount */}
-              <div className="space-y-1.5 pt-1.5 border-t border-slate-100">
-                <div className="flex justify-between items-center">
-                  <span>Flat Discount (BDT):</span>
+              {/* Special Discount Selection */}
+              <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
-                    type="number"
-                    min={0}
-                    value={discount}
-                    onChange={(e) => setDiscount(Number(e.target.value))}
-                    className="w-24 text-right bg-slate-50 border border-slate-200 rounded p-1 font-bold text-slate-900 focus:bg-white"
+                    type="checkbox"
+                    checked={hasDiscount}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasDiscount(checked);
+                      if (!checked) {
+                        setDiscount(0);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 accent-blue-900 cursor-pointer"
                   />
-                </div>
+                  <span className="font-bold text-slate-800 text-[11px]">
+                    ডিসকাউন্ট দিতে চান? / Apply Discount?
+                  </span>
+                </label>
+
+                {hasDiscount && (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200/60 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-semibold text-slate-600">Flat Discount (BDT):</span>
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs font-mono">৳</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={discount || ''}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setDiscount(val >= 0 ? val : 0);
+                          }}
+                          className="w-24 text-right bg-white border border-slate-200 rounded p-1 pl-5 font-bold text-slate-900 focus:border-blue-900 focus:outline-hidden text-xs"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Total Payable BDT */}
