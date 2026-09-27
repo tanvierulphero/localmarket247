@@ -26,6 +26,75 @@ interface DueLedgerProps {
   onViewDocument: (doc: Document) => void;
 }
 
+// Helper: Parse notes to extract payment transactions dynamically for reprinting later
+function parsePaymentsFromDoc(doc: Document) {
+  if (!doc.notes) return [];
+  const results: {
+    id: string;
+    receiptNo: string;
+    date: string;
+    amount: number;
+    paymentMethod: string;
+    notes: string;
+    references: string;
+    remainingDue: number;
+    customerName: string;
+    customerCompany: string;
+    customerPhone: string;
+  }[] = [];
+  
+  // Pattern 1: Single Collect
+  // [Payment Received: ৳X on YYYY-MM-DD via Z - Notes]
+  const p1Regex = /\[Payment Received: ৳([\d,]+) on ([\d-]+) via ([^\]-]+) - (.*?)\]/g;
+  let match;
+  while ((match = p1Regex.exec(doc.notes)) !== null) {
+    const amountStr = match[1].replace(/,/g, '');
+    const amount = parseInt(amountStr, 10) || 0;
+    const date = match[2];
+    const paymentMethod = match[3].trim();
+    const notes = match[4].trim();
+    results.push({
+      id: `${doc.id}-p1-${match.index}`,
+      receiptNo: `MR-${date.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+      date,
+      amount,
+      paymentMethod,
+      notes,
+      references: `${doc.type} #${doc.docNumber}`,
+      remainingDue: doc.dueAmount || 0,
+      customerName: doc.customerName,
+      customerCompany: doc.customerCompany || '',
+      customerPhone: doc.customerPhone || ''
+    });
+  }
+
+  // Pattern 2: Company Consolidated Collect
+  // [কোম্পানি বকেয়া জমা: ৳X via Z on YYYY-MM-DD - Notes]
+  const p2Regex = /\[কোম্পানি বকেয়া জমা: ৳([\d,]+) via ([^\]-]+) on ([\d-]+) - (.*?)\]/g;
+  while ((match = p2Regex.exec(doc.notes)) !== null) {
+    const amountStr = match[1].replace(/,/g, '');
+    const amount = parseInt(amountStr, 10) || 0;
+    const paymentMethod = match[2].trim();
+    const date = match[3];
+    const notes = match[4].trim();
+    results.push({
+      id: `${doc.id}-p2-${match.index}`,
+      receiptNo: `MR-${date.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+      date,
+      amount,
+      paymentMethod,
+      notes,
+      references: `${doc.type} #${doc.docNumber} (Ledger Payment)`,
+      remainingDue: doc.dueAmount || 0,
+      customerName: doc.customerName,
+      customerCompany: doc.customerCompany || '',
+      customerPhone: doc.customerPhone || ''
+    });
+  }
+
+  return results;
+}
+
 export default function DueLedger({ documents, customers, onUpdateDocument, onBatchUpdateDocuments, onViewDocument }: DueLedgerProps) {
   const [activeSubTab, setActiveSubTab] = useState<'customers' | 'invoices'>('customers');
   const [customerSearch, setCustomerSearch] = useState('');
@@ -491,9 +560,38 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
                                         {item.documents.map((doc) => {
                                           const paidAmt = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
                                           const dueAmt = doc.dueAmount !== undefined ? doc.dueAmount : (doc.status !== 'Paid' ? doc.total : 0);
+                                          const parsedPayments = parsePaymentsFromDoc(doc);
                                           return (
                                             <tr key={doc.id} className="hover:bg-slate-50">
-                                              <td className="py-3 px-4 font-mono font-bold text-blue-900">{doc.docNumber}</td>
+                                              <td className="py-3 px-4">
+                                                <span className="font-mono font-bold text-blue-900 block">{doc.docNumber}</span>
+                                                {parsedPayments.length > 0 && (
+                                                  <div className="mt-1 flex flex-wrap gap-1">
+                                                    {parsedPayments.map((p, idx) => (
+                                                      <button
+                                                        key={p.id}
+                                                        onClick={() => setRecentReceipt({
+                                                          receiptNo: p.receiptNo,
+                                                          date: p.date,
+                                                          customerName: p.customerName,
+                                                          customerCompany: p.customerCompany,
+                                                          customerPhone: p.customerPhone,
+                                                          amount: p.amount,
+                                                          paymentMethod: p.paymentMethod,
+                                                          notes: p.notes,
+                                                          references: p.references,
+                                                          remainingDue: p.remainingDue
+                                                        })}
+                                                        className="inline-flex items-center gap-0.5 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-200 px-1 py-0.5 rounded text-[8px] font-extrabold cursor-pointer transition-colors"
+                                                        title="মানি রসিদ পুনরায় প্রিন্ট করুন (Reprint Receipt)"
+                                                      >
+                                                        <Printer className="w-2.5 h-2.5 text-emerald-600" />
+                                                        রসিদ-{idx + 1} (৳{p.amount.toLocaleString()})
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                )}
+                                              </td>
                                               <td className="py-3 px-4">{doc.date}</td>
                                               <td className="py-3 px-4 font-mono">{doc.dueDate || '--'}</td>
                                               <td className="py-3 px-4 text-right text-slate-900 font-bold">৳{doc.total.toLocaleString()}</td>
@@ -600,6 +698,7 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
                     filteredInvoices.map((doc) => {
                       const paidAmt = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
                       const dueAmt = doc.dueAmount !== undefined ? doc.dueAmount : (doc.status !== 'Paid' ? doc.total : 0);
+                      const parsedPayments = parsePaymentsFromDoc(doc);
                       return (
                         <tr 
                           key={doc.id} 
@@ -608,6 +707,32 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
                           <td className="py-4 px-5">
                             <span className="font-mono font-bold text-blue-900 block text-xs">{doc.docNumber}</span>
                             <span className="text-[10px] text-slate-400 font-semibold block">{doc.type}</span>
+                            {parsedPayments.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {parsedPayments.map((p, idx) => (
+                                  <button
+                                    key={p.id}
+                                    onClick={() => setRecentReceipt({
+                                      receiptNo: p.receiptNo,
+                                      date: p.date,
+                                      customerName: p.customerName,
+                                      customerCompany: p.customerCompany,
+                                      customerPhone: p.customerPhone,
+                                      amount: p.amount,
+                                      paymentMethod: p.paymentMethod,
+                                      notes: p.notes,
+                                      references: p.references,
+                                      remainingDue: p.remainingDue
+                                    })}
+                                    className="inline-flex items-center gap-0.5 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-200 px-1 py-0.5 rounded text-[8px] font-extrabold cursor-pointer transition-colors"
+                                    title="মানি রসিদ পুনরায় প্রিন্ট করুন (Reprint Receipt)"
+                                  >
+                                    <Printer className="w-2.5 h-2.5 text-emerald-600" />
+                                    রসিদ-{idx + 1} (৳{p.amount.toLocaleString()})
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </td>
                           <td className="py-4 px-4">
                             <span className="font-bold text-slate-900 block">{doc.customerName}</span>
@@ -959,16 +1084,20 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
 
       {/* PRINTABLE MONEY RECEIPT MODAL */}
       {recentReceipt && (
-        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in no-print-backdrop">
+        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up my-8">
             
             {/* Header Control Panel (no-print) */}
-            <div className="bg-slate-950 text-white p-4 flex justify-between items-center no-print">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
-                <div>
-                  <h3 className="font-extrabold text-xs sm:text-sm text-white">পেমেন্ট রসিদ তৈরি হয়েছে / Money Receipt Ready</h3>
-                  <p className="text-[10px] text-slate-400">রসিদটি প্রিন্ট করে কাস্টমারকে দিন</p>
+            <div className="bg-slate-950 text-white p-4 flex justify-between items-center gap-4 no-print">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-6 h-6 text-emerald-400 mt-0.5 flex-shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
+                    পেমেন্ট রসিদ তৈরি হয়েছে / Money Receipt Ready
+                  </h3>
+                  <p className="text-[10px] text-slate-400 leading-normal">
+                    রসিদটি প্রিন্ট করে কাস্টমারকে দিন বা সংরক্ষণ করুন
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1006,7 +1135,7 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
                     Sales, Service & Repair of All Types of Air Conditioning Systems
                   </div>
                   <div className="text-[9px] text-slate-500 font-medium">
-                    Corporate Office & bull; Contact: +880 1711-000000 & bull; Email: support@hitachisolution.com
+                    Corporate Office • Contact: +880 1711-000000 • Email: support@hitachisolution.com
                   </div>
                 </div>
 
