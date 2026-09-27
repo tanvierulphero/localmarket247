@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  BadgeAlert
+  BadgeAlert,
+  Printer
 } from 'lucide-react';
 
 interface DueLedgerProps {
@@ -35,6 +36,22 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
   const [collectingDoc, setCollectingDoc] = useState<Document | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentNotes, setPaymentNotes] = useState('');
+  const [singlePaymentMethod, setSinglePaymentMethod] = useState<'Cash' | 'Bank Transfer' | 'bKash/Nagad' | 'Cheque'>('Cash');
+  const [singlePaymentDate, setSinglePaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Money Receipt state
+  const [recentReceipt, setRecentReceipt] = useState<{
+    receiptNo: string;
+    date: string;
+    customerName: string;
+    customerCompany: string;
+    customerPhone: string;
+    amount: number;
+    paymentMethod: string;
+    notes: string;
+    references: string;
+    remainingDue: number;
+  } | null>(null);
 
   // Company-Level Total Due Payment Modal State
   const [collectingCompany, setCollectingCompany] = useState<{
@@ -141,8 +158,7 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
     // Append standard notes if any
     let updatedNotes = collectingDoc.notes || '';
     if (paymentNotes.trim()) {
-      const today = new Date().toLocaleDateString('en-GB');
-      updatedNotes += `\n[Payment Received: ৳${paymentAmount.toLocaleString()} on ${today} - ${paymentNotes}]`;
+      updatedNotes += `\n[Payment Received: ৳${paymentAmount.toLocaleString()} on ${singlePaymentDate} via ${singlePaymentMethod} - ${paymentNotes}]`;
     }
 
     const updatedDoc: Document = {
@@ -154,6 +170,21 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
     };
 
     onUpdateDocument(updatedDoc);
+
+    // Create printable receipt
+    setRecentReceipt({
+      receiptNo: `MR-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      date: singlePaymentDate,
+      customerName: collectingDoc.customerName,
+      customerCompany: collectingDoc.customerCompany || '',
+      customerPhone: collectingDoc.customerPhone || '',
+      amount: paymentAmount,
+      paymentMethod: singlePaymentMethod,
+      notes: paymentNotes || 'Invoice Due Payment',
+      references: `${collectingDoc.type} #${collectingDoc.docNumber}`,
+      remainingDue: newDue
+    });
+
     setCollectingDoc(null);
     setPaymentAmount(0);
     setPaymentNotes('');
@@ -215,11 +246,23 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
     }
 
     const remainingDue = Math.max(0, collectingCompany.totalDue - companyPayAmount);
-    setCompanyPayFeedback(`৳${companyPayAmount.toLocaleString()} সফলভাবে জমা নেওয়া হয়েছে! নতুন মোট বকেয়া: ৳${remainingDue.toLocaleString()}`);
-    setTimeout(() => {
-      setCollectingCompany(null);
-      setCompanyPayFeedback(null);
-    }, 1200);
+    
+    // Create printable receipt for entire batch payment
+    setRecentReceipt({
+      receiptNo: `MR-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      date: companyPayDate,
+      customerName: collectingCompany.customer.name,
+      customerCompany: collectingCompany.customer.company || '',
+      customerPhone: collectingCompany.customer.phone || '',
+      amount: companyPayAmount,
+      paymentMethod: companyPayMethod,
+      notes: companyPayNotes || 'Company Ledger Consolidated Payment',
+      references: `Invoices Paid: ` + updatedDocs.map(d => d.docNumber).join(', '),
+      remainingDue: remainingDue
+    });
+
+    setCollectingCompany(null);
+    setCompanyPayFeedback(null);
   };
 
   return (
@@ -698,9 +741,37 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
                 <p className="text-[10px] text-slate-400">Enter payment collected from the client. Maximum allowed is the outstanding due amount.</p>
               </div>
 
+              {/* Payment Method & Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-700 font-bold block">পেমেন্ট মেথড (Payment Method)</label>
+                  <select
+                    value={singlePaymentMethod}
+                    onChange={(e) => setSinglePaymentMethod(e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-slate-800 focus:bg-white focus:outline-hidden"
+                  >
+                    <option value="Cash">Cash (নগদ)</option>
+                    <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
+                    <option value="bKash/Nagad">bKash / Nagad</option>
+                    <option value="Cheque">Cheque (চেক)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-700 font-bold block">জমার তারিখ (Payment Date)</label>
+                  <input
+                    type="date"
+                    required
+                    value={singlePaymentDate}
+                    onChange={(e) => setSinglePaymentDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:bg-white focus:outline-hidden"
+                  />
+                </div>
+              </div>
+
               {/* Payment Notes */}
               <div className="space-y-1">
-                <label className="text-slate-700 font-bold block">Payment / Transaction Memo</label>
+                <label className="text-slate-700 font-bold block">Payment / Transaction Memo (মন্তব্য)</label>
                 <input
                   type="text"
                   placeholder="e.g. Received via Bank Cheque #48104 or Cash"
@@ -885,6 +956,197 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
           </div>
         </div>
       )}
+
+      {/* PRINTABLE MONEY RECEIPT MODAL */}
+      {recentReceipt && (
+        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in no-print-backdrop">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up my-8">
+            
+            {/* Header Control Panel (no-print) */}
+            <div className="bg-slate-950 text-white p-4 flex justify-between items-center no-print">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <h3 className="font-extrabold text-xs sm:text-sm text-white">পেমেন্ট রসিদ তৈরি হয়েছে / Money Receipt Ready</h3>
+                  <p className="text-[10px] text-slate-400">রসিদটি প্রিন্ট করে কাস্টমারকে দিন</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print (প্রিন্ট)
+                </button>
+                <button 
+                  onClick={() => setRecentReceipt(null)}
+                  className="text-slate-400 hover:text-white font-bold bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center text-sm cursor-pointer"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Receipt Body */}
+            <div id="printable-area" className="p-8 bg-white text-slate-900 font-sans relative select-none">
+              
+              {/* Decorative border or watermarks for professional print */}
+              <div className="border-4 border-slate-900 p-6 rounded-xl relative">
+                
+                {/* Letterhead */}
+                <div className="text-center space-y-1 pb-4 border-b-2 border-slate-900">
+                  <div className="text-2xl font-black tracking-tight text-slate-900 font-display">
+                    HITACHI AIR SOLUTION CENTER
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
+                    "Your Problem Solution is Sustainable Partner"
+                  </div>
+                  <div className="text-[9px] text-slate-600 font-semibold">
+                    Sales, Service & Repair of All Types of Air Conditioning Systems
+                  </div>
+                  <div className="text-[9px] text-slate-500 font-medium">
+                    Corporate Office & bull; Contact: +880 1711-000000 & bull; Email: support@hitachisolution.com
+                  </div>
+                </div>
+
+                {/* Voucher Title */}
+                <div className="my-5 flex justify-center">
+                  <span className="bg-slate-900 text-white font-black text-xs uppercase tracking-widest px-6 py-1.5 rounded-lg text-center font-mono">
+                    MONEY RECEIPT / মানি রসিদ
+                  </span>
+                </div>
+
+                {/* Receipt Grid Info */}
+                <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-[11px] font-semibold text-slate-700 pb-4 border-b border-slate-200">
+                  <div>
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Receipt Number:</span>
+                    <strong className="text-slate-900 font-mono text-xs">{recentReceipt.receiptNo}</strong>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Date of Payment:</span>
+                    <strong className="text-slate-900 font-mono text-xs">{recentReceipt.date}</strong>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Received From (কাস্টমার):</span>
+                    <strong className="text-slate-900 text-sm">{recentReceipt.customerName}</strong>
+                    {recentReceipt.customerCompany && (
+                      <span className="text-slate-500 block text-[10px]">Company: {recentReceipt.customerCompany}</span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Contact Number:</span>
+                    <strong className="text-slate-800 font-mono">{recentReceipt.customerPhone || 'N/A'}</strong>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Payment Method:</span>
+                    <strong className="text-emerald-700 uppercase tracking-wider">{recentReceipt.paymentMethod}</strong>
+                  </div>
+                </div>
+
+                {/* Amount Section */}
+                <div className="my-5 bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2.5">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Reference Document:
+                    </span>
+                    <span className="font-mono font-black text-slate-900 text-xs bg-slate-200 px-2 py-0.5 rounded">
+                      {recentReceipt.references}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-black text-slate-800">
+                      Amount Received (জমাকৃত টাকা):
+                    </span>
+                    <span className="text-xl font-black text-slate-950 font-display">
+                      ৳{recentReceipt.amount.toLocaleString()}.00
+                    </span>
+                  </div>
+
+                  <div className="text-[10px] text-slate-600 bg-white border border-slate-100 p-2 rounded-lg font-bold italic">
+                    <span className="text-slate-400 uppercase tracking-wider font-mono block text-[9px] not-italic font-bold">
+                      Amount in Words (কথায়):
+                    </span>
+                    {numberToWords(recentReceipt.amount)}
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-[10px] font-bold text-slate-500">
+                    <span>Outstanding Remaining Due (অবশিষ্ট বকেয়া):</span>
+                    <span className="text-rose-600 font-black font-mono">
+                      ৳{recentReceipt.remainingDue.toLocaleString()}.00
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {recentReceipt.notes && (
+                  <div className="text-[10px] text-slate-500 font-semibold mb-6">
+                    <span className="text-slate-400 text-[9px] uppercase font-bold block">Payment Details / Memo:</span>
+                    <p className="text-slate-800 bg-slate-50 border border-slate-200 p-2 rounded-lg italic">
+                      {recentReceipt.notes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Signatures */}
+                <div className="grid grid-cols-2 gap-12 pt-12 text-center text-[10px] font-bold text-slate-500">
+                  <div className="space-y-1">
+                    <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800">
+                      Customer's Signature
+                    </div>
+                    <span className="text-[9px] text-slate-400 italic block">গ্রহীতার স্বাক্ষর</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800 font-bold">
+                      Authorized Signature
+                    </div>
+                    <span className="text-[9px] text-slate-400 italic block">কর্তৃপক্ষের স্বাক্ষর</span>
+                  </div>
+                </div>
+
+                {/* Copy / Seal Watermark */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none text-center rotate-12 z-0">
+                  <span className="text-5xl font-black tracking-widest text-slate-900 border-8 border-slate-900 p-4 rounded-3xl block">
+                    PAID / আদায়কৃত
+                  </span>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Footer buttons (no-print) */}
+            <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3 no-print">
+              <button
+                onClick={() => setRecentReceipt(null)}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-950 text-white text-xs font-bold uppercase rounded-xl cursor-pointer"
+              >
+                Close (বন্ধ করুন)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Helper: Convert number to English currency words
+function numberToWords(num: number): string {
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  if (num === 0) return 'Zero Taka Only';
+  
+  const convert = (n: number): string => {
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
+    if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' and ' + convert(n % 100) : '');
+    if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 !== 0 ? ' ' + convert(n % 1000) : '');
+    if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 !== 0 ? ' ' + convert(n % 100000) : '');
+    return convert(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 !== 0 ? ' ' + convert(n % 10000000) : '');
+  };
+  
+  return convert(num) + ' Taka Only';
 }

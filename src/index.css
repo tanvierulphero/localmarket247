@@ -7,12 +7,15 @@
 
 @layer utilities {
   @media print {
+    /* Hide specific navigation/interactive blocks on all printed views */
+    .no-print, nav, header, aside, footer, button, input, select, textarea, .action-buttons, .search-bar, .modal-backdrop, [role="tablist"], .tab-buttons {
+      display: none !important;
+    }
+
     /* Force exact color/background rendering in print dialogs */
     html, body {
       background-color: #ffffff !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 210mm !important;
+      color: #0f172a !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
@@ -20,23 +23,31 @@
     /* Page setup for A4 with 0 margin so #printable-area precise padding handles page margins */
     @page {
       size: A4 portrait;
+      margin: 10mm !important;
+    }
+
+    /* IF PRINTING A SPECIFIC DOCUMENT LETTERHEAD (#printable-area exists) */
+    body:has(#printable-area) {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 210mm !important;
+    }
+
+    body:has(#printable-area) @page {
       margin: 0 !important;
     }
 
-    /* Hide everything outside printable container */
-    body * {
+    body:has(#printable-area) * {
       visibility: hidden !important;
     }
-    
-    .no-print, nav, header, aside {
-      display: none !important;
-    }
 
-    #printable-area, #printable-area * {
+    body:has(#printable-area) #printable-area,
+    body:has(#printable-area) #printable-area * {
       visibility: visible !important;
     }
 
-    #printable-area {
+    body:has(#printable-area) #printable-area {
+      visibility: visible !important;
       position: absolute !important;
       left: 0 !important;
       top: 0 !important;
@@ -54,8 +65,43 @@
       print-color-adjust: exact !important;
     }
 
+    /* IF PRINTING REGULAR DASHBOARD (no #printable-area) */
+    body:not(:has(#printable-area)) {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 10px !important;
+    }
+
+    body:not(:has(#printable-area)) * {
+      visibility: visible !important;
+    }
+
+    body:not(:has(#printable-area)) main {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    body:not(:has(#printable-area)) .p-6,
+    body:not(:has(#printable-area)) .p-8 {
+      padding: 0 !important;
+    }
+
+    /* Ensure tables print beautifully */
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1 !important;
+      padding: 6px 10px !important;
+      font-size: 11px !important;
+      color: #000000 !important;
+    }
+
     /* Prevent breaking inside tables and signature blocks */
-    tr, table, .signature-block, .totals-block {
+    tr, table, .signature-block, .totals-block, .print-card {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }

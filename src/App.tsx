@@ -842,10 +842,10 @@ export default function App() {
 
       {/* 3. CORE SECURE EXECUTIVE DASHBOARD */}
       {currentView === 'dashboard' && (
-        <div className="min-h-screen flex flex-col md:flex-row no-print animate-fade-in">
+        <div className="min-h-screen flex flex-col md:flex-row animate-fade-in">
           
           {/* Dashboard Left Sidebar */}
-          <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between border-r border-slate-950 flex-shrink-0 z-30">
+          <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between border-r border-slate-950 flex-shrink-0 z-30 no-print">
             <div>
               {/* Brand Header */}
               <div className="p-5 border-b border-slate-950 flex items-center justify-center h-16">
@@ -1085,7 +1085,7 @@ export default function App() {
           {/* Core workspace content */}
           <main className="flex-1 bg-slate-50 min-h-screen flex flex-col justify-between">
             {/* Top Workspace Header */}
-            <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between no-print">
               <div className="flex items-center gap-3">
                 <FolderLock className="w-5 h-5 text-blue-900" />
                 <div className="text-xs">
@@ -1525,7 +1525,7 @@ export default function App() {
             </div>
 
             {/* Admin page copyright */}
-            <footer className="bg-white border-t border-slate-200 py-4 px-8 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">
+            <footer className="bg-white border-t border-slate-200 py-4 px-8 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono no-print">
               <span>hitachisolutioncenter Dashboard &bull; Cloud SQL Relational Database Active</span>
               <span>"Your Problem Solution is Sustainable Partner"</span>
             </footer>
