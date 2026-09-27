@@ -1084,33 +1084,33 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
 
       {/* PRINTABLE MONEY RECEIPT MODAL */}
       {recentReceipt && (
-        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up my-8">
+        <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
             
             {/* Header Control Panel (no-print) */}
-            <div className="bg-slate-950 text-white p-4 flex justify-between items-center gap-4 no-print">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="w-6 h-6 text-emerald-400 mt-0.5 flex-shrink-0" />
-                <div className="flex flex-col gap-0.5">
-                  <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
-                    পেমেন্ট রসিদ তৈরি হয়েছে / Money Receipt Ready
+            <div className="bg-slate-950 text-white px-4 py-3 flex justify-between items-center gap-4 no-print flex-shrink-0 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                <div>
+                  <h3 className="font-extrabold text-[11px] sm:text-xs text-white leading-tight">
+                    পেমেন্ট রসিদ / Money Receipt Ready
                   </h3>
-                  <p className="text-[10px] text-slate-400 leading-normal">
-                    রসিদটি প্রিন্ট করে কাস্টমারকে দিন বা সংরক্ষণ করুন
+                  <p className="text-[9px] text-slate-400 hidden sm:block">
+                    রসিদটি প্রিন্ট করে কাস্টমারকে দিন
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
                 >
-                  <Printer className="w-4 h-4" />
+                  <Printer className="w-3.5 h-3.5" />
                   Print (প্রিন্ট)
                 </button>
                 <button 
                   onClick={() => setRecentReceipt(null)}
-                  className="text-slate-400 hover:text-white font-bold bg-white/10 hover:bg-white/20 w-8 h-8 rounded-full flex items-center justify-center text-sm cursor-pointer"
+                  className="text-slate-400 hover:text-white font-bold bg-white/10 hover:bg-white/20 w-7 h-7 rounded-full flex items-center justify-center text-sm cursor-pointer transition-colors"
                 >
                   &times;
                 </button>
@@ -1118,7 +1118,7 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
             </div>
 
             {/* Printable Receipt Body */}
-            <div id="printable-area" className="p-8 bg-white text-slate-900 font-sans relative select-none">
+            <div id="printable-area" className="overflow-y-auto flex-1 p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0">
               
               {/* Decorative border or watermarks for professional print */}
               <div className="border-4 border-slate-900 p-6 rounded-xl relative">
