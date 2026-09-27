@@ -308,9 +308,13 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
             <div className="grid grid-cols-2 gap-3 mb-3 text-xs sm:text-sm leading-relaxed pb-3 border-b border-slate-300">
               <div>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Recipient / Client:</h3>
-                <p className="text-sm font-bold text-slate-900 font-display">{document.customerName}</p>
-                {document.customerCompany && (
-                  <p className="font-semibold text-slate-700 text-xs sm:text-sm">{document.customerCompany}</p>
+                {document.customerCompany ? (
+                  <>
+                    <p className="text-sm font-bold text-slate-900 font-display uppercase">{document.customerCompany}</p>
+                    <p className="font-semibold text-slate-700 text-xs sm:text-sm">Attention: {document.customerName}</p>
+                  </>
+                ) : (
+                  <p className="text-sm font-bold text-slate-900 font-display">{document.customerName}</p>
                 )}
                 <p className="text-slate-600 mt-0.5 flex items-center gap-1 text-xs sm:text-sm">
                   <Phone className="w-3.5 h-3.5 text-slate-400 inline" /> {document.customerPhone}
