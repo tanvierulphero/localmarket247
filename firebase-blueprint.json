@@ -97,7 +97,8 @@
         "terms": { "type": "string" },
         "notes": { "type": "string" },
         "signatureLabel": { "type": "string" },
-        "signatureName": { "type": "string" }
+        "signatureName": { "type": "string" },
+        "vatEnabled": { "type": "boolean" }
       },
       "required": ["id", "type", "docNumber", "date", "customerId", "customerName", "subtotal", "total", "status"]
     },

@@ -54,6 +54,7 @@ export default function DocumentCreator({
   const [items, setItems] = useState<DocumentItem[]>([]);
   
   // Totals & Overrides
+  const [vatEnabled, setVatEnabled] = useState(true);
   const [taxRate, setTaxRate] = useState(settings.taxRate);
   const [discount, setDiscount] = useState(0);
   const [terms, setTerms] = useState(settings.terms);
@@ -75,6 +76,7 @@ export default function DocumentCreator({
       setClosingParagraph(editingDocument.closingParagraph || '');
       setItems(editingDocument.items || []);
       setTaxRate(editingDocument.taxRate);
+      setVatEnabled(editingDocument.vatEnabled !== false && editingDocument.vatEnabled !== 0);
       setDiscount(editingDocument.discount);
       setTerms(editingDocument.terms);
       setSignatureName(editingDocument.signatureName);
@@ -199,7 +201,7 @@ export default function DocumentCreator({
 
   // Calculate Totals
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  const taxAmount = Math.round((subtotal * taxRate) / 100);
+  const taxAmount = vatEnabled ? Math.round((subtotal * taxRate) / 100) : 0;
   const total = Math.max(0, subtotal + taxAmount - discount);
 
   // Quick Unique Company ID Search auto-select
@@ -279,7 +281,7 @@ export default function DocumentCreator({
     }
 
     const calculatedSubtotal = validItems.reduce((sum, item) => sum + item.total, 0);
-    const calculatedTaxAmount = Math.round((calculatedSubtotal * taxRate) / 100);
+    const calculatedTaxAmount = vatEnabled ? Math.round((calculatedSubtotal * taxRate) / 100) : 0;
     const calculatedTotal = Math.max(0, calculatedSubtotal + calculatedTaxAmount - discount);
 
     const doc: Document = {
@@ -300,14 +302,15 @@ export default function DocumentCreator({
       closingParagraph: (docType === 'OFFER_LETTER' || docType === 'QUOTATION') ? closingParagraph : undefined,
       items: validItems,
       subtotal: calculatedSubtotal,
-      taxRate,
+      taxRate: vatEnabled ? taxRate : 0,
       taxAmount: calculatedTaxAmount,
       discount,
       total: calculatedTotal,
       status,
       terms,
       signatureName,
-      signatureLabel
+      signatureLabel,
+      vatEnabled
     };
 
     onSaveDocument(doc);
@@ -775,23 +778,41 @@ export default function DocumentCreator({
                 <span className="text-slate-950">৳{subtotal.toLocaleString()}</span>
               </div>
 
-              {/* VAT Tax */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span>VAT / Tax Rate (%):</span>
+              {/* VAT Tax Option */}
+              <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={taxRate}
-                    onChange={(e) => setTaxRate(Number(e.target.value))}
-                    className="w-16 text-right bg-slate-50 border border-slate-200 rounded p-1 font-bold text-slate-900 focus:bg-white"
+                    type="checkbox"
+                    checked={vatEnabled}
+                    onChange={(e) => setVatEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 accent-blue-900 cursor-pointer"
                   />
-                </div>
-                <div className="flex justify-between text-[11px] text-slate-400">
-                  <span>VAT calculated:</span>
-                  <span>৳{taxAmount.toLocaleString()}</span>
-                </div>
+                  <span className="font-bold text-slate-800 text-[11px]">
+                    ভ্যাট (VAT/Tax) যুক্ত করুন? / Include VAT?
+                  </span>
+                </label>
+
+                {vatEnabled ? (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200/60 animate-fade-in">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-semibold text-slate-600">VAT / Tax Rate (%):</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={taxRate}
+                        onChange={(e) => setTaxRate(Number(e.target.value))}
+                        className="w-16 text-right bg-white border border-slate-200 rounded p-1 font-bold text-slate-900 focus:border-blue-900 focus:outline-hidden"
+                      />
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-500 font-bold">
+                      <span>ভ্যাট হিসাব (VAT Amount):</span>
+                      <span>৳{taxAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 italic">ভ্যাট বিল বা চালানে যুক্ত হবে না (VAT Excluded)</p>
+                )}
               </div>
 
               {/* Special Discount */}

@@ -5,9 +5,9 @@ import path from 'path';
 import multer from 'multer';
 import { Server as SocketIOServer } from 'socket.io';
 import { db, pool } from './src/db/index.ts';
-import { products, customers, documents, staffUsers, settings, fieldDispatches, suppliers, purchases, salesReturns } from './src/db/schema.ts';
+import { products, customers, documents, staffUsers, settings, fieldDispatches, suppliers, purchases, salesReturns, expenses } from './src/db/schema.ts';
 import { eq, sql } from 'drizzle-orm';
-import { INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_DOCUMENTS, INITIAL_STAFF_USERS, DEFAULT_SETTINGS, INITIAL_FIELD_DISPATCHES, INITIAL_SUPPLIERS, INITIAL_PURCHASES, INITIAL_SALES_RETURNS } from './src/initialData.ts';
+import { INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_DOCUMENTS, INITIAL_STAFF_USERS, DEFAULT_SETTINGS, INITIAL_FIELD_DISPATCHES, INITIAL_SUPPLIERS, INITIAL_PURCHASES, INITIAL_SALES_RETURNS, INITIAL_EXPENSES } from './src/initialData.ts';
 
 const app = express();
 const port = 3000;
@@ -163,6 +163,28 @@ async function seedInitialDataIfNeeded() {
         }).onConflictDoNothing().catch(() => {});
       }
     }
+
+    const existingExpenses = await db.select().from(expenses).limit(1).catch(() => []);
+    if (existingExpenses.length === 0) {
+      console.log('Seeding initial daily expenses into Cloud SQL...');
+      for (const expItem of INITIAL_EXPENSES) {
+        await (db.insert(expenses) as any).values({
+          id: expItem.id,
+          expenseNumber: expItem.expenseNumber,
+          date: expItem.date,
+          category: expItem.category,
+          title: expItem.title,
+          amount: Number(expItem.amount) || 0,
+          paymentMethod: expItem.paymentMethod,
+          paidBy: expItem.paidBy || '',
+          staffId: expItem.staffId || '',
+          referenceNo: expItem.referenceNo || '',
+          notes: expItem.notes || '',
+          receiptUrl: expItem.receiptUrl || '',
+          createdAt: expItem.createdAt || '',
+        }).onConflictDoNothing().catch(() => {});
+      }
+    }
     isSeeded = true;
   } catch (err) {
     console.error('Data seeding check encountered notice:', err);
@@ -309,7 +331,11 @@ app.post('/api/documents', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing document ID' });
     }
-    await (db.insert(documents) as any).values(item).onConflictDoUpdate({
+    const dbItem = {
+      ...item,
+      vatEnabled: item.vatEnabled === false || item.vatEnabled === 0 ? 0 : 1
+    };
+    await (db.insert(documents) as any).values(dbItem).onConflictDoUpdate({
       target: documents.id,
       set: {
         type: item.type,
@@ -339,10 +365,11 @@ app.post('/api/documents', async (req, res) => {
         notes: item.notes || null,
         signatureLabel: item.signatureLabel || 'Authorized Signature',
         signatureName: item.signatureName || 'Hitachi Air Solution Center',
+        vatEnabled: item.vatEnabled === false || item.vatEnabled === 0 ? 0 : 1,
       },
     });
-    notifyChange('documents', 'save', item);
-    res.json(item);
+    notifyChange('documents', 'save', dbItem);
+    res.json(dbItem);
   } catch (err: any) {
     console.error('Failed to save document:', err);
     res.status(500).json({ error: err.message || 'Failed to save document' });
@@ -743,6 +770,76 @@ app.delete('/api/returns/:id', async (req, res) => {
   } catch (err: any) {
     console.error('Failed to delete return:', err);
     res.status(500).json({ error: err.message || 'Failed to delete return' });
+  }
+});
+
+// 10. Expenses API
+app.get('/api/expenses', async (_req, res) => {
+  try {
+    await seedInitialDataIfNeeded();
+    const result = await db.select().from(expenses);
+    res.json(result);
+  } catch (err: any) {
+    console.error('Failed to fetch expenses:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch expenses' });
+  }
+});
+
+app.post('/api/expenses', async (req, res) => {
+  try {
+    const item = req.body;
+    if (!item.id) {
+      return res.status(400).json({ error: 'Missing expense ID' });
+    }
+    const expenseData = {
+      id: String(item.id),
+      expenseNumber: String(item.expenseNumber || `EXP/${new Date().getFullYear()}/${Date.now()}`),
+      date: String(item.date || new Date().toISOString().split('T')[0]),
+      category: String(item.category || 'Miscellaneous / Other Expenses'),
+      title: String(item.title || ''),
+      amount: Number(item.amount) || 0,
+      paymentMethod: String(item.paymentMethod || 'Cash'),
+      paidBy: String(item.paidBy || ''),
+      staffId: String(item.staffId || ''),
+      referenceNo: String(item.referenceNo || ''),
+      notes: String(item.notes || ''),
+      receiptUrl: String(item.receiptUrl || ''),
+      createdAt: String(item.createdAt || new Date().toISOString().split('T')[0]),
+    };
+    await (db.insert(expenses) as any).values(expenseData).onConflictDoUpdate({
+      target: expenses.id,
+      set: {
+        expenseNumber: expenseData.expenseNumber,
+        date: expenseData.date,
+        category: expenseData.category,
+        title: expenseData.title,
+        amount: expenseData.amount,
+        paymentMethod: expenseData.paymentMethod,
+        paidBy: expenseData.paidBy,
+        staffId: expenseData.staffId,
+        referenceNo: expenseData.referenceNo,
+        notes: expenseData.notes,
+        receiptUrl: expenseData.receiptUrl,
+        createdAt: expenseData.createdAt,
+      },
+    });
+    notifyChange('expenses', 'save', expenseData);
+    res.json(expenseData);
+  } catch (err: any) {
+    console.error('Failed to save expense:', err);
+    res.status(500).json({ error: err.message || 'Failed to save expense' });
+  }
+});
+
+app.delete('/api/expenses/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.delete(expenses).where(eq(expenses.id, id));
+    notifyChange('expenses', 'delete', { id });
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('Failed to delete expense:', err);
+    res.status(500).json({ error: err.message || 'Failed to delete expense' });
   }
 });
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { Product, Customer, Document, BusinessSettings, DocumentType, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn } from './types';
+import { Product, Customer, Document, BusinessSettings, DocumentType, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from './types';
 import { 
   DEFAULT_SETTINGS, 
   INITIAL_PRODUCTS, 
@@ -10,7 +10,8 @@ import {
   INITIAL_FIELD_DISPATCHES, 
   INITIAL_SUPPLIERS, 
   INITIAL_PURCHASES,
-  INITIAL_SALES_RETURNS
+  INITIAL_SALES_RETURNS,
+  INITIAL_EXPENSES
 } from './initialData';
 
 // Component imports
@@ -24,6 +25,7 @@ import DocumentCreator from './components/DocumentCreator';
 import DocumentList from './components/DocumentList';
 import ReportsHub from './components/ReportsHub';
 import DueLedger from './components/DueLedger';
+import ExpenseManager from './components/ExpenseManager';
 import StaffManagement from './components/StaffManagement';
 import FieldDispatchManager from './components/FieldDispatchManager';
 import CompanyProfileManager from './components/CompanyProfileManager';
@@ -52,6 +54,7 @@ import {
   RefreshCw,
   Server,
   HardDrive,
+  Wallet,
   X
 } from 'lucide-react';
 import { 
@@ -81,6 +84,9 @@ import {
   apiGetReturns,
   apiSaveReturn,
   apiDeleteReturn,
+  apiGetExpenses,
+  apiSaveExpense,
+  apiDeleteExpense,
   apiCheckDatabaseHealth,
   DbHealthResult
 } from './lib/api';
@@ -111,6 +117,7 @@ export default function App() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [salesReturns, setSalesReturns] = useState<SalesReturn[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [settings, setSettings] = useState<BusinessSettings>(DEFAULT_SETTINGS);
 
   // Focus workflows
@@ -163,6 +170,7 @@ export default function App() {
     const cachedSuppliers = localStorage.getItem('hsc_suppliers');
     const cachedPurchases = localStorage.getItem('hsc_purchases');
     const cachedReturns = localStorage.getItem('hsc_returns');
+    const cachedExpenses = localStorage.getItem('hsc_expenses');
 
     if (cachedProds) setProducts(JSON.parse(cachedProds));
     if (cachedCusts) setCustomers(JSON.parse(cachedCusts));
@@ -171,9 +179,10 @@ export default function App() {
     if (cachedSuppliers) setSuppliers(JSON.parse(cachedSuppliers));
     if (cachedPurchases) setPurchases(JSON.parse(cachedPurchases));
     if (cachedReturns) setSalesReturns(JSON.parse(cachedReturns));
+    if (cachedExpenses) setExpenses(JSON.parse(cachedExpenses));
 
     try {
-      const [prods, custs, docs, staff, setts, disps, sups, purs, rets] = await Promise.all([
+      const [prods, custs, docs, staff, setts, disps, sups, purs, rets, exps] = await Promise.all([
         apiGetProducts().catch(() => cachedProds ? JSON.parse(cachedProds) : INITIAL_PRODUCTS),
         apiGetCustomers().catch(() => cachedCusts ? JSON.parse(cachedCusts) : INITIAL_CUSTOMERS),
         apiGetDocuments().catch(() => cachedDocs ? JSON.parse(cachedDocs) : INITIAL_DOCUMENTS),
@@ -183,6 +192,7 @@ export default function App() {
         apiGetSuppliers().catch(() => cachedSuppliers ? JSON.parse(cachedSuppliers) : INITIAL_SUPPLIERS),
         apiGetPurchases().catch(() => cachedPurchases ? JSON.parse(cachedPurchases) : INITIAL_PURCHASES),
         apiGetReturns().catch(() => cachedReturns ? JSON.parse(cachedReturns) : INITIAL_SALES_RETURNS),
+        apiGetExpenses().catch(() => cachedExpenses ? JSON.parse(cachedExpenses) : INITIAL_EXPENSES),
       ]);
 
       if (prods && prods.length > 0) {
@@ -234,6 +244,13 @@ export default function App() {
         setSalesReturns(INITIAL_SALES_RETURNS);
       }
 
+      if (exps && exps.length > 0) {
+        setExpenses(exps);
+        localStorage.setItem('hsc_expenses', JSON.stringify(exps));
+      } else if (!cachedExpenses) {
+        setExpenses(INITIAL_EXPENSES);
+      }
+
       setStaffUsers(staff.length > 0 ? staff : INITIAL_STAFF_USERS);
       setSettings(setts);
       setSettingsForm(setts);
@@ -282,6 +299,8 @@ export default function App() {
         apiGetPurchases().then(setPurchases).catch(() => {});
       } else if (change.entity === 'returns') {
         apiGetReturns().then(setSalesReturns).catch(() => {});
+      } else if (change.entity === 'expenses') {
+        apiGetExpenses().then(setExpenses).catch(() => {});
       }
     });
 
@@ -701,6 +720,36 @@ export default function App() {
     }
   };
 
+  // Daily Expense Handlers
+  const handleSaveExpense = async (expense: Expense) => {
+    const existingIndex = expenses.findIndex(e => e.id === expense.id);
+    let list: Expense[];
+    if (existingIndex >= 0) {
+      list = [...expenses];
+      list[existingIndex] = expense;
+    } else {
+      list = [expense, ...expenses];
+    }
+    setExpenses(list);
+    localStorage.setItem('hsc_expenses', JSON.stringify(list));
+    try {
+      await apiSaveExpense(expense);
+    } catch (e) {
+      console.warn('Backend sync warning for expense:', e);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    const list = expenses.filter(e => e.id !== id);
+    setExpenses(list);
+    localStorage.setItem('hsc_expenses', JSON.stringify(list));
+    try {
+      await apiDeleteExpense(id);
+    } catch (e) {
+      console.warn('Backend sync warning for delete expense:', e);
+    }
+  };
+
   // Batch Update Documents Handler (for Company-wide Payment Allocation)
   const handleBatchUpdateDocuments = async (docsToUpdate: Document[]) => {
     const updatedMap = new Map(docsToUpdate.map(d => [d.id, d]));
@@ -911,6 +960,21 @@ export default function App() {
                   >
                     <FileText className="w-4 h-4 text-rose-400" />
                     Due Ledger
+                  </button>
+                )}
+
+                {/* Tab: Daily Expenses */}
+                {hasPermission('view_expenses') && (
+                  <button
+                    onClick={() => { setActiveTab('expenses'); setEditingDocument(null); setIsCreatingDoc(null); }}
+                    className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-lg transition-all text-left cursor-pointer ${
+                      activeTab === 'expenses'
+                        ? 'bg-rose-700 text-white font-extrabold shadow-sm'
+                        : 'hover:bg-slate-800 hover:text-slate-100'
+                    }`}
+                  >
+                    <Wallet className="w-4 h-4 text-rose-400" />
+                    Daily Expenses (খরচ)
                   </button>
                 )}
 
@@ -1149,6 +1213,18 @@ export default function App() {
                       onUpdateDocument={handleSaveDocument}
                       onBatchUpdateDocuments={handleBatchUpdateDocuments}
                       onViewDocument={(doc) => setViewingDocument(doc)}
+                    />
+                  )}
+
+                  {/* TAB PANEL 4c: Daily Expenses Management */}
+                  {activeTab === 'expenses' && hasPermission('view_expenses') && (
+                    <ExpenseManager 
+                      expenses={expenses}
+                      staffUsers={staffUsers}
+                      currentUser={currentUser}
+                      settings={settings}
+                      onSaveExpense={handleSaveExpense}
+                      onDeleteExpense={handleDeleteExpense}
                     />
                   )}
 

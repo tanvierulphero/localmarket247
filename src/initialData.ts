@@ -1,4 +1,4 @@
-import { Product, Customer, Document, BusinessSettings, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn } from './types';
+import { Product, Customer, Document, BusinessSettings, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from './types';
 
 export const ALL_PERMISSIONS: { key: PermissionKey; label: string; description: string; category: string }[] = [
   { key: 'view_overview', label: 'Overview Analytics', description: 'View high-level revenue and business overview stats', category: 'General' },
@@ -12,6 +12,8 @@ export const ALL_PERMISSIONS: { key: PermissionKey; label: string; description: 
   { key: 'delete_documents', label: 'Delete Documents', description: 'Permanently purge invoices or quotation records', category: 'Documents' },
   { key: 'view_due_ledger', label: 'View Due Ledger', description: 'View customer accounts receivable and due balances', category: 'Accounts' },
   { key: 'manage_due_ledger', label: 'Collect Dues / Manage Ledger', description: 'Receive customer payments and update due balances', category: 'Accounts' },
+  { key: 'view_expenses', label: 'View Daily Expenses', description: 'Browse company and showroom expense records', category: 'Accounts' },
+  { key: 'manage_expenses', label: 'Manage Daily Expenses', description: 'Record, edit, and categorize company expenses', category: 'Accounts' },
   { key: 'view_field_dispatch', label: 'View Field Dispatches', description: 'Track staff products taken out and returned for service/sales', category: 'Dispatch' },
   { key: 'manage_field_dispatch', label: 'Manage Field Dispatches', description: 'Create dispatch slips, reconcile returns and generate field invoices', category: 'Dispatch' },
   { key: 'view_reports', label: 'View Business Reports', description: 'Export sales, VAT, and inventory report spreadsheets', category: 'Analytics' },
@@ -709,5 +711,73 @@ export const INITIAL_SALES_RETURNS: SalesReturn[] = [
     reason: "Unused spare part returned after 1 month routine maintenance cycle",
     notes: "Restocked into central warehouse. Adjusted against customer due ledger.",
     createdAt: "2026-09-22"
+  }
+];
+
+export const INITIAL_EXPENSES: Expense[] = [
+  {
+    id: "exp-2026-001",
+    expenseNumber: "EXP/2026/001",
+    date: "2026-09-25",
+    category: "Office Rent & Utilities",
+    title: "Showroom Electricity Bill (DPDC August 2026)",
+    amount: 14500,
+    paymentMethod: "Bank Transfer",
+    paidBy: "MD MAHI UDDIN",
+    referenceNo: "DPDC-893041",
+    notes: "Paid via Dutch Bangla Bank Corporate account online",
+    createdAt: "2026-09-25"
+  },
+  {
+    id: "exp-2026-002",
+    expenseNumber: "EXP/2026/002",
+    date: "2026-09-24",
+    category: "Shipping & Courier",
+    title: "SA Paribahan Compressor Oil Filter shipment to Chittagong Client",
+    amount: 1200,
+    paymentMethod: "Cash",
+    paidBy: "Kamrul Hasan",
+    referenceNo: "SA-CTG-9821",
+    notes: "Delivery for Apex Spinning & Knitting site service spare parts",
+    createdAt: "2026-09-24"
+  },
+  {
+    id: "exp-2026-003",
+    expenseNumber: "EXP/2026/003",
+    date: "2026-09-23",
+    category: "Conveyance & Transportation",
+    title: "Service Engineer travel & CNG fare for Jamuna Fertilizer onsite inspection",
+    amount: 2500,
+    paymentMethod: "bKash/Nagad",
+    paidBy: "Engr. Rafiqul Islam",
+    referenceNo: "CNG-JF-04",
+    notes: "Site visit for 75kW Hitachi Screw Compressor troubleshooting",
+    createdAt: "2026-09-23"
+  },
+  {
+    id: "exp-2026-004",
+    expenseNumber: "EXP/2026/004",
+    date: "2026-09-21",
+    category: "Office Tea, Snacks & Entertainment",
+    title: "Weekly Office Refreshment & Client Meeting Hospitality",
+    amount: 1850,
+    paymentMethod: "Cash",
+    paidBy: "Kamrul Hasan",
+    referenceNo: "SNACK-WK38",
+    notes: "Guest entertainment for industrial factory client meeting",
+    createdAt: "2026-09-21"
+  },
+  {
+    id: "exp-2026-005",
+    expenseNumber: "EXP/2026/005",
+    date: "2026-09-18",
+    category: "Stationery & Printing",
+    title: "Official Challan & Quotation Pad Printing (500 sets)",
+    amount: 4500,
+    paymentMethod: "Cash",
+    paidBy: "MD MAHI UDDIN",
+    referenceNo: "PRINT-PAD-2026",
+    notes: "Branded hitachisolutioncenter official delivery challan and letterhead printing",
+    createdAt: "2026-09-18"
   }
 ];

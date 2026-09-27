@@ -405,10 +405,12 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
                   <span>Sub-Total:</span>
                   <span className="text-slate-800 font-semibold">৳{document.subtotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-slate-500">
-                  <span>VAT / Tax ({document.taxRate}%):</span>
-                  <span className="text-slate-800 font-semibold">৳{document.taxAmount.toLocaleString()}</span>
-                </div>
+                {document.vatEnabled !== false && document.vatEnabled !== 0 && (
+                  <div className="flex justify-between text-slate-500">
+                    <span>VAT / Tax ({document.taxRate}%):</span>
+                    <span className="text-slate-800 font-semibold">৳{document.taxAmount.toLocaleString()}</span>
+                  </div>
+                )}
                 {document.discount > 0 && (
                   <div className="flex justify-between text-rose-600 font-semibold">
                     <span>Special Discount:</span>

@@ -32,6 +32,24 @@ export interface Customer {
 
 export type DocumentType = 'OFFER_LETTER' | 'QUOTATION' | 'BILL' | 'INVOICE' | 'CHALLAN';
 
+export type ExpensePaymentMethod = 'Cash' | 'Bank Transfer' | 'bKash/Nagad' | 'Cheque';
+
+export interface Expense {
+  id: string;
+  expenseNumber: string; // e.g. EXP/2026/001
+  date: string;          // YYYY-MM-DD
+  category: string;
+  title: string;
+  amount: number;
+  paymentMethod: ExpensePaymentMethod;
+  paidBy: string;
+  staffId?: string;
+  referenceNo?: string;
+  notes?: string;
+  receiptUrl?: string;
+  createdAt?: string;
+}
+
 export interface SalesReturn {
   id: string;
   returnNumber: string; // e.g. RET/2026/001
@@ -89,7 +107,9 @@ export type PermissionKey =
   | 'view_field_dispatch'
   | 'manage_field_dispatch'
   | 'view_company_profiles'
-  | 'manage_company_profiles';
+  | 'manage_company_profiles'
+  | 'view_expenses'
+  | 'manage_expenses';
 
 export interface Supplier {
   id: string;
@@ -254,6 +274,7 @@ export interface Document {
   notes?: string;
   signatureLabel: string;
   signatureName: string;
+  vatEnabled?: boolean | number;
 }
 
 export interface BusinessSettings {

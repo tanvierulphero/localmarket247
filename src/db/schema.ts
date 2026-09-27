@@ -81,6 +81,7 @@ export const documents = pgTable('documents', {
   notes: text('notes'),
   signatureLabel: text('signature_label').default('Authorized Signature'),
   signatureName: text('signature_name').default('Hitachi Air Solution Center'),
+  vatEnabled: integer('vat_enabled').default(1),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
@@ -231,6 +232,24 @@ export const salesReturns = pgTable('sales_returns', {
   restocked: integer('restocked').default(1),
   reason: text('reason').default(''),
   notes: text('notes').default(''),
+  createdAt: text('created_at').default(''),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Expenses table
+export const expenses = pgTable('expenses', {
+  id: text('id').primaryKey().notNull(),
+  expenseNumber: text('expense_number').notNull(),
+  date: text('date').notNull(),
+  category: text('category').notNull(),
+  title: text('title').notNull(),
+  amount: real('amount').notNull(),
+  paymentMethod: text('payment_method').notNull(), // 'Cash' | 'Bank Transfer' | 'bKash/Nagad' | 'Cheque'
+  paidBy: text('paid_by').default(''),
+  staffId: text('staff_id').default(''),
+  referenceNo: text('reference_no').default(''),
+  notes: text('notes').default(''),
+  receiptUrl: text('receipt_url').default(''),
   createdAt: text('created_at').default(''),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
