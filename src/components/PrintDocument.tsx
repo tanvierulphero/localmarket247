@@ -441,7 +441,7 @@ Content-Location: document.html
             <td style="text-align: center; font-family: monospace; font-weight: bold;">${item.brand || '—'}</td>
             <td style="text-align: center; font-weight: bold;">${item.quantity}</td>
             <td style="text-align: center; color: #64748b;">${item.unit || 'Pcs'}</td>
-            <td style="text-align: right; font-weight: bold;">৳${item.price.toLocaleString()}</td>
+            <td style="text-align: right; font-weight: bold;">${item.price.toLocaleString()}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -461,23 +461,23 @@ Content-Location: document.html
         <table width="100%" border="0" cellspacing="0" cellpadding="4">
           <tr>
             <td style="color: #64748b;">Sub-Total:</td>
-            <td style="font-weight: bold; color: #1e293b;">৳${document.subtotal.toLocaleString()}</td>
+            <td style="font-weight: bold; color: #1e293b;">${document.subtotal.toLocaleString()}</td>
           </tr>
           ${document.vatEnabled !== false && document.vatEnabled !== 0 ? `
             <tr>
               <td style="color: #64748b;">VAT / Tax (${document.taxRate}%):</td>
-              <td style="font-weight: bold; color: #1e293b;">৳${document.taxAmount.toLocaleString()}</td>
+              <td style="font-weight: bold; color: #1e293b;">${document.taxAmount.toLocaleString()}</td>
             </tr>
           ` : ''}
           ${document.discount > 0 ? `
             <tr style="color: #dc2626; font-weight: bold;">
               <td>Special Discount:</td>
-              <td>- ৳${document.discount.toLocaleString()}</td>
+              <td>- ${document.discount.toLocaleString()}</td>
             </tr>
           ` : ''}
           <tr class="total-payable">
             <td style="font-weight: bold; color: #1e3a8a;">Total Payable:</td>
-            <td style="font-weight: bold; color: #1e3a8a;">৳${document.total.toLocaleString()}</td>
+            <td style="font-weight: bold; color: #1e3a8a;">${document.total.toLocaleString()}</td>
           </tr>
         </table>
       </td>
@@ -749,8 +749,8 @@ ${rawBase64Logo}
                         </td>
                         <td className="py-3.5 px-1 sm:px-2 text-center font-extrabold text-slate-950 text-sm sm:text-[15px]">{item.quantity}</td>
                         <td className="py-3.5 px-1 sm:px-2 text-center font-semibold text-slate-600 text-xs sm:text-sm">{item.unit || 'Pcs'}</td>
-                        <td className="py-3.5 px-2 sm:px-3 text-right font-extrabold text-slate-950">৳{item.price.toLocaleString()}</td>
-                        <td className="py-3.5 px-2 sm:px-3 text-right font-black text-slate-950 text-sm sm:text-[16px]">৳{item.total.toLocaleString()}</td>
+                        <td className="py-3.5 px-2 sm:px-3 text-right font-extrabold text-slate-950">{item.price.toLocaleString()}</td>
+                        <td className="py-3.5 px-2 sm:px-3 text-right font-black text-slate-950 text-sm sm:text-[16px]">{item.total.toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -778,23 +778,23 @@ ${rawBase64Logo}
               <div className="col-span-5 text-xs sm:text-sm space-y-1.5 font-semibold">
                 <div className="flex justify-between text-slate-600">
                   <span>Sub-Total:</span>
-                  <span className="text-slate-900 font-bold">৳{document.subtotal.toLocaleString()}</span>
+                  <span className="text-slate-900 font-bold">{document.subtotal.toLocaleString()}</span>
                 </div>
                 {document.vatEnabled !== false && document.vatEnabled !== 0 && (
                   <div className="flex justify-between text-slate-600">
                     <span>VAT / Tax ({document.taxRate}%):</span>
-                    <span className="text-slate-900 font-bold">৳{document.taxAmount.toLocaleString()}</span>
+                    <span className="text-slate-900 font-bold">{document.taxAmount.toLocaleString()}</span>
                   </div>
                 )}
                 {document.discount > 0 && (
                   <div className="flex justify-between text-rose-600 font-extrabold">
                     <span>Special Discount:</span>
-                    <span>- ৳{document.discount.toLocaleString()}</span>
+                    <span>- {document.discount.toLocaleString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm sm:text-base font-black border-t-2 border-slate-300 pt-2 text-blue-900">
                   <span>Total Payable:</span>
-                  <span className="text-base sm:text-lg font-black text-blue-950">৳{document.total.toLocaleString()}</span>
+                  <span className="text-base sm:text-lg font-black text-blue-950">{document.total.toLocaleString()}</span>
                 </div>
               </div>
             </div>

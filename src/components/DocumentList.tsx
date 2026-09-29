@@ -322,7 +322,7 @@ export default function DocumentList({
 
                     {/* Value */}
                     <td className="py-3.5 px-3 text-right font-extrabold text-slate-900 font-display">
-                      ৳{doc.total.toLocaleString()}
+                      {doc.total.toLocaleString()}
                     </td>
 
                     {/* Status badge */}

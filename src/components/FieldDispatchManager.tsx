@@ -1654,19 +1654,19 @@ export default function FieldDispatchManager({
                     <tr>
                       <td className="py-2.5 px-4 text-slate-800">মোট সার্ভিস বিল এমাউন্ট</td>
                       <td className="py-2.5 px-4 text-right font-bold text-slate-900">
-                        ৳{(voucherToPrint.billAmount || 0).toLocaleString()}
+                        {(voucherToPrint.billAmount || 0).toLocaleString()}
                       </td>
                     </tr>
                     <tr>
                       <td className="py-2.5 px-4 text-emerald-800 font-bold">পেইড / সংগৃহীত টাকা ({voucherToPrint.paymentMethod || 'Cash'})</td>
                       <td className="py-2.5 px-4 text-right font-bold text-emerald-800">
-                        ৳{(voucherToPrint.paidAmount || 0).toLocaleString()}
+                        {(voucherToPrint.paidAmount || 0).toLocaleString()}
                       </td>
                     </tr>
                     <tr className="bg-rose-50/50">
                       <td className="py-2.5 px-4 text-rose-700 font-bold">অবশিষ্ট বিল বকেয়া (Due Amount)</td>
                       <td className="py-2.5 px-4 text-right font-bold text-rose-700">
-                        ৳{(voucherToPrint.dueAmount || 0).toLocaleString()}
+                        {(voucherToPrint.dueAmount || 0).toLocaleString()}
                       </td>
                     </tr>
                   </tbody>
@@ -1680,7 +1680,7 @@ export default function FieldDispatchManager({
                     <span className="font-bold">ফিল্ড খরচ (Conveyance/Expense): </span>
                     <span>{voucherToPrint.expenseDetails || 'যাতায়াত ও নাস্তা খরচ'}</span>
                   </div>
-                  <span className="font-mono font-bold">৳{voucherToPrint.expenseAmount.toLocaleString()}</span>
+                  <span className="font-mono font-bold">{voucherToPrint.expenseAmount.toLocaleString()}</span>
                 </div>
               ) : null}
 
@@ -1802,22 +1802,22 @@ export default function FieldDispatchManager({
                         <div className="text-[9px] text-slate-400 font-sans truncate max-w-[140px]">{item.address}</div>
                       </td>
                       <td className="p-2 font-sans text-[10px] max-w-xs">{item.description || item.purpose}</td>
-                      <td className="p-2 text-right font-bold">৳{(item.billAmount || 0).toLocaleString()}</td>
-                      <td className="p-2 text-right text-emerald-800 font-bold">৳{(item.paidAmount || 0).toLocaleString()}</td>
-                      <td className="p-2 text-right text-rose-700 font-bold">৳{(item.dueAmount || 0).toLocaleString()}</td>
-                      <td className="p-2 text-right text-amber-800 font-bold">৳{(item.expenseAmount || 0).toLocaleString()}</td>
-                      <td className="p-2 text-right font-black text-blue-950">৳{((item.paidAmount || 0) - (item.expenseAmount || 0)).toLocaleString()}</td>
+                      <td className="p-2 text-right font-bold">{(item.billAmount || 0).toLocaleString()}</td>
+                      <td className="p-2 text-right text-emerald-800 font-bold">{(item.paidAmount || 0).toLocaleString()}</td>
+                      <td className="p-2 text-right text-rose-700 font-bold">{(item.dueAmount || 0).toLocaleString()}</td>
+                      <td className="p-2 text-right text-amber-800 font-bold">{(item.expenseAmount || 0).toLocaleString()}</td>
+                      <td className="p-2 text-right font-black text-blue-950">{((item.paidAmount || 0) - (item.expenseAmount || 0)).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-slate-100 font-black border-t-2 border-slate-300 font-mono text-xs">
                   <tr>
                     <td colSpan={4} className="p-2 text-right font-sans uppercase">সর্বমোট (Total):</td>
-                    <td className="p-2 text-right">৳{stats.totalBill.toLocaleString()}</td>
-                    <td className="p-2 text-right text-emerald-800">৳{stats.totalPaid.toLocaleString()}</td>
-                    <td className="p-2 text-right text-rose-700">৳{stats.totalDue.toLocaleString()}</td>
-                    <td className="p-2 text-right text-amber-800">৳{stats.totalExpense.toLocaleString()}</td>
-                    <td className="p-2 text-right text-blue-900">৳{stats.netCash.toLocaleString()}</td>
+                    <td className="p-2 text-right">{stats.totalBill.toLocaleString()}</td>
+                    <td className="p-2 text-right text-emerald-800">{stats.totalPaid.toLocaleString()}</td>
+                    <td className="p-2 text-right text-rose-700">{stats.totalDue.toLocaleString()}</td>
+                    <td className="p-2 text-right text-amber-800">{stats.totalExpense.toLocaleString()}</td>
+                    <td className="p-2 text-right text-blue-900">{stats.netCash.toLocaleString()}</td>
                   </tr>
                 </tfoot>
               </table>
