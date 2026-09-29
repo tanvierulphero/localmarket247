@@ -189,7 +189,7 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
     });
   };
 
-  // Export and download document directly as a Microsoft Word Document (.doc) with high-fidelity formatting
+  // Export and download document directly as a Microsoft Word Document (.doc) with high-fidelity MHTML formatting
   const handleSaveWord = async () => {
     if (isGeneratingWord) return;
     setIsGeneratingWord(true);
@@ -198,330 +198,344 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
     try {
       // 1. Generate the Base64 PNG image string of our custom logo
       const logoPngBase64 = await getLogoBase64Png().catch(() => '');
+      const rawBase64Logo = logoPngBase64 ? logoPngBase64.replace(/^data:image\/png;base64,/, '') : '';
 
       const cleanCustomerName = document.customerName ? document.customerName.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
       const filename = `${document.docNumber}_${cleanCustomerName}.doc`;
 
-      // Build rich Word-friendly HTML content with CSS matching our beautiful 12pt theme
-      const htmlContent = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-          <title>${getDocTitle()}</title>
-          <!--[if gte mso 9]>
-          <xml>
-            <w:WordDocument>
-              <w:View>Print</w:View>
-              <w:Zoom>100</w:Zoom>
-              <w:DoNotOptimizeForBrowser/>
-            </w:WordDocument>
-          </xml>
-          <![endif]-->
-          <style>
-            @page {
-              size: A4;
-              margin: 1.5cm;
-            }
-            body {
-              font-family: "Segoe UI", "Arial", sans-serif;
-              font-size: 11pt;
-              line-height: 1.4;
-              color: #1e293b;
-            }
-            .header-table {
-              width: 100%;
-              border-bottom: 3px solid #1e3a8a;
-              padding-bottom: 12px;
-              margin-bottom: 20px;
-            }
-            .company-name {
-              font-size: 19pt;
-              font-weight: bold;
-              color: #1e3a8a;
-              text-transform: uppercase;
-              margin: 0;
-            }
-            .slogan {
-              font-size: 10pt;
-              font-weight: bold;
-              font-style: italic;
-              color: #dc2626;
-              margin: 4px 0 0 0;
-            }
-            .contact-details {
-              font-size: 9.5pt;
-              color: #475569;
-              text-align: right;
-              line-height: 1.35;
-            }
-            .title-bar {
-              background-color: #f1f5f9;
-              border-left: 5px solid #1e3a8a;
-              padding: 10px 15px;
-              margin-bottom: 20px;
-              width: 100%;
-            }
-            .title-text {
-              font-size: 13pt;
-              font-weight: bold;
-              color: #1e3a8a;
-              text-transform: uppercase;
-            }
-            .metadata-table {
-              width: 100%;
-              margin-bottom: 20px;
-            }
-            .metadata-cell {
-              vertical-align: top;
-              font-size: 11pt;
-              color: #334155;
-            }
-            .items-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 25px;
-            }
-            .items-table th {
-              background-color: #1e3a8a;
-              color: #ffffff;
-              font-weight: bold;
-              padding: 10px;
-              font-size: 11pt;
-              border: 1px solid #1e3a8a;
-              text-align: left;
-            }
-            .items-table td {
-              padding: 12px 10px;
-              border-bottom: 1px solid #cbd5e1;
-              font-size: 11pt;
-            }
-            .item-name {
-              font-weight: bold;
-              color: #0f172a;
-            }
-            .totals-table {
-              width: 100%;
-              margin-bottom: 25px;
-            }
-            .amount-words-box {
-              background-color: #f0f9ff;
-              border: 1px solid #bae6fd;
-              padding: 12px;
-              font-size: 10.5pt;
-              color: #0369a1;
-            }
-            .totals-breakdown {
-              text-align: right;
-              font-size: 11pt;
-              color: #475569;
-            }
-            .total-payable {
-              font-size: 12pt;
-              font-weight: bold;
-              color: #1e3a8a;
-              border-top: 2px solid #94a3b8;
-              padding-top: 8px;
-            }
-            .terms-box {
-              background-color: #f8fafc;
-              border: 1px solid #cbd5e1;
-              padding: 12px;
-              font-size: 10pt;
-              color: #334155;
-            }
-            .signature-box {
-              text-align: right;
-              margin-top: 30px;
-              font-size: 11pt;
-            }
-            .signature-line {
-              border-top: 1px solid #475569;
-              width: 180px;
-              margin-left: auto;
-              margin-bottom: 5px;
-            }
-            .footer-brands {
-              border-top: 2px solid #1e3a8a;
-              padding-top: 15px;
-              margin-top: 40px;
-              text-align: center;
-              font-size: 8.5pt;
-              font-weight: bold;
-              color: #475569;
-            }
-          </style>
-        </head>
-        <body>
-          <!-- Header Address Info block -->
-          <table class="header-table" border="0" cellspacing="0" cellpadding="0">
-            <tr>
-              ${logoPngBase64 ? `
-                <td style="vertical-align: middle; width: 85px; padding-right: 15px;">
-                  <img src="${logoPngBase64}" width="75" height="75" style="display: block; border: 0;" />
-                </td>
-              ` : ''}
-              <td style="vertical-align: middle;">
-                <h1 class="company-name">Jubayer Machineries</h1>
-                <p class="slogan">Your Problem Solution is Sustainable Partner</p>
-              </td>
-              <td class="contact-details" style="vertical-align: middle;">
-                <p style="margin: 0; font-weight: bold; color: #1e293b;">Corporate Office: ${settings.address}</p>
-                <p style="margin: 3px 0 0 0;">Hotline: ${settings.phone1}, ${settings.phone2}</p>
-                <p style="margin: 3px 0 0 0;">Email: ${settings.email}</p>
-                <p style="margin: 3px 0 0 0; color: #1e3a8a; font-weight: bold;">Website: ${settings.website}</p>
-              </td>
-            </tr>
-          </table>
+      // Build MHTML (MIME HTML) format so Microsoft Word embeds jubayer_logo.png natively
+      const mhtmlDocument = `MIME-Version: 1.0
+Content-Type: multipart/related; boundary="----=_NextPart_JUBAYER_DOC"
 
-          <!-- Document Title & No/Date Bar -->
-          <table class="title-bar" border="0" cellspacing="0" cellpadding="0">
-            <tr>
-              <td class="title-text" style="vertical-align: middle;">${getDocTitle()}</td>
-              <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 11pt; vertical-align: middle;">
-                No: ${document.docNumber}<br/>
-                Date: ${document.date}
-                ${document.dueDate ? `<br/><span style="color: #dc2626;">Due Date: ${document.dueDate}</span>` : ''}
-              </td>
-            </tr>
-          </table>
+------=_NextPart_JUBAYER_DOC
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Location: document.html
 
-          <!-- Recipient Details -->
-          <table class="metadata-table" border="0" cellspacing="0" cellpadding="0">
-            <tr>
-              <td class="metadata-cell" width="55%">
-                <p style="margin: 0 0 4px 0; font-size: 9.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Recipient / Client:</p>
-                ${document.customerCompany ? `
-                  <p style="margin: 0; font-size: 12.5pt; font-weight: bold; color: #0f172a; text-transform: uppercase;">${document.customerCompany}</p>
-                  <p style="margin: 2px 0 0 0; font-weight: bold;">Attention: ${document.customerName}</p>
-                ` : `
-                  <p style="margin: 0; font-size: 12.5pt; font-weight: bold; color: #0f172a;">${document.customerName}</p>
-                `}
-                <p style="margin: 3px 0 0 0;">Phone: ${document.customerPhone}</p>
-                ${document.customerEmail ? `<p style="margin: 3px 0 0 0;">Email: ${document.customerEmail}</p>` : ''}
-              </td>
-              <td class="metadata-cell" width="45%" style="text-align: right;">
-                <p style="margin: 0 0 4px 0; font-size: 9.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Address:</p>
-                <p style="margin: 0; line-height: 1.4; color: #334155; font-weight: bold;">${document.customerAddress.replace(/\n/g, '<br/>')}</p>
-              </td>
-            </tr>
-          </table>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <title>${getDocTitle()}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page {
+      size: A4;
+      margin: 1.5cm;
+    }
+    body {
+      font-family: "Segoe UI", "Arial", sans-serif;
+      font-size: 11pt;
+      line-height: 1.4;
+      color: #1e293b;
+    }
+    .header-table {
+      width: 100%;
+      border-bottom: 3px solid #1e3a8a;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .company-name {
+      font-size: 19pt;
+      font-weight: bold;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .slogan {
+      font-size: 10pt;
+      font-weight: bold;
+      font-style: italic;
+      color: #dc2626;
+      margin: 4px 0 0 0;
+    }
+    .contact-details {
+      font-size: 9.5pt;
+      color: #475569;
+      text-align: right;
+      line-height: 1.35;
+    }
+    .title-bar {
+      background-color: #f1f5f9;
+      border-left: 5px solid #1e3a8a;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+    .title-text {
+      font-size: 13pt;
+      font-weight: bold;
+      color: #1e3a8a;
+      text-transform: uppercase;
+    }
+    .metadata-table {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .metadata-cell {
+      vertical-align: top;
+      font-size: 11pt;
+      color: #334155;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+    }
+    .items-table th {
+      background-color: #1e3a8a;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 10px;
+      font-size: 11pt;
+      border: 1px solid #1e3a8a;
+      text-align: left;
+    }
+    .items-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #cbd5e1;
+      font-size: 11pt;
+    }
+    .item-name {
+      font-weight: bold;
+      color: #0f172a;
+    }
+    .totals-table {
+      width: 100%;
+      margin-bottom: 25px;
+    }
+    .amount-words-box {
+      background-color: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 12px;
+      font-size: 10.5pt;
+      color: #0369a1;
+    }
+    .totals-breakdown {
+      text-align: right;
+      font-size: 11pt;
+      color: #475569;
+    }
+    .total-payable {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #1e3a8a;
+      border-top: 2px solid #94a3b8;
+      padding-top: 8px;
+    }
+    .terms-box {
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 12px;
+      font-size: 10pt;
+      color: #334155;
+    }
+    .signature-box {
+      text-align: right;
+      margin-top: 30px;
+      font-size: 11pt;
+    }
+    .signature-line {
+      border-top: 1px solid #475569;
+      width: 180px;
+      margin-left: auto;
+      margin-bottom: 5px;
+    }
+    .footer-brands {
+      border-top: 2px solid #1e3a8a;
+      padding-top: 15px;
+      margin-top: 40px;
+      text-align: center;
+      font-size: 8.5pt;
+      font-weight: bold;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header Address Info block -->
+  <table class="header-table" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td style="vertical-align: middle; width: 85px; padding-right: 15px;">
+        <img src="jubayer_logo.png" width="75" height="75" alt="Jubayer Machineries Logo" style="display: block; width: 75px; height: 75px; border: 0;" />
+      </td>
+      <td style="vertical-align: middle;">
+        <h1 class="company-name">Jubayer Machineries</h1>
+        <p class="slogan">Your Problem Solution is Sustainable Partner</p>
+      </td>
+      <td class="contact-details" style="vertical-align: middle;">
+        <p style="margin: 0; font-weight: bold; color: #1e293b;">Corporate Office: ${settings.address}</p>
+        <p style="margin: 3px 0 0 0;">Hotline: ${settings.phone1}, ${settings.phone2}</p>
+        <p style="margin: 3px 0 0 0;">Email: ${settings.email}</p>
+        <p style="margin: 3px 0 0 0; color: #1e3a8a; font-weight: bold;">Website: ${settings.website}</p>
+      </td>
+    </tr>
+  </table>
 
-          <!-- Subject and Salutations if Offer Letter/Quotation -->
-          ${(isOffer || isQuotation) ? `
-            <div style="margin-bottom: 20px; font-size: 11pt; color: #1e293b;">
-              ${document.subject ? `<p style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;"><span style="color: #1e3a8a;">Subject:</span> ${document.subject}</p>` : ''}
-              ${document.salutation ? `<p style="font-weight: bold; margin-bottom: 10px;">${document.salutation}</p>` : ''}
-              ${document.openingParagraph ? `<p style="line-height: 1.5; color: #334155; margin-bottom: 15px;">${document.openingParagraph.replace(/\n/g, '<br/>')}</p>` : ''}
-            </div>
+  <!-- Document Title & No/Date Bar -->
+  <table class="title-bar" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td class="title-text" style="vertical-align: middle;">${getDocTitle()}</td>
+      <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 11pt; vertical-align: middle;">
+        No: ${document.docNumber}<br/>
+        Date: ${document.date}
+        ${document.dueDate ? `<br/><span style="color: #dc2626;">Due Date: ${document.dueDate}</span>` : ''}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Recipient Details -->
+  <table class="metadata-table" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td class="metadata-cell" width="55%">
+        <p style="margin: 0 0 4px 0; font-size: 9.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Recipient / Client:</p>
+        ${document.customerCompany ? `
+          <p style="margin: 0; font-size: 12.5pt; font-weight: bold; color: #0f172a; text-transform: uppercase;">${document.customerCompany}</p>
+          <p style="margin: 2px 0 0 0; font-weight: bold;">Attention: ${document.customerName}</p>
+        ` : `
+          <p style="margin: 0; font-size: 12.5pt; font-weight: bold; color: #0f172a;">${document.customerName}</p>
+        `}
+        <p style="margin: 3px 0 0 0;">Phone: ${document.customerPhone}</p>
+        ${document.customerEmail ? `<p style="margin: 3px 0 0 0;">Email: ${document.customerEmail}</p>` : ''}
+      </td>
+      <td class="metadata-cell" width="45%" style="text-align: right;">
+        <p style="margin: 0 0 4px 0; font-size: 9.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Address:</p>
+        <p style="margin: 0; line-height: 1.4; color: #334155; font-weight: bold;">${document.customerAddress.replace(/\n/g, '<br/>')}</p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Subject and Salutations if Offer Letter/Quotation -->
+  ${(isOffer || isQuotation) ? `
+    <div style="margin-bottom: 20px; font-size: 11pt; color: #1e293b;">
+      ${document.subject ? `<p style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;"><span style="color: #1e3a8a;">Subject:</span> ${document.subject}</p>` : ''}
+      ${document.salutation ? `<p style="font-weight: bold; margin-bottom: 10px;">${document.salutation}</p>` : ''}
+      ${document.openingParagraph ? `<p style="line-height: 1.5; color: #334155; margin-bottom: 15px;">${document.openingParagraph.replace(/\n/g, '<br/>')}</p>` : ''}
+    </div>
+  ` : ''}
+
+  <!-- Items list Table -->
+  ${document.items && document.items.length > 0 ? `
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th width="8%" style="text-align: center;">SL</th>
+          <th width="42%">Description of Goods / Spare Parts</th>
+          <th width="15%" style="text-align: center;">Brand</th>
+          <th width="10%" style="text-align: center;">Qty</th>
+          <th width="10%" style="text-align: center;">Unit</th>
+          <th width="15%" style="text-align: right;">Price (BDT)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${document.items.map((item, index) => `
+          <tr>
+            <td style="text-align: center; color: #64748b;">${index + 1}</td>
+            <td class="item-name">${item.name}</td>
+            <td style="text-align: center; font-family: monospace; font-weight: bold;">${item.brand || '—'}</td>
+            <td style="text-align: center; font-weight: bold;">${item.quantity}</td>
+            <td style="text-align: center; color: #64748b;">${item.unit || 'Pcs'}</td>
+            <td style="text-align: right; font-weight: bold;">৳${item.price.toLocaleString()}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  ` : ''}
+
+  <!-- Calculation details table -->
+  <table class="totals-table" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td width="55%" style="vertical-align: top;">
+        <div class="amount-words-box">
+          <span style="font-size: 8pt; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 3px; color: #0284c7;">Amount in Words</span>
+          <strong>${numberToWords(document.total).toUpperCase()}</strong>
+        </div>
+      </td>
+      <td width="45%" class="totals-breakdown" style="vertical-align: top;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="4">
+          <tr>
+            <td style="color: #64748b;">Sub-Total:</td>
+            <td style="font-weight: bold; color: #1e293b;">৳${document.subtotal.toLocaleString()}</td>
+          </tr>
+          ${document.vatEnabled !== false && document.vatEnabled !== 0 ? `
+            <tr>
+              <td style="color: #64748b;">VAT / Tax (${document.taxRate}%):</td>
+              <td style="font-weight: bold; color: #1e293b;">৳${document.taxAmount.toLocaleString()}</td>
+            </tr>
           ` : ''}
-
-          <!-- Items list Table -->
-          ${document.items && document.items.length > 0 ? `
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th width="8%" style="text-align: center;">SL</th>
-                  <th width="42%">Description of Goods / Spare Parts</th>
-                  <th width="15%" style="text-align: center;">Brand</th>
-                  <th width="10%" style="text-align: center;">Qty</th>
-                  <th width="10%" style="text-align: center;">Unit</th>
-                  <th width="15%" style="text-align: right;">Price (BDT)</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${document.items.map((item, index) => `
-                  <tr>
-                    <td style="text-align: center; color: #64748b;">${index + 1}</td>
-                    <td class="item-name">${item.name}</td>
-                    <td style="text-align: center; font-family: monospace; font-weight: bold;">${item.brand || '—'}</td>
-                    <td style="text-align: center; font-weight: bold;">${item.quantity}</td>
-                    <td style="text-align: center; color: #64748b;">${item.unit || 'Pcs'}</td>
-                    <td style="text-align: right; font-weight: bold;">৳${item.price.toLocaleString()}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
+          ${document.discount > 0 ? `
+            <tr style="color: #dc2626; font-weight: bold;">
+              <td>Special Discount:</td>
+              <td>- ৳${document.discount.toLocaleString()}</td>
+            </tr>
           ` : ''}
+          <tr class="total-payable">
+            <td style="font-weight: bold; color: #1e3a8a;">Total Payable:</td>
+            <td style="font-weight: bold; color: #1e3a8a;">৳${document.total.toLocaleString()}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 
-          <!-- Calculation details table -->
-          <table class="totals-table" border="0" cellspacing="0" cellpadding="0">
-            <tr>
-              <td width="55%" style="vertical-align: top;">
-                <div class="amount-words-box">
-                  <span style="font-size: 8pt; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 3px; color: #0284c7;">Amount in Words</span>
-                  <strong>${numberToWords(document.total).toUpperCase()}</strong>
-                </div>
-              </td>
-              <td width="45%" class="totals-breakdown" style="vertical-align: top;">
-                <table width="100%" border="0" cellspacing="0" cellpadding="4">
-                  <tr>
-                    <td style="color: #64748b;">Sub-Total:</td>
-                    <td style="font-weight: bold; color: #1e293b;">৳${document.subtotal.toLocaleString()}</td>
-                  </tr>
-                  ${document.vatEnabled !== false && document.vatEnabled !== 0 ? `
-                    <tr>
-                      <td style="color: #64748b;">VAT / Tax (${document.taxRate}%):</td>
-                      <td style="font-weight: bold; color: #1e293b;">৳${document.taxAmount.toLocaleString()}</td>
-                    </tr>
-                  ` : ''}
-                  ${document.discount > 0 ? `
-                    <tr style="color: #dc2626; font-weight: bold;">
-                      <td>Special Discount:</td>
-                      <td>- ৳${document.discount.toLocaleString()}</td>
-                    </tr>
-                  ` : ''}
-                  <tr class="total-payable">
-                    <td style="font-weight: bold; color: #1e3a8a;">Total Payable:</td>
-                    <td style="font-weight: bold; color: #1e3a8a;">৳${document.total.toLocaleString()}</td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-
-          <!-- Terms, signatures and footers -->
-          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 15px;">
-            <tr>
-              <td width="55%" style="vertical-align: top; padding-right: 20px;">
-                ${document.terms ? `
-                  <div class="terms-box">
-                    <h4 style="font-weight: bold; color: #1e293b; margin: 0 0 5px 0; text-transform: uppercase; font-size: 9pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">Terms & Conditions:</h4>
-                    <p style="margin: 0; line-height: 1.4; color: #475569; font-size: 9pt;">${document.terms.replace(/\n/g, '<br/>')}</p>
-                  </div>
-                ` : ''}
-              </td>
-              <td width="45%" class="signature-box" style="vertical-align: bottom;">
-                ${(isOffer || isQuotation) && document.closingParagraph ? `
-                  <p style="font-style: italic; color: #64748b; margin-bottom: 20px; font-size: 9.5pt; text-align: right; line-height: 1.4;">${document.closingParagraph.replace(/\n/g, '<br/>')}</p>
-                ` : ''}
-                <div class="signature-line"></div>
-                <strong style="color: #0f172a; font-size: 11pt;">${document.signatureName}</strong><br/>
-                <span style="font-size: 9.5pt; color: #64748b; font-weight: bold; text-transform: uppercase;">${document.signatureLabel}</span><br/>
-                <span style="font-size: 8.5pt; color: #94a3b8; font-weight: bold; text-transform: uppercase;">JUBAYER MACHINERIES</span>
-              </td>
-            </tr>
-          </table>
-
-          <!-- Footer brand screw list -->
-          <div class="footer-brands">
-            <span style="color: #1e293b;">HITACHI</span> | 
-            <span style="color: #0054a6;">ATLAS COPCO</span> | 
-            <span style="color: #007cc3;">LINGHEIN</span> | 
-            <span style="color: #f15a24;">KAESER</span> | 
-            <span style="color: #009639;">BOGE</span> | 
-            <span style="color: #ed1c24;">ELGI</span> | 
-            <span style="color: #003b46;">JAGUAR</span> | 
-            <span style="color: #e31b23;">IR INGERSOLL RAND</span> | 
-            <span style="color: #00529b;">GARDNER DENVER</span>
-            <p style="margin: 5px 0 0 0; font-style: italic; color: #1e3a8a; font-size: 10pt;">
-              "We supply all brand screw air compressor genuine spare parts"
-            </p>
+  <!-- Terms, signatures and footers -->
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 15px;">
+    <tr>
+      <td width="55%" style="vertical-align: top; padding-right: 20px;">
+        ${document.terms ? `
+          <div class="terms-box">
+            <h4 style="font-weight: bold; color: #1e293b; margin: 0 0 5px 0; text-transform: uppercase; font-size: 9pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">Terms & Conditions:</h4>
+            <p style="margin: 0; line-height: 1.4; color: #475569; font-size: 9pt;">${document.terms.replace(/\n/g, '<br/>')}</p>
           </div>
-        </body>
-        </html>
-      `;
+        ` : ''}
+      </td>
+      <td width="45%" class="signature-box" style="vertical-align: bottom;">
+        ${(isOffer || isQuotation) && document.closingParagraph ? `
+          <p style="font-style: italic; color: #64748b; margin-bottom: 20px; font-size: 9.5pt; text-align: right; line-height: 1.4;">${document.closingParagraph.replace(/\n/g, '<br/>')}</p>
+        ` : ''}
+        <div class="signature-line"></div>
+        <strong style="color: #0f172a; font-size: 11pt;">${document.signatureName}</strong><br/>
+        <span style="font-size: 9.5pt; color: #64748b; font-weight: bold; text-transform: uppercase;">${document.signatureLabel}</span><br/>
+        <span style="font-size: 8.5pt; color: #94a3b8; font-weight: bold; text-transform: uppercase;">JUBAYER MACHINERIES</span>
+      </td>
+    </tr>
+  </table>
 
-      // Convert to blob and trigger safe direct file download as .doc format
-      const blob = new Blob(['\ufeff' + htmlContent], {
+  <!-- Footer brand screw list -->
+  <div class="footer-brands">
+    <span style="color: #1e293b;">HITACHI</span> | 
+    <span style="color: #0054a6;">ATLAS COPCO</span> | 
+    <span style="color: #007cc3;">LINGHEIN</span> | 
+    <span style="color: #f15a24;">KAESER</span> | 
+    <span style="color: #009639;">BOGE</span> | 
+    <span style="color: #ed1c24;">ELGI</span> | 
+    <span style="color: #003b46;">JAGUAR</span> | 
+    <span style="color: #e31b23;">IR INGERSOLL RAND</span> | 
+    <span style="color: #00529b;">GARDNER DENVER</span>
+    <p style="margin: 5px 0 0 0; font-style: italic; color: #1e3a8a; font-size: 10pt;">
+      "We supply all brand screw air compressor genuine spare parts"
+    </p>
+  </div>
+</body>
+</html>
+
+${rawBase64Logo ? `------=_NextPart_JUBAYER_DOC
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: jubayer_logo.png
+
+${rawBase64Logo}
+` : ''}
+------=_NextPart_JUBAYER_DOC--`;
+
+      // Convert to blob with MIME type application/msword
+      const blob = new Blob([mhtmlDocument], {
         type: 'application/msword;charset=utf-8'
       });
 
