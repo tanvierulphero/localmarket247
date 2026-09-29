@@ -95,10 +95,10 @@ export const INITIAL_STAFF_USERS: StaffUser[] = [
 export const DEFAULT_SETTINGS: BusinessSettings = {
   name: "Jubayer Machineries",
   slogan: "Your Problem Solution is Sustainable Partner",
-  address: "M.R Trade Center, Bason Sharok, Gazipur City.",
+  address: "Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.",
   phone1: "01715-994956",
   phone2: "01799-498199",
-  email: "ssengbd25@gmail.com",
+  email: "jubayermachineries@gmail.com",
   website: "www.hitachiairsolutioncenter.com",
   invoicePrefix: "JM/INV/2026/",
   quotePrefix: "JM/QT/2026/",

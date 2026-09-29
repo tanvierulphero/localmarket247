@@ -812,8 +812,8 @@ export default function ExpenseManager({
             <div id="printable-area" className="overflow-y-auto flex-1 p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-6">
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
                 <div>
-                  <h1 className="text-xl font-black text-slate-900 font-display tracking-tight">{settings.name || 'HITACHI SOLUTION CENTER'}</h1>
-                  <p className="text-[10px] text-slate-500 font-medium">{settings.address || 'Corporate Showroom & Service Center, Dhaka'}</p>
+                  <h1 className="text-xl font-black text-slate-900 font-display tracking-tight">{settings.name || 'Jubayer Machineries'}</h1>
+                  <p className="text-[10px] text-slate-500 font-medium">{settings.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}</p>
                   <p className="text-[10px] text-slate-500 font-medium">Hotline: {settings.phone1 || '01715-994956'}</p>
                 </div>
                 <div className="text-right">

@@ -142,6 +142,23 @@ async function seedInitialDataIfNeeded() {
         id: 'global_settings',
         ...DEFAULT_SETTINGS,
       }).onConflictDoNothing().catch(() => {});
+    } else {
+      const current = existingSettings[0];
+      if (current && (current.name !== 'Jubayer Machineries' || current.email === 'ssengbd25@gmail.com' || current.address.includes('M.R Trade'))) {
+        console.log('Updating existing settings to Jubayer Machineries...');
+        await (db.update(settings as any) as any)
+          .set({
+            name: "Jubayer Machineries",
+            slogan: "Your Problem Solution is Sustainable Partner",
+            address: "Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.",
+            phone1: "01715-994956",
+            phone2: "01799-498199",
+            email: "jubayermachineries@gmail.com",
+            website: "www.hitachiairsolutioncenter.com",
+          })
+          .where(eq(settings.id, 'global_settings'))
+          .catch(() => {});
+      }
     }
 
     const existingDispatches = await db.select().from(fieldDispatches).limit(1).catch(() => []);

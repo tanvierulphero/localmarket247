@@ -118,7 +118,7 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
             {/* Logo & Technical Partner Tag */}
             <div className="flex items-center gap-3">
               <div className="h-11 w-auto flex-shrink-0">
-                <Logo className="h-full w-auto text-blue-900" />
+                <Logo className="h-full w-auto text-blue-900" forPublic={true} />
               </div>
               <div className="hidden lg:flex flex-col justify-center border-l border-slate-200 pl-3">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
