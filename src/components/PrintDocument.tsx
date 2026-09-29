@@ -105,13 +105,100 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
     window.print();
   };
 
+  // Helper function to dynamically generate a high-res PNG base64 representation of our exact Jubayer Machineries logo
+  const getLogoBase64Png = (): Promise<string> => {
+    return new Promise((resolve) => {
+      const svgString = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="400" height="400">
+          <rect width="200" height="200" fill="#ffffff" />
+          <!-- 1. BACKGROUND: DIAGONAL INDUSTRIAL WRENCH -->
+          <g opacity="0.18">
+            <line x1="45" y1="155" x2="140" y2="60" stroke="#475569" stroke-width="14" stroke-linecap="round" />
+            <line x1="45" y1="155" x2="140" y2="60" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+            <g transform="translate(142, 58) rotate(-45)">
+              <circle cx="0" cy="0" r="16" fill="#475569" />
+              <rect x="-16" y="-8" width="20" height="16" fill="#ffffff" />
+              <polygon points="-6,-12 -6,12 16,0" fill="#ffffff" />
+            </g>
+            <g transform="translate(42, 158) rotate(-45)">
+              <circle cx="0" cy="0" r="14" fill="#475569" />
+              <circle cx="0" cy="0" r="7" fill="#ffffff" />
+            </g>
+          </g>
+          <!-- 2. GEAR SEGMENTS -->
+          <g stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round">
+            <path d="M 100,20 A 75,75 0 0,1 175,95" fill="none" stroke="#1c3f94" stroke-width="11" stroke-linecap="square" />
+            <g fill="#1c3f94">
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(0, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(18, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(36, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(54, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(72, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(90, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+            </g>
+            <path d="M 25,105 A 75,75 0 0,0 100,180" fill="none" stroke="#1c3f94" stroke-width="11" stroke-linecap="square" />
+            <g fill="#1c3f94">
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(180, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(198, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(216, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(234, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(252, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+              <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(270, 100, 100)" stroke="#ffffff" stroke-width="1.5" />
+            </g>
+          </g>
+          <!-- 3. CENTER BRAND TYPOGRAPHY -->
+          <g text-anchor="middle" font-family="Georgia, serif">
+            <text x="100" y="93" font-size="25" font-weight="900" letter-spacing="0.06em" fill="#00a651" font-family="Impact, Arial Black, sans-serif">JUBAYER</text>
+            <text x="100" y="119" font-size="23" font-weight="900" letter-spacing="0.02em" fill="#c1272d" font-family="Impact, Arial Black, sans-serif">MACHINERIES</text>
+            <text x="100" y="136" font-size="10" font-weight="bold" font-style="italic" fill="#222222">Your Sustainable Partner</text>
+          </g>
+          <!-- 4. BOTTOM CROSSHAIR -->
+          <g stroke="#000000" stroke-width="1.5">
+            <line x1="50" y1="152" x2="150" y2="152" stroke-width="2" />
+            <line x1="120" y1="140" x2="120" y2="170" />
+            <rect x="113" y="145" width="14" height="14" fill="#ffffff" stroke="#000000" stroke-width="1.5" />
+            <line x1="113" y1="152" x2="127" y2="152" stroke-width="1" />
+            <line x1="120" y1="145" x2="120" y2="159" stroke-width="1" />
+          </g>
+        </svg>
+      `;
+
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const canvas = window.document.createElement('canvas');
+          canvas.width = 400;
+          canvas.height = 400;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 400, 400);
+            ctx.drawImage(img, 0, 0, 400, 400);
+            resolve(canvas.toDataURL('image/png'));
+          } else {
+            resolve('');
+          }
+        };
+        img.onerror = () => resolve('');
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(svgBlob);
+    });
+  };
+
   // Export and download document directly as a Microsoft Word Document (.doc) with high-fidelity formatting
-  const handleSaveWord = () => {
+  const handleSaveWord = async () => {
     if (isGeneratingWord) return;
     setIsGeneratingWord(true);
     setWordSuccessNotice(false);
 
     try {
+      // 1. Generate the Base64 PNG image string of our custom logo
+      const logoPngBase64 = await getLogoBase64Png().catch(() => '');
+
       const cleanCustomerName = document.customerName ? document.customerName.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
       const filename = `${document.docNumber}_${cleanCustomerName}.doc`;
 
@@ -267,6 +354,11 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
           <!-- Header Address Info block -->
           <table class="header-table" border="0" cellspacing="0" cellpadding="0">
             <tr>
+              ${logoPngBase64 ? `
+                <td style="vertical-align: middle; width: 85px; padding-right: 15px;">
+                  <img src="${logoPngBase64}" width="75" height="75" style="display: block; border: 0;" />
+                </td>
+              ` : ''}
               <td style="vertical-align: middle;">
                 <h1 class="company-name">Jubayer Machineries</h1>
                 <p class="slogan">Your Problem Solution is Sustainable Partner</p>
