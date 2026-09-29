@@ -86,82 +86,149 @@ export default function Logo({ className = "w-full h-full", light = false, forPu
   }
 
   // -------------------------------------------------------------
-  // PRIVATE ADMIN LOGO (JUBAYER MACHINERIES LOGO WITH MECHANICAL COGS)
-  // Matching the uploaded official pad image
+  // PRIVATE ADMIN LOGO (JUBAYER MACHINERIES EXACT UPLOADED LOGO)
+  // Exact replication of the user's provided logo with gears, wrench, colors
   // -------------------------------------------------------------
-  const textColor = light ? "#ffffff" : "#1e3a8a"; // Deep Blue for Jubayer Machineries
-  const sloganColor = light ? "#fecdd3" : "#dc2626"; // Red/Crimson for the slogan
-  const primaryGearColor = light ? "#93c5fd" : "#1e3a8a"; // Gear segment main color
-  const accentGearColor = light ? "#fda4af" : "#ef4444"; // Accent gear color
+  const mainBlue = "#1c3f94"; // Deep professional blue for gears
+  const greenText = "#00a651"; // Exact green for JUBAYER
+  const redText = "#c1272d"; // Exact red for MACHINERIES
+  const subText = light ? "#f3f4f6" : "#222222"; // Dark slate or light gray for "Your Sustainable Partner"
+  const lineText = light ? "#ffffff" : "#000000"; // Black or white for bottom crosshair
 
   return (
     <svg 
-      viewBox="0 0 540 120" 
+      viewBox="0 0 200 200" 
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Icon: Double mechanical gears */}
-      <g>
-        {/* Outer Gear */}
-        <g fill={primaryGearColor}>
-          <path d="M 32,88 A 40,40 0 1,1 88,32" fill="none" stroke={primaryGearColor} strokeWidth="7" strokeLinecap="round" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(0, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(30, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(60, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(90, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(120, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(150, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(-30, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(-60, 60, 60)" />
-          <rect x="55" y="10" width="10" height="10" rx="2" transform="rotate(-90, 60, 60)" />
-          <circle cx="60" cy="60" r="28" fill="none" stroke={primaryGearColor} strokeWidth="2" strokeDasharray="5,3" />
-        </g>
+      {/* 1. BACKGROUND: DIAGONAL INDUSTRIAL WRENCH (SPANNER) */}
+      <g opacity="0.18">
+        {/* Wrench Shaft */}
+        <line x1="45" y1="155" x2="140" y2="60" stroke="#475569" strokeWidth="14" strokeLinecap="round" />
+        <line x1="45" y1="155" x2="140" y2="60" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
         
-        {/* Inner Gear */}
-        <g fill={accentGearColor}>
-          <circle cx="60" cy="60" r="18" fill="none" stroke={accentGearColor} strokeWidth="4" />
-          <rect x="57" y="38" width="6" height="5" rx="1" transform="rotate(0, 60, 60)" />
-          <rect x="57" y="38" width="6" height="5" rx="1" transform="rotate(45, 60, 60)" />
-          <rect x="57" y="38" width="6" height="5" rx="1" transform="rotate(90, 60, 60)" />
-          <rect x="57" y="38" width="6" height="5" rx="1" transform="rotate(135, 60, 60)" />
-          <circle cx="60" cy="60" r="8" fill={light ? "#1e293b" : "#ffffff"} />
-          <circle cx="60" cy="60" r="4" fill={accentGearColor} />
+        {/* Top-Right Spanner Jaw */}
+        <g transform="translate(142, 58) rotate(-45)">
+          <circle cx="0" cy="0" r="16" fill="#475569" />
+          <rect x="-16" y="-8" width="20" height="16" fill="#ffffff" />
+          <polygon points="-6,-12 -6,12 16,0" fill="#ffffff" />
         </g>
 
-        {/* Technical cross lines */}
-        <line x1="60" y1="28" x2="60" y2="92" stroke={primaryGearColor} strokeWidth="1.5" strokeOpacity="0.4" />
-        <line x1="28" y1="60" x2="92" y2="60" stroke={primaryGearColor} strokeWidth="1.5" strokeOpacity="0.4" />
+        {/* Bottom-Left Spanner End */}
+        <g transform="translate(42, 158) rotate(-45)">
+          <circle cx="0" cy="0" r="14" fill="#475569" />
+          <circle cx="0" cy="0" r="7" fill="#ffffff" />
+        </g>
       </g>
 
-      {/* Typography for Jubayer Machineries */}
-      <g>
+      {/* 2. GEAR SEGMENTS (Top-Right & Bottom-Left arcs with thick blue cogs) */}
+      <g stroke="#ffffff" strokeWidth="1.5" strokeLinejoin="round">
+        {/* Top-Right Gear Arc */}
+        <path 
+          d="M 100,20 A 75,75 0 0,1 175,95" 
+          fill="none" 
+          stroke={mainBlue} 
+          strokeWidth="11" 
+          strokeLinecap="square"
+        />
+        {/* Top-Right Gear Teeth */}
+        <g fill={mainBlue}>
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(0, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(18, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(36, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(54, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(72, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(90, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+        </g>
+
+        {/* Bottom-Left Gear Arc */}
+        <path 
+          d="M 25,105 A 75,75 0 0,0 100,180" 
+          fill="none" 
+          stroke={mainBlue} 
+          strokeWidth="11" 
+          strokeLinecap="square"
+        />
+        {/* Bottom-Left Gear Teeth */}
+        <g fill={mainBlue}>
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(180, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(198, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(216, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(234, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(252, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+          <rect x="94" y="10" width="12" height="10" rx="1.5" transform="rotate(270, 100, 100)" stroke="#ffffff" strokeWidth="1.5" />
+        </g>
+      </g>
+
+      {/* 3. CENTER BRAND TYPOGRAPHY */}
+      <g textAnchor="middle" style={{ fontFamily: '"Georgia", "Times New Roman", serif' }}>
+        {/* "JUBAYER" */}
         <text 
-          x="125" 
-          y="58" 
+          x="100" 
+          y="93" 
           style={{ 
-            fontSize: '44px', 
-            fontWeight: 900, 
-            fontFamily: '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif', 
-            letterSpacing: '-0.01em', 
-            fill: textColor 
+            fontSize: '25px', 
+            fontWeight: '900', 
+            letterSpacing: '0.06em', 
+            fill: greenText,
+            fontFamily: '"Impact", "Arial Black", sans-serif'
           }}
         >
-          Jubayer Machineries
+          JUBAYER
         </text>
+
+        {/* "MACHINERIES" */}
         <text 
-          x="125" 
-          y="88" 
+          x="100" 
+          y="119" 
           style={{ 
-            fontSize: '15.5px', 
-            fontWeight: 700, 
+            fontSize: '23px', 
+            fontWeight: '900', 
+            letterSpacing: '0.02em', 
+            fill: redText,
+            fontFamily: '"Impact", "Arial Black", sans-serif'
+          }}
+        >
+          MACHINERIES
+        </text>
+
+        {/* "Your Sustainable Partner" */}
+        <text 
+          x="100" 
+          y="136" 
+          style={{ 
+            fontSize: '10px', 
+            fontWeight: 'bold', 
             fontStyle: 'italic',
-            fontFamily: '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif', 
-            letterSpacing: '0.01em',
-            fill: sloganColor 
+            fill: subText,
+            fontFamily: '"Georgia", serif'
           }}
         >
-          Your Problem Solution is Sustainable Partner
+          Your Sustainable Partner
         </text>
+      </g>
+
+      {/* 4. BOTTOM CROSSHAIR / TRANSFORMER MARKING */}
+      <g stroke={lineText} strokeWidth="1.5">
+        {/* Horizontal Line */}
+        <line x1="50" y1="152" x2="150" y2="152" strokeWidth="2" />
+        
+        {/* Vertical Crosshair Line */}
+        <line x1="120" y1="140" x2="120" y2="170" />
+
+        {/* Central Transformer Symbol / Square Box */}
+        <rect 
+          x="113" 
+          y="145" 
+          width="14" 
+          height="14" 
+          fill={light ? "#1e293b" : "#ffffff"} 
+          stroke={lineText} 
+          strokeWidth="1.5" 
+        />
+        {/* Inner cross inside the box */}
+        <line x1="113" y1="152" x2="127" y2="152" strokeWidth="1" />
+        <line x1="120" y1="145" x2="120" y2="159" strokeWidth="1" />
       </g>
     </svg>
   );
