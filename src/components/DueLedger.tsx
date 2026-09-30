@@ -493,68 +493,68 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
       </div>
 
       {/* Receivables Analytics Widgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Receivables */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-6 h-6 animate-pulse" />
+        <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-2xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 bg-rose-50 border border-rose-100 text-rose-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-4 h-4 sm:w-6 sm:h-6 animate-pulse" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">
+          <div className="min-w-0 flex-1">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
               Total Outstanding
             </span>
-            <span className="text-lg font-black text-slate-900 font-display block mt-1">
+            <span className="text-sm sm:text-lg font-black text-slate-900 font-display block mt-1 truncate">
               ৳{totalOutstanding.toLocaleString()}
             </span>
-            <span className="text-[9px] font-bold text-rose-500 block">Uncollected credit</span>
+            <span className="text-[8px] sm:text-[9px] font-bold text-rose-500 block truncate">Uncollected credit</span>
           </div>
         </div>
 
         {/* Overdue Receivables */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 bg-rose-100 border border-rose-200 text-rose-700 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Clock className="w-6 h-6" />
+        <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-2xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 bg-rose-100 border border-rose-200 text-rose-700 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">
+          <div className="min-w-0 flex-1">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
               Overdue Receivables
             </span>
-            <span className="text-lg font-black text-rose-700 font-display block mt-1">
+            <span className="text-sm sm:text-lg font-black text-rose-700 font-display block mt-1 truncate">
               ৳{overdueOutstanding.toLocaleString()}
             </span>
-            <span className="text-[9px] font-bold text-slate-400 block">Passed due dates</span>
+            <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 block truncate">Passed due dates</span>
           </div>
         </div>
 
         {/* Collected Balance */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <CheckCircle className="w-6 h-6" />
+        <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-2xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+            <CheckCircle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">
+          <div className="min-w-0 flex-1">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
               Total Received/Paid
             </span>
-            <span className="text-lg font-black text-emerald-700 font-display block mt-1">
+            <span className="text-sm sm:text-lg font-black text-emerald-700 font-display block mt-1 truncate">
               ৳{totalPaid.toLocaleString()}
             </span>
-            <span className="text-[9px] font-bold text-slate-400 block">Out of ৳{totalInvoiced.toLocaleString()}</span>
+            <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 block truncate">Cleared payments</span>
           </div>
         </div>
 
         {/* Due Collection Ratio */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <CreditCard className="w-6 h-6" />
+        <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-2xs flex items-center gap-2.5 sm:gap-4">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 bg-blue-50 border border-blue-100 text-blue-600 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">
+          <div className="min-w-0 flex-1">
+            <span className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
               Collection Ratio
             </span>
-            <span className="text-lg font-black text-blue-900 font-display block mt-1">
+            <span className="text-sm sm:text-lg font-black text-blue-900 font-display block mt-1 truncate">
               {totalInvoiced > 0 ? ((totalPaid / totalInvoiced) * 100).toFixed(1) : "0"}%
             </span>
-            <span className="text-[9px] font-bold text-emerald-600 block">Total payment clearance</span>
+            <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 block truncate">Total clearance</span>
           </div>
         </div>
       </div>
@@ -634,17 +634,17 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                             <td className="py-4 px-4 text-right font-bold text-emerald-600">৳{item.paid.toLocaleString()}</td>
                             <td className="py-4 px-4 text-right">
                               {item.due > 0 ? (
-                                <div className="inline-block bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg text-right">
-                                  <span className="text-sm font-black text-rose-700 font-display block leading-tight">
+                                <div className="inline-block bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md text-right">
+                                  <span className="text-xs sm:text-sm font-black text-rose-700 font-display block leading-tight">
                                     ৳{item.due.toLocaleString()}
                                   </span>
-                                  <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider block">
+                                  <span className="text-[8px] font-bold text-rose-500 uppercase tracking-wider block">
                                     মোট বকেয়া
                                   </span>
                                 </div>
                               ) : (
                                 <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-bold">
-                                  ✅ কোনো বকেয়া নেই
+                                  বকেয়ামুক্ত
                                 </span>
                               )}
                             </td>
@@ -721,7 +721,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                                 <span className="font-mono font-bold text-blue-900 block">{doc.docNumber}</span>
                                                 {parsedPayments.length > 0 && (
                                                   <div className="mt-1 flex flex-wrap gap-1">
-                                                    {parsedPayments.map((p, idx) => (
+                                                    {parsedPayments.map((p) => (
                                                       <button
                                                         key={p.id}
                                                         onClick={() => setRecentReceipt({
@@ -740,7 +740,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                                         title="মানি রসিদ পুনরায় প্রিন্ট করুন (Reprint Receipt)"
                                                       >
                                                         <Printer className="w-2.5 h-2.5 text-emerald-600" />
-                                                        রসিদ-{idx + 1} (৳{p.amount.toLocaleString()})
+                                                        রসিদ (৳{p.amount.toLocaleString()})
                                                       </button>
                                                     ))}
                                                   </div>
@@ -1460,76 +1460,76 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               </div>
 
               {/* Printable Statement Body */}
-              <div id="printable-area" className="overflow-y-auto flex-1 p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-6">
+              <div id="printable-area" className="overflow-y-auto flex-1 p-4 sm:p-6 md:p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-4 sm:space-y-6">
                 
                 {/* Official Showroom Header */}
-                <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-3 sm:pb-4 gap-2 sm:gap-0">
                   <div>
-                    <h1 className="text-xl font-black text-slate-900 font-display tracking-tight">
+                    <h1 className="text-lg sm:text-xl font-black text-slate-900 font-display tracking-tight">
                       {settings?.name || 'Jubayer Machineries'}
                     </h1>
-                    <p className="text-[10px] text-slate-500 font-medium">{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
-                    <p className="text-[10px] text-slate-500 font-medium">{settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}</p>
-                    <p className="text-[10px] text-slate-500 font-medium">Hotline: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'}</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Hotline: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'}</p>
                   </div>
-                  <div className="text-right">
-                    <span className="font-black text-sm text-slate-950 uppercase tracking-widest block font-mono">
+                  <div className="text-left sm:text-right">
+                    <span className="font-black text-xs sm:text-sm text-slate-950 uppercase tracking-widest block font-mono">
                       CUSTOMER DUE STATEMENT
                     </span>
-                    <span className="text-[11px] text-rose-700 font-extrabold block">
+                    <span className="text-[10px] sm:text-[11px] text-rose-700 font-extrabold block">
                       গ্রাহকভিত্তিক বকেয়া ও জমা লেজার
                     </span>
-                    <span className="text-[10px] text-slate-400 block font-semibold mt-1">
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 block font-semibold mt-0.5">
                       তারিখ: {new Date().toLocaleDateString('en-GB')}
                     </span>
                   </div>
                 </div>
 
                 {/* Customer Profile Box */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs">
                   <div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">কোম্পানি / কাস্টমারের তথ্য</span>
-                    <h3 className="font-extrabold text-sm text-slate-900 mt-0.5">{cust.company || 'Private Client'}</h3>
-                    <p className="text-slate-600 font-bold">প্রতিনিধি/নাম: <span className="text-slate-900">{cust.name}</span></p>
-                    <p className="text-slate-600">ঠিকানা: <span className="font-medium text-slate-800">{cust.address || 'Gazipur, Bangladesh'}</span></p>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block">কোম্পানি / কাস্টমারের তথ্য</span>
+                    <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 mt-0.5">{cust.company || 'Private Client'}</h3>
+                    <p className="text-slate-600 font-bold text-[11px] sm:text-xs">প্রতিনিধি/নাম: <span className="text-slate-900">{cust.name}</span></p>
+                    <p className="text-slate-600 text-[11px] sm:text-xs">ঠিকানা: <span className="font-medium text-slate-800">{cust.address || 'Gazipur, Bangladesh'}</span></p>
                   </div>
                   <div className="text-left sm:text-right space-y-0.5">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">যোগাযোগ ও আইডি</span>
-                    <p className="font-bold text-slate-900">ফোন: <span className="font-mono text-blue-900">{cust.phone}</span></p>
-                    {cust.email && <p className="text-slate-600">ইমেইল: <span className="font-medium">{cust.email}</span></p>}
-                    {cust.companyId && <p className="text-slate-500 font-mono text-[10px]">কোম্পানি আইডি: {cust.companyId}</p>}
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block">যোগাযোগ ও আইডি</span>
+                    <p className="font-bold text-slate-900 text-[11px] sm:text-xs">ফোন: <span className="font-mono text-blue-900">{cust.phone}</span></p>
+                    {cust.email && <p className="text-slate-600 text-[11px] sm:text-xs">ইমেইল: <span className="font-medium">{cust.email}</span></p>}
+                    {cust.companyId && <p className="text-slate-500 font-mono text-[9px] sm:text-[10px]">কোম্পানি আইডি: {cust.companyId}</p>}
                   </div>
                 </div>
 
                 {/* Summary Balance Metric Cards */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">১. সর্বমোট ইনভয়েস বিল</span>
-                    <span className="text-base font-extrabold text-slate-900 font-mono">৳{viewingCustomerReport.invoiced.toLocaleString()}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+                  <div className="p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">সর্বমোট ইনভয়েস বিল</span>
+                    <span className="text-sm sm:text-base font-extrabold text-slate-900 font-mono">৳{viewingCustomerReport.invoiced.toLocaleString()}</span>
                   </div>
-                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
-                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">২. সর্বমোট পরিশোধিত টাকা</span>
-                    <span className="text-base font-black text-emerald-700 font-mono">৳{viewingCustomerReport.paid.toLocaleString()}</span>
+                  <div className="p-3 sm:p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                    <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">সর্বমোট পরিশোধিত টাকা</span>
+                    <span className="text-sm sm:text-base font-black text-emerald-700 font-mono">৳{viewingCustomerReport.paid.toLocaleString()}</span>
                   </div>
-                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
-                    <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider block mb-0.5">৩. বর্তমান অবশিষ্ট বকেয়া</span>
-                    <span className="text-base font-black text-rose-700 font-mono">৳{viewingCustomerReport.due.toLocaleString()}</span>
+                  <div className="p-3 sm:p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
+                    <span className="text-[8px] sm:text-[9px] font-bold text-rose-600 uppercase tracking-wider block mb-0.5">বর্তমান অবশিষ্ট বকেয়া</span>
+                    <span className="text-sm sm:text-base font-black text-rose-700 font-mono">৳{viewingCustomerReport.due.toLocaleString()}</span>
                   </div>
                 </div>
 
                 {/* Step-by-Step Payment Breakdown Table */}
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 sm:gap-0">
                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                       তারিখ ক্রমানুসারে ইনভয়েস বিল ও প্রতিটি পরিশোধের হিসাব (Payment Breakdown Ledger)
                     </h3>
                     <span className="text-[10px] text-slate-400 font-mono">
-                      Total {ledgerTransactions.length} Ledger Events
+                      মোট {ledgerTransactions.length} টি এন্ট্রি
                     </span>
                   </div>
 
-                  <div className="border border-slate-300 rounded-lg overflow-hidden">
-                    <table className="w-full text-left text-[11px] border-collapse">
+                  <div className="border border-slate-300 rounded-lg overflow-x-auto">
+                    <table className="w-full text-left text-[11px] border-collapse min-w-[500px]">
                       <thead>
                         <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[9px]">
                           <th className="py-2.5 px-3">তারিখ (Date)</th>
@@ -1545,18 +1545,18 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                           const isPayment = tx.type === 'PAYMENT';
                           return (
                             <tr key={tx.id} className={isPayment ? 'bg-emerald-50/30 font-semibold' : 'hover:bg-slate-50/50'}>
-                              <td className="py-2.5 px-3 font-mono text-[10px] font-bold text-slate-600">{tx.date}</td>
-                              <td className="py-2.5 px-3 font-mono font-bold text-blue-900 text-[10px]">{tx.refNo}</td>
+                              <td className="py-2.5 px-3 font-mono text-[10px] font-bold text-slate-600 whitespace-nowrap">{tx.date}</td>
+                              <td className="py-2.5 px-3 font-mono font-bold text-blue-900 text-[10px] whitespace-nowrap">{tx.refNo}</td>
                               <td className="py-2.5 px-3 max-w-xs">
-                                <span className="block leading-tight">{tx.particulars}</span>
+                                <span className="block leading-tight text-[11px]">{tx.particulars}</span>
                               </td>
-                              <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                              <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                                 {tx.billed > 0 ? `৳${tx.billed.toLocaleString()}` : '—'}
                               </td>
-                              <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-700">
+                              <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-700 whitespace-nowrap">
                                 {tx.paid > 0 ? `+ ৳${tx.paid.toLocaleString()}` : '—'}
                               </td>
-                              <td className="py-2.5 px-3 text-right font-mono font-black text-rose-700">
+                              <td className="py-2.5 px-3 text-right font-mono font-black text-rose-700 whitespace-nowrap">
                                 ৳{tx.runningDue.toLocaleString()}
                               </td>
                             </tr>
@@ -1568,13 +1568,13 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                           <td colSpan={3} className="py-3 px-3 uppercase tracking-wider text-[10px]">
                             সর্বমোট হিসাব (Grand Total Balance):
                           </td>
-                          <td className="py-3 px-3 text-right font-mono font-black">
+                          <td className="py-3 px-3 text-right font-mono font-black whitespace-nowrap">
                             ৳{viewingCustomerReport.invoiced.toLocaleString()}
                           </td>
-                          <td className="py-3 px-3 text-right font-mono font-black text-emerald-700">
+                          <td className="py-3 px-3 text-right font-mono font-black text-emerald-700 whitespace-nowrap">
                             ৳{viewingCustomerReport.paid.toLocaleString()}
                           </td>
-                          <td className="py-3 px-3 text-right font-mono font-black text-rose-700 text-sm">
+                          <td className="py-3 px-3 text-right font-mono font-black text-rose-700 text-sm whitespace-nowrap">
                             ৳{viewingCustomerReport.due.toLocaleString()}
                           </td>
                         </tr>
@@ -1584,24 +1584,24 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 </div>
 
                 {/* Signatures */}
-                <div className="grid grid-cols-3 gap-8 pt-10 text-center text-[10px] font-bold text-slate-500">
+                <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-6 sm:pt-10 text-center text-[9px] sm:text-[10px] font-bold text-slate-500">
                   <div className="space-y-1">
-                    <div className="border-t border-slate-400 pt-1.5 w-36 mx-auto text-slate-800">
+                    <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800">
                       Customer Signature
                     </div>
-                    <span className="text-[9px] text-slate-400 italic block">গ্রহীতা / কাস্টমারের স্বাক্ষর</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">গ্রহীতার স্বাক্ষর</span>
                   </div>
                   <div className="space-y-1">
-                    <div className="border-t border-slate-400 pt-1.5 w-36 mx-auto text-slate-800">
+                    <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800">
                       Accounts Prepared By
                     </div>
-                    <span className="text-[9px] text-slate-400 italic block">হিসাবরক্ষকের স্বাক্ষর</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">হিসাবরক্ষক</span>
                   </div>
                   <div className="space-y-1">
-                    <div className="border-t border-slate-400 pt-1.5 w-36 mx-auto text-slate-800 font-bold">
+                    <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800 font-bold">
                       {settings?.signatureName || 'Managing Director'}
                     </div>
-                    <span className="text-[9px] text-slate-400 italic block">অনুমোদনকারীর স্বাক্ষর</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">অনুমোদনকারী</span>
                   </div>
                 </div>
 

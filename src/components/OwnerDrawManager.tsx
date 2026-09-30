@@ -339,59 +339,59 @@ export default function OwnerDrawManager({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: Total Business Income */}
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 space-y-1.5">
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-400">১. টোটাল ইনকাম (Total Income)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-400">টোটাল ইনকাম (Total Income)</span>
               <ArrowUpRight className="w-4 h-4 text-emerald-400" />
             </div>
-            <div className="text-xl font-black font-display text-emerald-300">
+            <div className="text-lg sm:text-xl font-black font-display text-emerald-300">
               ৳{financialSummary.totalIncome.toLocaleString()}
             </div>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[9px] sm:text-[10px] text-slate-400">
               বিক্রয় ইনভয়েস: ৳{financialSummary.paidInvoicesIncome.toLocaleString()} + ফিল্ড সেবা: ৳{financialSummary.fieldDispatchesIncome.toLocaleString()}
             </p>
           </div>
 
           {/* Card 2: Various Operating Expenses */}
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 space-y-1.5">
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-amber-400">২. পরিচালন খরচ (Operating Expenses)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-amber-400">পরিচালন খরচ (Operating Expenses)</span>
               <ArrowDownRight className="w-4 h-4 text-amber-400" />
             </div>
-            <div className="text-xl font-black font-display text-amber-300">
+            <div className="text-lg sm:text-xl font-black font-display text-amber-300">
               ৳{financialSummary.totalOperatingExpenses.toLocaleString()}
             </div>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[9px] sm:text-[10px] text-slate-400">
               শোরুম খরচ: ৳{financialSummary.showroomExpenses.toLocaleString()} + মালামাল ক্রয়: ৳{financialSummary.purchaseExpenses.toLocaleString()}
             </p>
           </div>
 
           {/* Card 3: Owner's Drawings */}
-          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 space-y-1.5">
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-rose-400">৩. মালিকের উত্তোলন (Owner's Draw)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-rose-400">মালিকের উত্তোলন (Owner's Draw)</span>
               <UserCheck className="w-4 h-4 text-rose-400" />
             </div>
-            <div className="text-xl font-black font-display text-rose-300">
+            <div className="text-lg sm:text-xl font-black font-display text-rose-300">
               ৳{financialSummary.totalOwnerDrawings.toLocaleString()}
             </div>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[9px] sm:text-[10px] text-slate-400">
               চলতি মাসে উত্তোলন: ৳{financialSummary.thisMonthDraw.toLocaleString()}
             </p>
           </div>
 
           {/* Card 4: Net Surplus Balance */}
-          <div className="bg-slate-950 border border-emerald-500/30 rounded-xl p-4 space-y-1.5">
+          <div className="bg-slate-950 border border-emerald-500/30 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-blue-300">৪. অবশিষ্ট তহবিল (Net Cash Flow)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-blue-300">অবশিষ্ট তহবিল (Net Cash Flow)</span>
               <Wallet className="w-4 h-4 text-blue-400" />
             </div>
-            <div className={`text-xl font-black font-display ${financialSummary.netRetainedCash >= 0 ? 'text-blue-300' : 'text-rose-400'}`}>
+            <div className={`text-lg sm:text-xl font-black font-display ${financialSummary.netRetainedCash >= 0 ? 'text-blue-300' : 'text-rose-400'}`}>
               ৳{financialSummary.netRetainedCash.toLocaleString()}
             </div>
-            <p className="text-[10px] text-emerald-400 font-semibold">
+            <p className="text-[9px] sm:text-[10px] text-emerald-400 font-semibold">
               ইনকাম হতে সকল খরচ ও উত্তোলন বাদ দিয়ে অবশিষ্ট
             </p>
           </div>
