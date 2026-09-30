@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react';
-import { Document, Customer, DocumentStatus } from '../types';
+import { Document, Customer, DocumentStatus, BusinessSettings } from '../types';
 import { 
   DollarSign, 
   Search, 
@@ -15,12 +15,17 @@ import {
   ChevronUp,
   FileText,
   BadgeAlert,
-  Printer
+  Printer,
+  FileSpreadsheet,
+  Download,
+  Coins,
+  Building2
 } from 'lucide-react';
 
 interface DueLedgerProps {
   documents: Document[];
   customers: Customer[];
+  settings?: BusinessSettings;
   onUpdateDocument: (doc: Document) => void;
   onBatchUpdateDocuments?: (docs: Document[]) => void;
   onViewDocument: (doc: Document) => void;
@@ -95,7 +100,117 @@ function parsePaymentsFromDoc(doc: Document) {
   return results;
 }
 
-export default function DueLedger({ documents, customers, onUpdateDocument, onBatchUpdateDocuments, onViewDocument }: DueLedgerProps) {
+// Helper: Generate chronological step-by-step payment breakdown ledger for individual customer statement
+function generateCustomerLedgerTransactions(item: { customer: Customer; documents: Document[] }) {
+  const transactions: {
+    id: string;
+    date: string;
+    refNo: string;
+    type: 'INVOICE' | 'PAYMENT' | 'RETURN';
+    particulars: string;
+    billed: number;
+    paid: number;
+    paymentMethod?: string;
+  }[] = [];
+
+  item.documents.forEach(doc => {
+    // 1. Add Billed Invoice entry
+    transactions.push({
+      id: `bill-${doc.id}`,
+      date: doc.date,
+      refNo: doc.docNumber,
+      type: 'INVOICE',
+      particulars: `${doc.type === 'BILL' ? 'Purchase Bill' : 'Sales Invoice'} #${doc.docNumber}${doc.items && doc.items.length > 0 ? ` (${doc.items.map(i => i.name).join(', ')})` : ''}`,
+      billed: doc.total,
+      paid: 0
+    });
+
+    // 2. Parse payment log entries from doc.notes
+    const parsedPayments = parsePaymentsFromDoc(doc);
+    if (parsedPayments.length > 0) {
+      parsedPayments.forEach((p, idx) => {
+        transactions.push({
+          id: `pay-${doc.id}-${idx}`,
+          date: p.date,
+          refNo: p.receiptNo,
+          type: 'PAYMENT',
+          particulars: `Payment Received via ${p.paymentMethod}${p.notes ? ` (${p.notes})` : ''} [Ref: ${doc.docNumber}]`,
+          billed: 0,
+          paid: p.amount,
+          paymentMethod: p.paymentMethod
+        });
+      });
+    } else {
+      // Fallback: If no parsed payments exist in notes, but doc has paidAmount > 0 or status === 'Paid'
+      const actualPaid = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
+      if (actualPaid > 0) {
+        transactions.push({
+          id: `pay-fallback-${doc.id}`,
+          date: doc.date,
+          refNo: `REC-${doc.docNumber}`,
+          type: 'PAYMENT',
+          particulars: `Payment Cleared for ${doc.docNumber}`,
+          billed: 0,
+          paid: actualPaid,
+          paymentMethod: 'Cash/Bank'
+        });
+      }
+    }
+  });
+
+  // Sort chronologically ascending by date
+  transactions.sort((a, b) => {
+    const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (diff !== 0) return diff;
+    if (a.type === 'INVOICE' && b.type !== 'INVOICE') return -1;
+    if (a.type !== 'INVOICE' && b.type === 'INVOICE') return 1;
+    return 0;
+  });
+
+  // Calculate step-by-step running balance
+  let runningDue = 0;
+  const ledgerWithBalance = transactions.map(t => {
+    runningDue = runningDue + t.billed - t.paid;
+    return {
+      ...t,
+      runningDue: Math.max(0, runningDue)
+    };
+  });
+
+  return ledgerWithBalance;
+}
+
+// Helper: Download CSV statement for individual customer
+function downloadCustomerStatementCSV(
+  customer: Customer, 
+  transactions: ReturnType<typeof generateCustomerLedgerTransactions>,
+  totals: { invoiced: number; paid: number; due: number }
+) {
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += `Customer Statement / Due Report - ${customer.company || customer.name}\n`;
+  csvContent += `Company Name,${customer.company || 'N/A'}\n`;
+  csvContent += `Attn Name,${customer.name}\n`;
+  csvContent += `Phone,${customer.phone}\n`;
+  csvContent += `Total Billed (BDT),${totals.invoiced}\n`;
+  csvContent += `Total Paid (BDT),${totals.paid}\n`;
+  csvContent += `Current Net Outstanding Due (BDT),${totals.due}\n\n`;
+
+  csvContent += "Date,Ref / Memo No,Particulars / Description,Billed Amount (BDT),Paid Amount (BDT),Running Balance Due (BDT)\n";
+
+  transactions.forEach(t => {
+    csvContent += `"${t.date}","${t.refNo}","${t.particulars.replace(/"/g, '""')}",${t.billed},${t.paid},${t.runningDue}\n`;
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Statement-${(customer.company || customer.name).replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export default function DueLedger({ documents, customers, settings, onUpdateDocument, onBatchUpdateDocuments, onViewDocument }: DueLedgerProps) {
   const [activeSubTab, setActiveSubTab] = useState<'customers' | 'invoices'>('customers');
   const [customerSearch, setCustomerSearch] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -133,6 +248,15 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
   const [companyPayDate, setCompanyPayDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [companyPayNotes, setCompanyPayNotes] = useState('');
   const [companyPayFeedback, setCompanyPayFeedback] = useState<string | null>(null);
+
+  // Individual Customer Due Statement / Report Modal State
+  const [viewingCustomerReport, setViewingCustomerReport] = useState<{
+    customer: Customer;
+    invoiced: number;
+    paid: number;
+    due: number;
+    documents: Document[];
+  } | null>(null);
 
   // Helper: Extract only Invoice & Bill documents
   const financialDocs = documents.filter(doc => doc.type === 'INVOICE' || doc.type === 'BILL');
@@ -439,7 +563,7 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
       {activeSubTab === 'customers' && (
         <div className="space-y-4">
           {/* Controls */}
-          <div className="flex justify-between items-center bg-white p-4 border border-slate-200 rounded-2xl shadow-2xs gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center bg-white p-4 border border-slate-200 rounded-2xl shadow-2xs gap-4">
             <div className="relative w-full max-w-sm">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -450,6 +574,28 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
                 className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 focus:bg-white rounded-lg text-xs focus:outline-hidden transition-all font-semibold"
               />
             </div>
+
+            {/* Quick Individual Customer Statement Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0 hidden md:inline">আলাদা রিপোর্ট:</span>
+              <select
+                onChange={(e) => {
+                  const matched = customerLedger.find(c => c.customer.id === e.target.value);
+                  if (matched) setViewingCustomerReport(matched);
+                  e.target.value = "";
+                }}
+                defaultValue=""
+                className="bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs p-2 rounded-lg cursor-pointer focus:outline-hidden"
+              >
+                <option value="" disabled>-- কাস্টমারের আলাদা ডিউ রিপোর্ট বেছে নিন --</option>
+                {customerLedger.map(item => (
+                  <option key={item.customer.id} value={item.customer.id}>
+                    {item.customer.company || item.customer.name} (বকেয়া: ৳{item.due.toLocaleString()})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="text-slate-400 text-[10px] font-bold uppercase tracking-wider hidden sm:block">
               Total Managed: {filteredCustomerLedger.length} Accounts
             </div>
@@ -513,6 +659,14 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
                             </td>
                             <td className="py-4 px-5 text-center">
                               <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => setViewingCustomerReport(item)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-lg text-xs shadow-2xs transition-colors cursor-pointer"
+                                  title="প্রতিটি কোম্পানি বা কাস্টমারের জন্য আলাদা বকেয়া ও পরিশোধের লেজার রিপোর্ট দেখুন"
+                                >
+                                  <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
+                                  আলাদা রিপোর্ট
+                                </button>
                                 {item.due > 0 && (
                                   <button
                                     onClick={() => handleOpenCompanyPay(item)}
@@ -1257,6 +1411,205 @@ export default function DueLedger({ documents, customers, onUpdateDocument, onBa
           </div>
         </div>
       )}
+
+      {/* INDIVIDUAL CUSTOMER DUE & PAYMENT STATEMENT REPORT MODAL */}
+      {viewingCustomerReport && (() => {
+        const ledgerTransactions = generateCustomerLedgerTransactions(viewingCustomerReport);
+        const cust = viewingCustomerReport.customer;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+              
+              {/* Modal Top Control Bar (no-print) */}
+              <div className="bg-slate-950 text-white px-5 py-3.5 flex justify-between items-center gap-4 no-print flex-shrink-0 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <FileSpreadsheet className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
+                      {cust.company || cust.name} - কাস্টমার ডিউ ও পরিশোধের আলাদা রিপোর্ট
+                    </h3>
+                    <p className="text-[10px] text-slate-400 hidden sm:block">
+                      প্রতিটি বিল এবং তারিখ অনুযায়ী পরিশোধিত টাকার বিবরণ সম্বলিত পৃথক লেজার রিপোর্ট
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => downloadCustomerStatementCSV(cust, ledgerTransactions, viewingCustomerReport)}
+                    className="px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-300" />
+                    CSV ডাউনলো
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    প্রিন্ট রিপোর্ট (Print)
+                  </button>
+                  <button 
+                    onClick={() => setViewingCustomerReport(null)}
+                    className="text-slate-400 hover:text-white font-bold bg-white/10 hover:bg-white/20 w-7 h-7 rounded-full flex items-center justify-center text-sm cursor-pointer transition-colors"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              {/* Printable Statement Body */}
+              <div id="printable-area" className="overflow-y-auto flex-1 p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-6">
+                
+                {/* Official Showroom Header */}
+                <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                  <div>
+                    <h1 className="text-xl font-black text-slate-900 font-display tracking-tight">
+                      {settings?.name || 'Jubayer Machineries'}
+                    </h1>
+                    <p className="text-[10px] text-slate-500 font-medium">{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
+                    <p className="text-[10px] text-slate-500 font-medium">{settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}</p>
+                    <p className="text-[10px] text-slate-500 font-medium">Hotline: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-black text-sm text-slate-950 uppercase tracking-widest block font-mono">
+                      CUSTOMER DUE STATEMENT
+                    </span>
+                    <span className="text-[11px] text-rose-700 font-extrabold block">
+                      গ্রাহকভিত্তিক বকেয়া ও জমা লেজার
+                    </span>
+                    <span className="text-[10px] text-slate-400 block font-semibold mt-1">
+                      তারিখ: {new Date().toLocaleDateString('en-GB')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Customer Profile Box */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">কোম্পানি / কাস্টমারের তথ্য</span>
+                    <h3 className="font-extrabold text-sm text-slate-900 mt-0.5">{cust.company || 'Private Client'}</h3>
+                    <p className="text-slate-600 font-bold">প্রতিনিধি/নাম: <span className="text-slate-900">{cust.name}</span></p>
+                    <p className="text-slate-600">ঠিকানা: <span className="font-medium text-slate-800">{cust.address || 'Gazipur, Bangladesh'}</span></p>
+                  </div>
+                  <div className="text-left sm:text-right space-y-0.5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">যোগাযোগ ও আইডি</span>
+                    <p className="font-bold text-slate-900">ফোন: <span className="font-mono text-blue-900">{cust.phone}</span></p>
+                    {cust.email && <p className="text-slate-600">ইমেইল: <span className="font-medium">{cust.email}</span></p>}
+                    {cust.companyId && <p className="text-slate-500 font-mono text-[10px]">কোম্পানি আইডি: {cust.companyId}</p>}
+                  </div>
+                </div>
+
+                {/* Summary Balance Metric Cards */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">১. সর্বমোট ইনভয়েস বিল</span>
+                    <span className="text-base font-extrabold text-slate-900 font-mono">৳{viewingCustomerReport.invoiced.toLocaleString()}</span>
+                  </div>
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                    <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">২. সর্বমোট পরিশোধিত টাকা</span>
+                    <span className="text-base font-black text-emerald-700 font-mono">৳{viewingCustomerReport.paid.toLocaleString()}</span>
+                  </div>
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
+                    <span className="text-[9px] font-bold text-rose-600 uppercase tracking-wider block mb-0.5">৩. বর্তমান অবশিষ্ট বকেয়া</span>
+                    <span className="text-base font-black text-rose-700 font-mono">৳{viewingCustomerReport.due.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Step-by-Step Payment Breakdown Table */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      তারিখ ক্রমানুসারে ইনভয়েস বিল ও প্রতিটি পরিশোধের হিসাব (Payment Breakdown Ledger)
+                    </h3>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Total {ledgerTransactions.length} Ledger Events
+                    </span>
+                  </div>
+
+                  <div className="border border-slate-300 rounded-lg overflow-hidden">
+                    <table className="w-full text-left text-[11px] border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[9px]">
+                          <th className="py-2.5 px-3">তারিখ (Date)</th>
+                          <th className="py-2.5 px-3">রেফারেন্স / বিল নং</th>
+                          <th className="py-2.5 px-3">বিবরণ (Particulars)</th>
+                          <th className="py-2.5 px-3 text-right">ইনভয়েস বিল ৳</th>
+                          <th className="py-2.5 px-3 text-right">পরিশোধিত টাকা ৳</th>
+                          <th className="py-2.5 px-3 text-right">অবশিষ্ট বকেয়া ৳</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
+                        {ledgerTransactions.map((tx) => {
+                          const isPayment = tx.type === 'PAYMENT';
+                          return (
+                            <tr key={tx.id} className={isPayment ? 'bg-emerald-50/30 font-semibold' : 'hover:bg-slate-50/50'}>
+                              <td className="py-2.5 px-3 font-mono text-[10px] font-bold text-slate-600">{tx.date}</td>
+                              <td className="py-2.5 px-3 font-mono font-bold text-blue-900 text-[10px]">{tx.refNo}</td>
+                              <td className="py-2.5 px-3 max-w-xs">
+                                <span className="block leading-tight">{tx.particulars}</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                                {tx.billed > 0 ? `৳${tx.billed.toLocaleString()}` : '—'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-700">
+                                {tx.paid > 0 ? `+ ৳${tx.paid.toLocaleString()}` : '—'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-black text-rose-700">
+                                ৳{tx.runningDue.toLocaleString()}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        
+                        {/* Ledger Summary Footer */}
+                        <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 text-xs">
+                          <td colSpan={3} className="py-3 px-3 uppercase tracking-wider text-[10px]">
+                            সর্বমোট হিসাব (Grand Total Balance):
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-black">
+                            ৳{viewingCustomerReport.invoiced.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-black text-emerald-700">
+                            ৳{viewingCustomerReport.paid.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-black text-rose-700 text-sm">
+                            ৳{viewingCustomerReport.due.toLocaleString()}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Signatures */}
+                <div className="grid grid-cols-3 gap-8 pt-10 text-center text-[10px] font-bold text-slate-500">
+                  <div className="space-y-1">
+                    <div className="border-t border-slate-400 pt-1.5 w-36 mx-auto text-slate-800">
+                      Customer Signature
+                    </div>
+                    <span className="text-[9px] text-slate-400 italic block">গ্রহীতা / কাস্টমারের স্বাক্ষর</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="border-t border-slate-400 pt-1.5 w-36 mx-auto text-slate-800">
+                      Accounts Prepared By
+                    </div>
+                    <span className="text-[9px] text-slate-400 italic block">হিসাবরক্ষকের স্বাক্ষর</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="border-t border-slate-400 pt-1.5 w-36 mx-auto text-slate-800 font-bold">
+                      {settings?.signatureName || 'Managing Director'}
+                    </div>
+                    <span className="text-[9px] text-slate-400 italic block">অনুমোদনকারীর স্বাক্ষর</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

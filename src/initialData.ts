@@ -14,6 +14,8 @@ export const ALL_PERMISSIONS: { key: PermissionKey; label: string; description: 
   { key: 'manage_due_ledger', label: 'Collect Dues / Manage Ledger', description: 'Receive customer payments and update due balances', category: 'Accounts' },
   { key: 'view_expenses', label: 'View Daily Expenses', description: 'Browse company and showroom expense records', category: 'Accounts' },
   { key: 'manage_expenses', label: 'Manage Daily Expenses', description: 'Record, edit, and categorize company expenses', category: 'Accounts' },
+  { key: 'view_owner_draw', label: "View Owner's Drawings (মালিকের উত্তোলন)", description: "View owner's personal expenses and withdrawals", category: 'Accounts' },
+  { key: 'manage_owner_draw', label: "Manage Owner's Drawings", description: "Record and manage owner's personal drawings and personal expenses", category: 'Accounts' },
   { key: 'view_field_dispatch', label: 'View Field Dispatches', description: 'Track staff products taken out and returned for service/sales', category: 'Dispatch' },
   { key: 'manage_field_dispatch', label: 'Manage Field Dispatches', description: 'Create dispatch slips, reconcile returns and generate field invoices', category: 'Dispatch' },
   { key: 'view_reports', label: 'View Business Reports', description: 'Export sales, VAT, and inventory report spreadsheets', category: 'Analytics' },
@@ -779,5 +781,31 @@ export const INITIAL_EXPENSES: Expense[] = [
     referenceNo: "PRINT-PAD-2026",
     notes: "Branded hitachisolutioncenter official delivery challan and letterhead printing",
     createdAt: "2026-09-18"
+  },
+  {
+    id: "exp-2026-006",
+    expenseNumber: "DRAW/2026/001",
+    date: "2026-09-26",
+    category: "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)",
+    title: "মালিকের ব্যক্তিগত প্রয়োজনীয় নগদ উত্তোলন (Personal Family Draw)",
+    amount: 25000,
+    paymentMethod: "Cash",
+    paidBy: "MD MAHI UDDIN (Owner)",
+    referenceNo: "DRAW-CASH-01",
+    notes: "শোরুমের ক্যাশ বক্স থেকে মালিকের পারিবারিক খরচের জন্য উত্তোলন",
+    createdAt: "2026-09-26"
+  },
+  {
+    id: "exp-2026-007",
+    expenseNumber: "DRAW/2026/002",
+    date: "2026-09-20",
+    category: "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)",
+    title: "মালিকের ব্যক্তিগত গাড়ির ফুয়েল ও সার্ভিসিং খরচ (Personal Car Maintenance)",
+    amount: 8500,
+    paymentMethod: "bKash/Nagad",
+    paidBy: "MD MAHI UDDIN (Owner)",
+    referenceNo: "CAR-SERVICE-20",
+    notes: "ব্যক্তিগত ব্যবহৃত গাড়ির পার্টস ও ফুয়েল ফিলিং",
+    createdAt: "2026-09-20"
   }
 ];

@@ -109,7 +109,9 @@ export type PermissionKey =
   | 'view_company_profiles'
   | 'manage_company_profiles'
   | 'view_expenses'
-  | 'manage_expenses';
+  | 'manage_expenses'
+  | 'view_owner_draw'
+  | 'manage_owner_draw';
 
 export interface Supplier {
   id: string;

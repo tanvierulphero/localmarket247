@@ -26,6 +26,7 @@ import DocumentList from './components/DocumentList';
 import ReportsHub from './components/ReportsHub';
 import DueLedger from './components/DueLedger';
 import ExpenseManager from './components/ExpenseManager';
+import OwnerDrawManager from './components/OwnerDrawManager';
 import StaffManagement from './components/StaffManagement';
 import FieldDispatchManager from './components/FieldDispatchManager';
 import CompanyProfileManager from './components/CompanyProfileManager';
@@ -978,6 +979,21 @@ export default function App() {
                   </button>
                 )}
 
+                {/* Tab: Owner's Personal Drawings */}
+                {(currentUser?.role === 'ADMIN' || hasPermission('view_owner_draw') || hasPermission('view_expenses')) && (
+                  <button
+                    onClick={() => { setActiveTab('owner_draw'); setEditingDocument(null); setIsCreatingDoc(null); }}
+                    className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-lg transition-all text-left cursor-pointer ${
+                      activeTab === 'owner_draw'
+                        ? 'bg-rose-800 text-white font-extrabold shadow-sm'
+                        : 'hover:bg-slate-800 hover:text-slate-100'
+                    }`}
+                  >
+                    <UserCheck className="w-4 h-4 text-rose-300" />
+                    Owner's Draw (মালিকের উত্তোলন)
+                  </button>
+                )}
+
                 {/* Tab: Field Service & Dispatches */}
                 {hasPermission('view_field_dispatch') && (
                   <button
@@ -1200,6 +1216,9 @@ export default function App() {
                       products={products}
                       customers={customers}
                       returns={salesReturns}
+                      expenses={expenses}
+                      purchases={purchases}
+                      dispatches={dispatches}
                       onSaveReturn={handleSaveReturn}
                       onDeleteReturn={handleDeleteReturn}
                     />
@@ -1210,6 +1229,7 @@ export default function App() {
                     <DueLedger 
                       documents={documents}
                       customers={customers}
+                      settings={settings}
                       onUpdateDocument={handleSaveDocument}
                       onBatchUpdateDocuments={handleBatchUpdateDocuments}
                       onViewDocument={(doc) => setViewingDocument(doc)}
@@ -1220,6 +1240,21 @@ export default function App() {
                   {activeTab === 'expenses' && hasPermission('view_expenses') && (
                     <ExpenseManager 
                       expenses={expenses}
+                      staffUsers={staffUsers}
+                      currentUser={currentUser}
+                      settings={settings}
+                      onSaveExpense={handleSaveExpense}
+                      onDeleteExpense={handleDeleteExpense}
+                    />
+                  )}
+
+                  {/* TAB PANEL 4c2: Owner's Personal Expenses & Drawings */}
+                  {(activeTab === 'owner_draw' || activeTab === 'owner_drawings') && (
+                    <OwnerDrawManager 
+                      expenses={expenses}
+                      documents={documents}
+                      dispatches={dispatches}
+                      purchases={purchases}
                       staffUsers={staffUsers}
                       currentUser={currentUser}
                       settings={settings}

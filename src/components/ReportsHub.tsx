@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Document, Product, Customer, SalesReturn } from '../types';
+import { Document, Product, Customer, SalesReturn, Expense, Purchase, FieldDispatch } from '../types';
 import { 
   Download, 
   Users, 
@@ -15,7 +15,13 @@ import {
   AlertCircle,
   Package,
   Layers,
-  Search
+  Search,
+  Wallet,
+  Coins,
+  TrendingUp,
+  UserCheck,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 
 interface ReportsHubProps {
@@ -23,6 +29,9 @@ interface ReportsHubProps {
   products: Product[];
   customers: Customer[];
   returns?: SalesReturn[];
+  expenses?: Expense[];
+  purchases?: Purchase[];
+  dispatches?: FieldDispatch[];
   onSaveReturn?: (ret: SalesReturn) => Promise<void> | void;
   onDeleteReturn?: (id: string) => Promise<void> | void;
 }
@@ -32,10 +41,13 @@ export default function ReportsHub({
   products, 
   customers,
   returns = [],
+  expenses = [],
+  purchases = [],
+  dispatches = [],
   onSaveReturn,
   onDeleteReturn
 }: ReportsHubProps) {
-  const [activeReportTab, setActiveReportTab] = useState<'sales' | 'customer' | 'product' | 'returns'>('sales');
+  const [activeReportTab, setActiveReportTab] = useState<'sales' | 'customer' | 'product' | 'returns' | 'income_expenses'>('sales');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('All');
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
   const [returnSearch, setReturnSearch] = useState('');
@@ -155,6 +167,60 @@ export default function ReportsHub({
       totalRefundAmount
     };
   }, [returns]);
+
+  // Total Income vs Various Expenses & Owner's Drawings Metrics
+  const incomeExpensesMetrics = useMemo(() => {
+    // Paid Invoice Collections
+    const paidInvoicesVal = documents
+      .filter(d => (d.type === 'INVOICE' || d.type === 'BILL'))
+      .reduce((sum, d) => {
+        if (d.paidAmount !== undefined) return sum + d.paidAmount;
+        return d.status === 'Paid' ? sum + d.total : 0;
+      }, 0);
+
+    // Paid Field Service Dispatches Collections
+    const paidDispatchesVal = dispatches.reduce((sum, d) => sum + (Number(d.paidAmount) || 0), 0);
+
+    const totalIncome = paidInvoicesVal + paidDispatchesVal;
+
+    // Showroom Overhead Expenses (Excluding Owner Draw)
+    const OWNER_DRAW_CAT = "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)";
+    const showroomExpensesVal = expenses
+      .filter(e => e.category !== OWNER_DRAW_CAT)
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    // Stock Purchases Costs
+    const purchasesCostVal = purchases.reduce((sum, p) => sum + (Number(p.paidAmount) || 0), 0);
+
+    // Field Service Travel Expenses
+    const fieldExpensesVal = dispatches.reduce((sum, d) => sum + (Number(d.expenseAmount) || 0), 0);
+
+    const totalOperatingExpenses = showroomExpensesVal + purchasesCostVal + fieldExpensesVal;
+
+    // Owner's Personal Drawings
+    const ownerDrawingsVal = expenses
+      .filter(e => e.category === OWNER_DRAW_CAT)
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const totalAllExpensesCombined = totalOperatingExpenses + ownerDrawingsVal;
+
+    const netProfitBeforeDraw = totalIncome - totalOperatingExpenses;
+    const netRetainedCash = totalIncome - totalAllExpensesCombined;
+
+    return {
+      paidInvoicesVal,
+      paidDispatchesVal,
+      totalIncome,
+      showroomExpensesVal,
+      purchasesCostVal,
+      fieldExpensesVal,
+      totalOperatingExpenses,
+      ownerDrawingsVal,
+      totalAllExpensesCombined,
+      netProfitBeforeDraw,
+      netRetainedCash
+    };
+  }, [documents, dispatches, expenses, purchases]);
 
   const filteredReturns = useMemo(() => {
     if (!returnSearch.trim()) return returns;
@@ -283,11 +349,23 @@ export default function ReportsHub({
   };
 
   // CLIENT-SIDE DOWNLOAD DYNAMIC CSV GENERATOR
-  const downloadCSV = (reportType: 'sales' | 'customers' | 'products' | 'returns') => {
+  const downloadCSV = (reportType: 'sales' | 'customers' | 'products' | 'returns' | 'income_expenses') => {
     let csvContent = "data:text/csv;charset=utf-8,";
     let filename = `hitachisolutioncenter-${reportType}-Report.csv`;
 
-    if (reportType === 'sales') {
+    if (reportType === 'income_expenses') {
+      csvContent += "Financial Metric / Category,Amount (BDT),Notes\n";
+      csvContent += `Sales Invoices Collection,${incomeExpensesMetrics.paidInvoicesVal},Paid Sales Receipts\n`;
+      csvContent += `Field Service Dispatches Collection,${incomeExpensesMetrics.paidDispatchesVal},Service & Repair Payments\n`;
+      csvContent += `TOTAL INCOME / REVENUE,${incomeExpensesMetrics.totalIncome},Total Cash Inflow\n`;
+      csvContent += `Showroom & Overhead Expenses,${incomeExpensesMetrics.showroomExpensesVal},Utilities Rent & Maintenance\n`;
+      csvContent += `Stock Purchases Inward Cost,${incomeExpensesMetrics.purchasesCostVal},Parts & Machine Buying\n`;
+      csvContent += `Field Service Travel Expenses,${incomeExpensesMetrics.fieldExpensesVal},Staff Travel & Meal\n`;
+      csvContent += `TOTAL OPERATING EXPENSES,${incomeExpensesMetrics.totalOperatingExpenses},Total Operating Outflow\n`;
+      csvContent += `NET OPERATING PROFIT,${incomeExpensesMetrics.netProfitBeforeDraw},Profit Before Owner Drawings\n`;
+      csvContent += `OWNER PERSONAL DRAWINGS,${incomeExpensesMetrics.ownerDrawingsVal},Owner Personal Expenses\n`;
+      csvContent += `NET RETAINED SURPLUS CASH,${incomeExpensesMetrics.netRetainedCash},Net Cash Balance\n`;
+    } else if (reportType === 'sales') {
       csvContent += "Metric Label,Value (BDT / Count)\n";
       csvContent += `Total Sales Revenue (Paid Invoices),৳${salesMetrics.totalSalesValue}\n`;
       csvContent += `Total VAT/Tax Collected,৳${salesMetrics.totalTaxValue}\n`;
@@ -337,6 +415,18 @@ export default function ReportsHub({
             }`}
           >
             Sales Reports
+          </button>
+          
+          <button
+            onClick={() => setActiveReportTab('income_expenses')}
+            className={`px-4 py-2 font-bold uppercase tracking-wider rounded-md cursor-pointer transition-colors flex items-center gap-1.5 ${
+              activeReportTab === 'income_expenses'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Coins className="w-3.5 h-3.5 text-amber-300" />
+            আয় ও বিভিন্ন খরচ (Income vs Expenses)
           </button>
           
           <button
@@ -397,6 +487,149 @@ export default function ReportsHub({
       </div>
 
       {/* RENDER DYNAMIC TAB CONTENT */}
+
+      {/* Tab: Total Income vs Various Expenses (টোটাল ইনকাম - বিভিন্ন ধরণের খরচ ও মালিকের উত্তোলন) */}
+      {activeReportTab === 'income_expenses' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Top KPI Summary Banner */}
+          <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-md border border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+              <div className="flex items-center gap-2">
+                <Coins className="w-5 h-5 text-amber-400" />
+                <h3 className="font-extrabold text-sm font-display text-white">
+                  টোটাল ইনকাম ও বিভিন্ন ধরণের খরচের বাৎসরিক/মাসিক লাভ-ক্ষতি হিসাব
+                </h3>
+              </div>
+              <span className="text-[10px] bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-mono border border-slate-700">
+                Total Revenue minus Operating Expenses & Owner Drawings
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-800/90 border border-slate-700 p-4 rounded-xl space-y-1">
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">১. টোটাল ইনকাম (Total Revenue)</span>
+                <span className="text-xl font-black font-display text-emerald-300 block">৳{incomeExpensesMetrics.totalIncome.toLocaleString()}</span>
+                <span className="text-[10px] text-slate-400 block">চালান সংগ্রহ + ফিল্ড সার্ভিস ক্যাশ</span>
+              </div>
+
+              <div className="bg-slate-800/90 border border-slate-700 p-4 rounded-xl space-y-1">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">২. পরিচালন খরচ (Operating Costs)</span>
+                <span className="text-xl font-black font-display text-amber-300 block">৳{incomeExpensesMetrics.totalOperatingExpenses.toLocaleString()}</span>
+                <span className="text-[10px] text-slate-400 block">শোরুম ইউটিলিটি + পার্টস ক্রয় + ভ্রমণ</span>
+              </div>
+
+              <div className="bg-slate-800/90 border border-slate-700 p-4 rounded-xl space-y-1">
+                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">৩. মালিকের ব্যক্তিগত উত্তোলন</span>
+                <span className="text-xl font-black font-display text-rose-300 block">৳{incomeExpensesMetrics.ownerDrawingsVal.toLocaleString()}</span>
+                <span className="text-[10px] text-slate-400 block">মালিকের নিজস্ব ও পারিবারিক খরচ</span>
+              </div>
+
+              <div className="bg-slate-950 border border-emerald-500/30 p-4 rounded-xl space-y-1">
+                <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider block">৪. নিট অবশিষ্ট নগদ (Net Surplus)</span>
+                <span className={`text-xl font-black font-display block ${incomeExpensesMetrics.netRetainedCash >= 0 ? 'text-blue-300' : 'text-rose-400'}`}>
+                  ৳{incomeExpensesMetrics.netRetainedCash.toLocaleString()}
+                </span>
+                <span className="text-[10px] text-emerald-400 block font-semibold">সকল খরচ ও উত্তোলনের পর অবশিষ্ট</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed Financial Breakdown Table */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 font-display flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-900" />
+              বিশদ ইনকাম ও ব্যয় বিবরণী (Financial Income & Expense Statement)
+            </h3>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden font-sans">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4">খাত / বিবরণী (Category Item)</th>
+                    <th className="py-3 px-4 text-center">টাইপ (Type)</th>
+                    <th className="py-3 px-4 text-right">টাকার পরিমাণ (BDT)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs font-semibold">
+                  {/* Revenue Row 1 */}
+                  <tr className="bg-emerald-50/40">
+                    <td className="py-3 px-4 text-slate-900 font-bold">বিক্রয় ইনভয়েস হতে সংগৃহীত টাকা (Sales Invoices Collection)</td>
+                    <td className="py-3 px-4 text-center text-emerald-700 font-bold">INCOME (+ A)</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-emerald-800 font-mono">৳{incomeExpensesMetrics.paidInvoicesVal.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Revenue Row 2 */}
+                  <tr className="bg-emerald-50/40">
+                    <td className="py-3 px-4 text-slate-900 font-bold">ফিল্ড সার্ভিস ও মেমো বিল পরিশোধ (Field Dispatches Payment)</td>
+                    <td className="py-3 px-4 text-center text-emerald-700 font-bold">INCOME (+ B)</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-emerald-800 font-mono">৳{incomeExpensesMetrics.paidDispatchesVal.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Subtotal Income */}
+                  <tr className="bg-emerald-100/70 border-t-2 border-emerald-300 font-extrabold">
+                    <td className="py-3.5 px-4 text-emerald-950 font-black uppercase tracking-wider">সর্বমোট ব্যবসায়িক আয় (TOTAL INCOME / REVENUE)</td>
+                    <td className="py-3.5 px-4 text-center text-emerald-900">TOTAL INFLOW</td>
+                    <td className="py-3.5 px-4 text-right font-black text-emerald-900 font-mono text-sm">৳{incomeExpensesMetrics.totalIncome.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Expense Row 1 */}
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-3 px-4 text-slate-800 font-bold">শোরুম পরিচালনা, বিদ্যুৎ বিল, ভাড়া ও আপ্যায়ন (Showroom & Utilities Expense)</td>
+                    <td className="py-3 px-4 text-center text-amber-700 font-bold">EXPENSE (- 1)</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-slate-900 font-mono">৳{incomeExpensesMetrics.showroomExpensesVal.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Expense Row 2 */}
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-3 px-4 text-slate-800 font-bold">পার্টস ও মালামাল ক্রয় বাবদ খরচ (Stock Purchases Inward Cost)</td>
+                    <td className="py-3 px-4 text-center text-amber-700 font-bold">EXPENSE (- 2)</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-slate-900 font-mono">৳{incomeExpensesMetrics.purchasesCostVal.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Expense Row 3 */}
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-3 px-4 text-slate-800 font-bold">টেকনিশিয়ানদের অনসাইট ফিল্ড যাতায়াত ও খাবার খরচ (Field Service Conveyance)</td>
+                    <td className="py-3 px-4 text-center text-amber-700 font-bold">EXPENSE (- 3)</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-slate-900 font-mono">৳{incomeExpensesMetrics.fieldExpensesVal.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Subtotal Operating Expenses */}
+                  <tr className="bg-amber-50 border-t-2 border-amber-300 font-extrabold">
+                    <td className="py-3.5 px-4 text-amber-950 font-black uppercase tracking-wider">সর্বমোট পরিচালন খরচ (TOTAL OPERATING EXPENSES)</td>
+                    <td className="py-3.5 px-4 text-center text-amber-900">OPERATING OUTFLOW</td>
+                    <td className="py-3.5 px-4 text-right font-black text-amber-900 font-mono text-sm">৳{incomeExpensesMetrics.totalOperatingExpenses.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Operating Profit before Owner Draw */}
+                  <tr className="bg-blue-50 border-t border-b border-blue-200 font-extrabold">
+                    <td className="py-3.5 px-4 text-blue-950 font-black uppercase tracking-wider">ব্যবসায়িক নিট পরিচালন লাভ (NET OPERATING PROFIT BEFORE DRAW)</td>
+                    <td className="py-3.5 px-4 text-center text-blue-900">INCOME - EXPENSES</td>
+                    <td className="py-3.5 px-4 text-right font-black text-blue-950 font-mono text-sm">৳{incomeExpensesMetrics.netProfitBeforeDraw.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Owner's Draw Row */}
+                  <tr className="bg-rose-50/60">
+                    <td className="py-3 px-4 text-rose-950 font-black">মালিকের ব্যক্তিগত খরচ বা উত্তোলন (OWNER'S PERSONAL DRAWINGS)</td>
+                    <td className="py-3 px-4 text-center text-rose-800 font-bold">OWNER DRAW (- 4)</td>
+                    <td className="py-3 px-4 text-right font-black text-rose-700 font-mono text-sm">৳{incomeExpensesMetrics.ownerDrawingsVal.toLocaleString()}</td>
+                  </tr>
+
+                  {/* Final Net Cash Retained */}
+                  <tr className="bg-slate-900 text-white font-extrabold border-t-2 border-slate-950">
+                    <td className="py-4 px-4 font-black text-white text-xs uppercase tracking-wider">
+                      উত্তোলনের পর অবশিষ্ট নিট নগদ তহবিল (NET SURPLUS CASH FLOW)
+                    </td>
+                    <td className="py-4 px-4 text-center text-slate-300 text-xs">FINAL CASH BALANCE</td>
+                    <td className={`py-4 px-4 text-right font-black text-base font-mono ${incomeExpensesMetrics.netRetainedCash >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      ৳{incomeExpensesMetrics.netRetainedCash.toLocaleString()}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab 1: Sales Summary & Trends */}
       {activeReportTab === 'sales' && (

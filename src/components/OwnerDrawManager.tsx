@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Expense, StaffUser, BusinessSettings, ExpensePaymentMethod } from '../types';
+import { Expense, StaffUser, BusinessSettings, ExpensePaymentMethod, Document, FieldDispatch, Purchase } from '../types';
 import { 
-  DollarSign, 
+  UserCheck, 
   PlusCircle, 
   Search, 
   Calendar, 
@@ -10,23 +10,25 @@ import {
   Trash2, 
   Edit3, 
   Wallet, 
-  TrendingUp, 
   Clock, 
-  Filter, 
   CheckCircle2, 
-  Receipt, 
-  Building, 
-  Car, 
-  Coffee, 
-  Package, 
-  Wrench, 
-  Printer as PrintIcon, 
   AlertCircle,
-  FileText
+  TrendingUp,
+  DollarSign,
+  ArrowUpRight,
+  ArrowDownRight,
+  Coins,
+  Receipt,
+  Building,
+  ShieldCheck,
+  Filter
 } from 'lucide-react';
 
-interface ExpenseManagerProps {
+interface OwnerDrawManagerProps {
   expenses: Expense[];
+  documents: Document[];
+  dispatches: FieldDispatch[];
+  purchases: Purchase[];
   staffUsers: StaffUser[];
   currentUser: StaffUser | null;
   settings: BusinessSettings;
@@ -34,32 +36,22 @@ interface ExpenseManagerProps {
   onDeleteExpense: (id: string) => Promise<void> | void;
 }
 
-export const EXPENSE_CATEGORIES = [
-  { name: 'Office Rent & Utilities', icon: Building, color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  { name: 'Staff Salary & Allowances', icon: Wallet, color: 'text-purple-600 bg-purple-50 border-purple-200' },
-  { name: 'Conveyance & Transportation', icon: Car, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  { name: 'Office Tea, Snacks & Entertainment', icon: Coffee, color: 'text-orange-600 bg-orange-50 border-orange-200' },
-  { name: 'Shipping & Courier', icon: Package, color: 'text-teal-600 bg-teal-50 border-teal-200' },
-  { name: 'Repair & Maintenance', icon: Wrench, color: 'text-rose-600 bg-rose-50 border-rose-200' },
-  { name: "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)", icon: AlertCircle, color: 'text-rose-800 bg-rose-100 border-rose-300 font-bold' },
-  { name: 'Marketing & Advertising', icon: TrendingUp, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
-  { name: 'Stationery & Printing', icon: PrintIcon, color: 'text-cyan-600 bg-cyan-50 border-cyan-200' },
-  { name: 'Bank Charges & Taxes', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-  { name: 'Miscellaneous / Other Expenses', icon: FileText, color: 'text-slate-600 bg-slate-100 border-slate-200' },
-];
+export const OWNER_DRAW_CATEGORY = "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)";
 
-export default function ExpenseManager({
+export default function OwnerDrawManager({
   expenses,
+  documents,
+  dispatches,
+  purchases,
   staffUsers,
   currentUser,
   settings,
   onSaveExpense,
   onDeleteExpense
-}: ExpenseManagerProps) {
+}: OwnerDrawManagerProps) {
   // Filters & State
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('ALL');
+  const [selectedMethod, setSelectedMethod] = useState<string>('ALL');
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'LAST_MONTH'>('ALL');
 
   // Modal State
@@ -68,11 +60,10 @@ export default function ExpenseManager({
 
   // Form State
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0].name);
   const [amount, setAmount] = useState<number | ''>('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethod>('Cash');
-  const [paidBy, setPaidBy] = useState(() => currentUser?.name || 'MD MAHI UDDIN');
+  const [paidBy, setPaidBy] = useState(() => currentUser?.name || 'MD MAHI UDDIN (Owner)');
   const [referenceNo, setReferenceNo] = useState('');
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState('');
@@ -81,28 +72,29 @@ export default function ExpenseManager({
   // Print Summary State
   const [isPrintSummaryOpen, setIsPrintSummaryOpen] = useState(false);
 
-  // Filtered Expenses
-  const filteredExpenses = useMemo(() => {
+  // All Owner Drawings Expenses
+  const ownerDrawingsList = useMemo(() => {
+    return expenses.filter(e => e.category === OWNER_DRAW_CATEGORY);
+  }, [expenses]);
+
+  // Filtered List
+  const filteredDrawings = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
 
-    return expenses.filter(exp => {
+    return ownerDrawingsList.filter(exp => {
       // Search
       const term = searchQuery.toLowerCase();
       const matchSearch = 
         exp.expenseNumber.toLowerCase().includes(term) ||
         exp.title.toLowerCase().includes(term) ||
-        exp.category.toLowerCase().includes(term) ||
         (exp.paidBy && exp.paidBy.toLowerCase().includes(term)) ||
         (exp.referenceNo && exp.referenceNo.toLowerCase().includes(term));
 
-      // Category
-      const matchCategory = selectedCategory === 'ALL' || exp.category === selectedCategory;
-
       // Payment method
-      const matchMethod = selectedPaymentMethod === 'ALL' || exp.paymentMethod === selectedPaymentMethod;
+      const matchMethod = selectedMethod === 'ALL' || exp.paymentMethod === selectedMethod;
 
       // Date Range
       let matchDate = true;
@@ -122,106 +114,130 @@ export default function ExpenseManager({
         matchDate = expDate.getFullYear() === lastMonthYear && expDate.getMonth() === lastMonth;
       }
 
-      return matchSearch && matchCategory && matchMethod && matchDate;
+      return matchSearch && matchMethod && matchDate;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [expenses, searchQuery, selectedCategory, selectedPaymentMethod, dateFilter]);
+  }, [ownerDrawingsList, searchQuery, selectedMethod, dateFilter]);
 
-  // Aggregate Metrics
-  const metrics = useMemo(() => {
+  // Aggregate Business Financial Metrics (Total Income vs Various Expenses vs Owner's Drawings)
+  const financialSummary = useMemo(() => {
+    // 1. Total Income from Paid Invoices
+    const paidInvoicesIncome = documents
+      .filter(d => (d.type === 'INVOICE' || d.type === 'BILL'))
+      .reduce((sum, d) => {
+        if (d.paidAmount !== undefined) return sum + d.paidAmount;
+        return d.status === 'Paid' ? sum + d.total : 0;
+      }, 0);
+
+    // 2. Field Service Dispatches Income
+    const fieldDispatchesIncome = dispatches.reduce((sum, d) => sum + (Number(d.paidAmount) || 0), 0);
+
+    const totalIncome = paidInvoicesIncome + fieldDispatchesIncome;
+
+    // 3. Operational Showroom Expenses (Excluding Owner Drawings)
+    const showroomExpenses = expenses
+      .filter(e => e.category !== OWNER_DRAW_CATEGORY)
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    // 4. Stock Inward Purchases Expenses
+    const purchaseExpenses = purchases.reduce((sum, p) => sum + (Number(p.paidAmount) || 0), 0);
+
+    // 5. Field Service Travel Expenses
+    const fieldServiceExpenses = dispatches.reduce((sum, d) => sum + (Number(d.expenseAmount) || 0), 0);
+
+    const totalOperatingExpenses = showroomExpenses + purchaseExpenses + fieldServiceExpenses;
+
+    // 6. Net Operating Profit before Owner Drawings
+    const operatingProfit = totalIncome - totalOperatingExpenses;
+
+    // 7. Owner's Total Drawings
+    const totalOwnerDrawings = ownerDrawingsList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    // 8. Net Retained Cash Balance
+    const netRetainedCash = operatingProfit - totalOwnerDrawings;
+
+    // Today & Month Owner Draw totals
     const todayStr = new Date().toISOString().split('T')[0];
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
 
-    const totalExpense = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-
-    const todayExpense = expenses
+    const todayDraw = ownerDrawingsList
       .filter(e => e.date === todayStr)
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-    const thisMonthExpense = expenses
+    const thisMonthDraw = ownerDrawingsList
       .filter(e => {
         const d = new Date(e.date);
         return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
       })
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-    // Group by category to find top category
-    const catMap: Record<string, number> = {};
-    expenses.forEach(e => {
-      catMap[e.category] = (catMap[e.category] || 0) + (Number(e.amount) || 0);
-    });
-
-    let topCat = 'None';
-    let topCatAmt = 0;
-    Object.entries(catMap).forEach(([cat, amt]) => {
-      if (amt > topCatAmt) {
-        topCatAmt = amt;
-        topCat = cat;
-      }
-    });
-
     return {
-      totalExpense,
-      todayExpense,
-      thisMonthExpense,
-      topCat,
-      topCatAmt,
-      filteredTotal: filteredExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+      totalIncome,
+      paidInvoicesIncome,
+      fieldDispatchesIncome,
+      showroomExpenses,
+      purchaseExpenses,
+      fieldServiceExpenses,
+      totalOperatingExpenses,
+      operatingProfit,
+      totalOwnerDrawings,
+      netRetainedCash,
+      todayDraw,
+      thisMonthDraw,
+      filteredTotal: filteredDrawings.reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
     };
-  }, [expenses, filteredExpenses]);
+  }, [documents, dispatches, expenses, purchases, ownerDrawingsList, filteredDrawings]);
 
-  // Open Create Modal
+  // Open Modal Create
   const handleOpenCreate = () => {
     setEditingExpense(null);
-    setTitle('');
-    setCategory(EXPENSE_CATEGORIES[0].name);
+    setTitle('মালিকের প্রয়োজনীয় ব্যক্তিগত নগদ উত্তোলন');
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setPaymentMethod('Cash');
-    setPaidBy(currentUser?.name || 'MD MAHI UDDIN');
+    setPaidBy(currentUser?.name || 'MD MAHI UDDIN (Owner)');
     setReferenceNo('');
     setNotes('');
     setFormError('');
     setIsModalOpen(true);
   };
 
-  // Open Edit Modal
+  // Open Modal Edit
   const handleOpenEdit = (exp: Expense) => {
     setEditingExpense(exp);
     setTitle(exp.title);
-    setCategory(exp.category);
     setAmount(exp.amount);
     setDate(exp.date);
     setPaymentMethod(exp.paymentMethod);
-    setPaidBy(exp.paidBy || currentUser?.name || 'MD MAHI UDDIN');
+    setPaidBy(exp.paidBy || currentUser?.name || 'MD MAHI UDDIN (Owner)');
     setReferenceNo(exp.referenceNo || '');
     setNotes(exp.notes || '');
     setFormError('');
     setIsModalOpen(true);
   };
 
-  // Submit Handler
+  // Form Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
 
     if (!title.trim()) {
-      setFormError('Please enter an expense title / description.');
+      setFormError('উত্তোলনের বিবরণ বা কারণ লিখুন (Enter description).');
       return;
     }
     if (!amount || Number(amount) <= 0) {
-      setFormError('Please enter a valid expense amount greater than 0.');
+      setFormError('সঠিক টাকার পরিমাণ দিন (Enter valid amount).');
       return;
     }
 
     setIsSubmitting(true);
     try {
       const expenseItem: Expense = {
-        id: editingExpense?.id || `exp-${Date.now()}`,
-        expenseNumber: editingExpense?.expenseNumber || `EXP/${new Date().getFullYear()}/${String(expenses.length + 1).padStart(3, '0')}`,
+        id: editingExpense?.id || `draw-${Date.now()}`,
+        expenseNumber: editingExpense?.expenseNumber || `DRAW/${new Date().getFullYear()}/${String(ownerDrawingsList.length + 1).padStart(3, '0')}`,
         date,
-        category,
+        category: OWNER_DRAW_CATEGORY,
         title: title.trim(),
         amount: Number(amount),
         paymentMethod,
@@ -235,68 +251,46 @@ export default function ExpenseManager({
       await onSaveExpense(expenseItem);
       setIsModalOpen(false);
     } catch (err: any) {
-      setFormError(err.message || 'Failed to save expense');
+      setFormError(err.message || 'উত্তোলন সংরক্ষণ করতে ব্যর্থ হয়েছে');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Download CSV
+  // CSV Export
   const handleDownloadCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Voucher No,Date,Category,Expense Description,Amount (BDT),Payment Method,Paid By,Reference / Memo No,Notes\n";
+    csvContent += "Voucher No,Date,Withdrawal Purpose / Title,Amount (BDT),Payment Method,Drawn By,Reference,Notes\n";
 
-    filteredExpenses.forEach(exp => {
-      csvContent += `"${exp.expenseNumber}","${exp.date}","${exp.category}","${exp.title.replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${(exp.notes || '').replace(/"/g, '""')}"\n`;
+    filteredDrawings.forEach(exp => {
+      csvContent += `"${exp.expenseNumber}","${exp.date}","${exp.title.replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${(exp.notes || '').replace(/"/g, '""')}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `hitachisolutioncenter-expenses-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `hitachisolutioncenter-owner-drawings-${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Category badge helper
-  const getCategoryBadge = (catName: string) => {
-    const found = EXPENSE_CATEGORIES.find(c => c.name === catName);
-    return found?.color || 'text-slate-700 bg-slate-100 border-slate-200';
-  };
-
-  // Payment method badge helper
-  const getMethodBadge = (method: ExpensePaymentMethod) => {
-    switch (method) {
-      case 'Cash':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'Bank Transfer':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'bKash/Nagad':
-        return 'bg-pink-100 text-pink-800 border-pink-200';
-      case 'Cheque':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
-      default:
-        return 'bg-slate-100 text-slate-800 border-slate-200';
-    }
-  };
-
   return (
     <div className="space-y-6 text-xs animate-fade-in">
       
-      {/* Top Header Card */}
+      {/* Top Header Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-rose-50 text-rose-700 rounded-xl border border-rose-200">
-              <Wallet className="w-5 h-5" />
+            <div className="p-2.5 bg-rose-100 text-rose-800 rounded-xl border border-rose-300">
+              <UserCheck className="w-6 h-6" />
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-900 font-display">
-                Showroom & Daily Expenses (দৈনন্দিন খরচ ও ব্যয়)
+                মালিকের ব্যক্তিগত খরচ বা উত্তোলন (Owner's Personal Expenses & Drawings)
               </h2>
-              <p className="text-slate-400 text-[11px]">
-                Track showroom overheads, utilities, staff conveyance, courier, and miscellaneous operational costs.
+              <p className="text-slate-500 text-[11px]">
+                ব্যবসায়িক পরিচালন খরচের বাইরে মালিকের পারিবারিক প্রয়োজন, নিজস্ব গাড়ি ও ব্যক্তিগত উত্তোলন আলাদাভাবে ট্র্যাক করুন।
               </p>
             </div>
           </div>
@@ -307,16 +301,15 @@ export default function ExpenseManager({
           <button
             onClick={() => setIsPrintSummaryOpen(true)}
             className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Print Expense Summary"
+            title="Print Statement"
           >
             <Printer className="w-4 h-4 text-slate-600" />
-            Print Summary
+            প্রিন্ট বিবরণী (Print Statement)
           </button>
 
           <button
             onClick={handleDownloadCSV}
             className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Export CSV"
           >
             <Download className="w-4 h-4 text-blue-700" />
             Export CSV
@@ -327,104 +320,161 @@ export default function ExpenseManager({
             className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            + New Expense (নতুন খরচ এন্ট্রি)
+            + নতুন উত্তোলন এন্ট্রি (Add Owner Draw)
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total All-Time Expenses */}
+      {/* COMPREHENSIVE P&L FINANCIAL BALANCE SUMMARY BAR (টোটাল ইনকাম - বিভিন্ন ধরণের খরচ - মালিকের উত্তোলন) */}
+      <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-lg border border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+          <div className="flex items-center gap-2">
+            <Coins className="w-5 h-5 text-amber-400" />
+            <h3 className="font-extrabold text-sm font-display text-white">
+              হিসাব সংক্ষেপ: টোটাল ইনকাম - বিভিন্ন ধরণের খরচ - মালিকের উত্তোলন
+            </h3>
+          </div>
+          <span className="text-[10px] bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-mono border border-slate-700">
+            Real-Time Cash & Profit Reconciliation
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Total Business Income */}
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-400">১. টোটাল ইনকাম (Total Income)</span>
+              <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="text-xl font-black font-display text-emerald-300">
+              ৳{financialSummary.totalIncome.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-slate-400">
+              বিক্রয় ইনভয়েস: ৳{financialSummary.paidInvoicesIncome.toLocaleString()} + ফিল্ড সেবা: ৳{financialSummary.fieldDispatchesIncome.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Card 2: Various Operating Expenses */}
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="font-bold text-[10px] uppercase tracking-wider text-amber-400">২. পরিচালন খরচ (Operating Expenses)</span>
+              <ArrowDownRight className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="text-xl font-black font-display text-amber-300">
+              ৳{financialSummary.totalOperatingExpenses.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-slate-400">
+              শোরুম খরচ: ৳{financialSummary.showroomExpenses.toLocaleString()} + মালামাল ক্রয়: ৳{financialSummary.purchaseExpenses.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Card 3: Owner's Drawings */}
+          <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="font-bold text-[10px] uppercase tracking-wider text-rose-400">৩. মালিকের উত্তোলন (Owner's Draw)</span>
+              <UserCheck className="w-4 h-4 text-rose-400" />
+            </div>
+            <div className="text-xl font-black font-display text-rose-300">
+              ৳{financialSummary.totalOwnerDrawings.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-slate-400">
+              চলতি মাসে উত্তোলন: ৳{financialSummary.thisMonthDraw.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Card 4: Net Surplus Balance */}
+          <div className="bg-slate-950 border border-emerald-500/30 rounded-xl p-4 space-y-1.5">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="font-bold text-[10px] uppercase tracking-wider text-blue-300">৪. অবশিষ্ট তহবিল (Net Cash Flow)</span>
+              <Wallet className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className={`text-xl font-black font-display ${financialSummary.netRetainedCash >= 0 ? 'text-blue-300' : 'text-rose-400'}`}>
+              ৳{financialSummary.netRetainedCash.toLocaleString()}
+            </div>
+            <p className="text-[10px] text-emerald-400 font-semibold">
+              ইনকাম হতে সকল খরচ ও উত্তোলন বাদ দিয়ে অবশিষ্ট
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards Grid for Owner's Drawings Specifics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Total Draw All Time */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">Total Expenses (সর্বমোট ব্যয়)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">সর্বমোট উত্তোলন (Total All-Time Draw)</span>
             <div className="p-1.5 bg-rose-50 text-rose-700 rounded-lg">
-              <DollarSign className="w-4 h-4" />
+              <Coins className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-xl font-extrabold text-slate-900 font-display">
-            ৳{metrics.totalExpense.toLocaleString()}
+          <div className="text-xl font-extrabold text-rose-800 font-display">
+            ৳{financialSummary.totalOwnerDrawings.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
-            Across {expenses.length} recorded voucher entries
+            মোট {ownerDrawingsList.length} টি উত্তোলন ভাউচার সম্পন্ন
           </p>
         </div>
 
-        {/* Card 2: This Month's Expenses */}
+        {/* This Month Draw */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">This Month (চলতি মাস)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">চলতি মাসের উত্তোলন (This Month)</span>
             <div className="p-1.5 bg-blue-50 text-blue-700 rounded-lg">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-blue-900 font-display">
-            ৳{metrics.thisMonthExpense.toLocaleString()}
+            ৳{financialSummary.thisMonthDraw.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
-            Total operational costs this calendar month
+            চলতি ক্যালেণ্ডার মাসের মোট উত্তোলন
           </p>
         </div>
 
-        {/* Card 3: Today's Expenses */}
+        {/* Today's Draw */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">Today's Expense (আজকের খরচ)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">আজকের উত্তোলন (Today's Draw)</span>
             <div className="p-1.5 bg-amber-50 text-amber-700 rounded-lg">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-amber-800 font-display">
-            ৳{metrics.todayExpense.toLocaleString()}
+            ৳{financialSummary.todayDraw.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
-            Today's petty cash & direct payments
-          </p>
-        </div>
-
-        {/* Card 4: Top Expense Category */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">Top Category (সর্বোচ্চ খাত)</span>
-            <div className="p-1.5 bg-purple-50 text-purple-700 rounded-lg">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-sm font-extrabold text-slate-800 truncate" title={metrics.topCat}>
-            {metrics.topCat}
-          </div>
-          <p className="text-[10px] text-purple-700 font-bold">
-            ৳{metrics.topCatAmt.toLocaleString()} spent
+            আজকের নগদ বা পেটি ক্যাশ ব্যক্তিগত উত্তোলন
           </p>
         </div>
       </div>
 
-      {/* Search, Filter Toolbar & Category Pills */}
+      {/* Search & Filter Toolbar */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-          {/* Search box */}
+          {/* Search */}
           <div className="sm:col-span-6 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search voucher #, title, reference no, or staff..."
+              placeholder="Search voucher #, purpose / title, reference, or notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:bg-white focus:outline-hidden"
             />
           </div>
 
-          {/* Payment Method filter */}
+          {/* Payment Method */}
           <div className="sm:col-span-3">
             <select
-              value={selectedPaymentMethod}
-              onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+              value={selectedMethod}
+              onChange={(e) => setSelectedMethod(e.target.value)}
               className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-hidden cursor-pointer"
             >
               <option value="ALL">All Payment Methods</option>
               <option value="Cash">Cash (নগদ)</option>
               <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
-              <option value="bKash/Nagad">bKash/Nagad (মোবাইল ব্যাংকিং)</option>
+              <option value="bKash/Nagad">bKash/Nagad (বিকাশ/নগদ)</option>
               <option value="Cheque">Cheque (চেক)</option>
             </select>
           </div>
@@ -436,61 +486,24 @@ export default function ExpenseManager({
               onChange={(e) => setDateFilter(e.target.value as any)}
               className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-hidden cursor-pointer"
             >
-              <option value="ALL">All Time (সব সময়)</option>
-              <option value="TODAY">Today Only (আজকের খরচ)</option>
+              <option value="ALL">All Time (সব সময়)</option>
+              <option value="TODAY">Today Only (আজকের উত্তোলন)</option>
               <option value="THIS_WEEK">This Week (এই সপ্তাহ)</option>
               <option value="THIS_MONTH">This Month (চলতি মাস)</option>
               <option value="LAST_MONTH">Last Month (গত মাস)</option>
             </select>
           </div>
         </div>
-
-        {/* Category Pills */}
-        <div className="border-t border-slate-100 pt-3 flex flex-wrap gap-1.5 items-center">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1">
-            <Filter className="w-3 h-3" /> Categories:
-          </span>
-
-          <button
-            onClick={() => setSelectedCategory('ALL')}
-            className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-              selectedCategory === 'ALL'
-                ? 'bg-slate-900 text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            All Categories ({expenses.length})
-          </button>
-
-          {EXPENSE_CATEGORIES.map(cat => {
-            const count = expenses.filter(e => e.category === cat.name).length;
-            if (count === 0 && selectedCategory !== cat.name) return null;
-            return (
-              <button
-                key={cat.name}
-                onClick={() => setSelectedCategory(cat.name)}
-                className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
-                  selectedCategory === cat.name
-                    ? 'bg-rose-700 text-white border-rose-700 shadow-2xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <span>{cat.name}</span>
-                <span className="text-[9px] opacity-75 font-mono">({count})</span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
-      {/* Main Expense Table */}
+      {/* Main Table */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <span className="font-bold text-slate-700">
-            Showing {filteredExpenses.length} Expense Records
+            Showing {filteredDrawings.length} Owner Draw Records
           </span>
           <span className="font-extrabold text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-            Filtered Total: ৳{metrics.filteredTotal.toLocaleString()}
+            Filtered Total Draw: ৳{financialSummary.filteredTotal.toLocaleString()}
           </span>
         </div>
 
@@ -499,22 +512,22 @@ export default function ExpenseManager({
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <th className="py-3 px-4">Voucher No. / Date</th>
-                <th className="py-3 px-3">Category (খাত)</th>
-                <th className="py-3 px-3">Description / Title</th>
-                <th className="py-3 px-3">Paid By / Ref</th>
-                <th className="py-3 px-3 text-center">Payment Method</th>
+                <th className="py-3 px-3">Withdrawal Purpose / Title (উদ্দেশ্য)</th>
+                <th className="py-3 px-3">Drawn By / Paid To</th>
+                <th className="py-3 px-3 text-center">Method</th>
+                <th className="py-3 px-3">Memo / Ref No.</th>
                 <th className="py-3 px-4 text-right">Amount (BDT)</th>
                 <th className="py-3 px-3 text-center w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredExpenses.length > 0 ? (
-                filteredExpenses.map(exp => (
+              {filteredDrawings.length > 0 ? (
+                filteredDrawings.map(exp => (
                   <tr key={exp.id} className="hover:bg-slate-50/60 transition-colors">
                     {/* Voucher No & Date */}
                     <td className="py-3 px-4">
                       <div className="space-y-0.5">
-                        <span className="font-extrabold text-slate-900 block font-mono text-xs">
+                        <span className="font-extrabold text-rose-900 block font-mono text-xs">
                           {exp.expenseNumber}
                         </span>
                         <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
@@ -522,13 +535,6 @@ export default function ExpenseManager({
                           {exp.date}
                         </span>
                       </div>
-                    </td>
-
-                    {/* Category */}
-                    <td className="py-3 px-3">
-                      <span className={`inline-block font-bold text-[10px] px-2 py-0.5 rounded-md border ${getCategoryBadge(exp.category)}`}>
-                        {exp.category}
-                      </span>
                     </td>
 
                     {/* Title & Notes */}
@@ -545,25 +551,21 @@ export default function ExpenseManager({
                       </div>
                     </td>
 
-                    {/* Paid By & Reference */}
-                    <td className="py-3 px-3">
-                      <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-800 block text-[11px]">
-                          {exp.paidBy || 'Office Cash'}
-                        </span>
-                        {exp.referenceNo && (
-                          <span className="text-[9px] font-mono text-slate-500 bg-slate-100 px-1 py-0.5 rounded inline-block">
-                            Ref: {exp.referenceNo}
-                          </span>
-                        )}
-                      </div>
+                    {/* Paid By */}
+                    <td className="py-3 px-3 font-semibold text-slate-800">
+                      {exp.paidBy || 'MD MAHI UDDIN (Owner)'}
                     </td>
 
-                    {/* Payment Method */}
+                    {/* Method */}
                     <td className="py-3 px-3 text-center">
-                      <span className={`inline-block font-bold text-[10px] px-2 py-0.5 rounded-full border ${getMethodBadge(exp.paymentMethod)}`}>
+                      <span className="inline-block font-bold text-[10px] px-2 py-0.5 rounded-full border bg-rose-50 text-rose-800 border-rose-200">
                         {exp.paymentMethod}
                       </span>
+                    </td>
+
+                    {/* Ref */}
+                    <td className="py-3 px-3 font-mono text-slate-500 text-[10px]">
+                      {exp.referenceNo || 'N/A'}
                     </td>
 
                     {/* Amount */}
@@ -579,18 +581,18 @@ export default function ExpenseManager({
                         <button
                           onClick={() => handleOpenEdit(exp)}
                           className="p-1.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors cursor-pointer"
-                          title="Edit expense"
+                          title="Edit draw"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete expense "${exp.title}" (৳${exp.amount.toLocaleString()})?`)) {
+                            if (window.confirm(`Are you sure you want to delete owner draw record "${exp.title}" (৳${exp.amount.toLocaleString()})?`)) {
                               onDeleteExpense(exp.id);
                             }
                           }}
                           className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                          title="Delete expense"
+                          title="Delete draw"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -601,7 +603,7 @@ export default function ExpenseManager({
               ) : (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-slate-400 italic">
-                    {searchQuery ? 'No expenses matched your filter criteria.' : 'No expenses recorded yet. Click "+ New Expense" to log your first expenditure.'}
+                    {searchQuery ? 'No owner drawings matched your search filter.' : 'No owner personal expenses or drawings recorded yet. Click "+ নতুন উত্তোলন এন্ট্রি" above to log.'}
                   </td>
                 </tr>
               )}
@@ -610,21 +612,21 @@ export default function ExpenseManager({
         </div>
       </div>
 
-      {/* ADD / EDIT EXPENSE MODAL */}
+      {/* ADD / EDIT OWNER DRAW MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-lg w-full border border-slate-200 shadow-2xl p-6 space-y-4 my-8 animate-scale-up">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
-                  <Wallet className="w-4 h-4" />
+                  <UserCheck className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    {editingExpense ? 'Modify Expense Voucher' : 'Record New Showroom Expense (নতুন খরচ এন্ট্রি)'}
+                    {editingExpense ? 'মালিকের উত্তোলন সংশোধন' : 'মালিকের ব্যক্তিগত খরচ বা উত্তোলন এন্ট্রি (Owner Draw)'}
                   </h3>
                   <p className="text-[10px] text-slate-400">
-                    {editingExpense ? `Updating Voucher #${editingExpense.expenseNumber}` : 'Log daily operational, utility, travel, or office costs'}
+                    শোরুম বা ব্যাংক একাউন্ট থেকে মালিকের ব্যক্তিগত নগদ উত্তোলন বা পারিবারিক খরচ যুক্ত করুন
                   </p>
                 </div>
               </div>
@@ -645,27 +647,13 @@ export default function ExpenseManager({
             )}
 
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
-              {/* Category */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Expense Category (খরচের খাত)</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-bold text-slate-800 focus:outline-hidden"
-                >
-                  {EXPENSE_CATEGORIES.map(c => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
               {/* Title / Description */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Expense Title / Description (খরচের বিবরণ)</label>
+                <label className="font-bold text-slate-700">উত্তোলনের উদ্দেশ্য / বিবরণ (Withdrawal Purpose / Title)</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Showroom Electricity Bill, Compressor delivery transport, etc."
+                  placeholder="যেমন: মালিকের ব্যক্তিগত প্রয়োজনীয় নগদ উত্তোলন, পারিবারিক খরচ, নিজস্ব গাড়ি ফুয়েল ইত্যাদি"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold focus:bg-white focus:outline-hidden"
@@ -675,7 +663,7 @@ export default function ExpenseManager({
               {/* Amount & Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Amount (খরচের পরিমাণ ৳)</label>
+                  <label className="font-bold text-slate-700">উত্তোলনের পরিমাণ (Amount ৳)</label>
                   <input
                     type="number"
                     min={1}
@@ -688,7 +676,7 @@ export default function ExpenseManager({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Date (তারিখ)</label>
+                  <label className="font-bold text-slate-700">তারিখ (Date)</label>
                   <input
                     type="date"
                     required
@@ -702,26 +690,26 @@ export default function ExpenseManager({
               {/* Payment Method & Paid By */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Payment Method (পরিশোধের মাধ্যম)</label>
+                  <label className="font-bold text-slate-700">গ্রহণের মাধ্যম (Withdrawal Method)</label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as ExpensePaymentMethod)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold text-slate-800 focus:outline-hidden"
                   >
-                    <option value="Cash">Cash (নগদ)</option>
-                    <option value="Bank Transfer">Bank Transfer (ব্যাংক একাউন্ট)</option>
+                    <option value="Cash">Cash (নগদ ক্যাশ)</option>
+                    <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
                     <option value="bKash/Nagad">bKash / Nagad (বিকাশ / নগদ)</option>
                     <option value="Cheque">Cheque (চেক)</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Paid By / Spender (প্রদানকারী)</label>
+                  <label className="font-bold text-slate-700">উত্তোলনকারী (Drawn By / Owner Name)</label>
                   <input
                     type="text"
                     value={paidBy}
                     onChange={(e) => setPaidBy(e.target.value)}
-                    placeholder="e.g. Staff or Manager name"
+                    placeholder="MD MAHI UDDIN (Owner)"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold focus:bg-white focus:outline-hidden"
                   />
                 </div>
@@ -729,10 +717,10 @@ export default function ExpenseManager({
 
               {/* Reference / Voucher No. */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Money Receipt / Voucher / Memo Ref (মেমো বা ভাউচার নম্বর)</label>
+                <label className="font-bold text-slate-700">মেমো / ব্যাংক লেনদেন রেফারেন্স (Ref / Cheque / Txn ID)</label>
                 <input
                   type="text"
-                  placeholder="e.g. SA-9821, CHQ-481940, CASH-MEMO-44"
+                  placeholder="e.g. CASH-DRAW-01, CHQ-99214"
                   value={referenceNo}
                   onChange={(e) => setReferenceNo(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-semibold focus:bg-white focus:outline-hidden"
@@ -741,12 +729,12 @@ export default function ExpenseManager({
 
               {/* Notes */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Remarks / Internal Notes (অতিরিক্ত নোট)</label>
+                <label className="font-bold text-slate-700">অতিরিক্ত নোট বা মন্তব্য (Remarks)</label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any extra context or supplier details..."
+                  placeholder="যেমন: ঘর ভাড়া, চিকিৎসা খরচ বা ব্যক্তিগত ক্রয়..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold focus:bg-white focus:outline-hidden"
                 />
               </div>
@@ -766,7 +754,7 @@ export default function ExpenseManager({
                   className="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  {isSubmitting ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Save Expense (সংরক্ষণ করুন)')}
+                  {isSubmitting ? 'Saving...' : (editingExpense ? 'আপডেট করুন' : 'উত্তোলন সংরক্ষণ করুন')}
                 </button>
               </div>
             </form>
@@ -774,7 +762,7 @@ export default function ExpenseManager({
         </div>
       )}
 
-      {/* PRINTABLE EXPENSE SUMMARY MODAL */}
+      {/* PRINTABLE OWNER DRAWINGS STATEMENT MODAL */}
       {isPrintSummaryOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
@@ -785,10 +773,10 @@ export default function ExpenseManager({
                 <Printer className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                 <div>
                   <h3 className="font-extrabold text-[11px] sm:text-xs text-white leading-tight">
-                    ব্যয় বিবরণী / Expense Statement & Audit Summary
+                    মালিকের উত্তোলন ও ব্যক্তিগত খরচ স্টেটমেন্ট (Owner's Drawings Statement)
                   </h3>
                   <p className="text-[9px] text-slate-400 hidden sm:block">
-                    বিবরণীটি কাস্টমারকে দিতে বা নিজের সংরক্ষণের জন্য প্রিন্ট করুন
+                    অফিসিয়াল হিসাব বিবরণী প্রিন্ট বা সংরক্ষণের জন্য ব্যবহার করুন
                   </p>
                 </div>
               </div>
@@ -809,7 +797,7 @@ export default function ExpenseManager({
               </div>
             </div>
 
-            {/* Print Content Area (scrollable body) */}
+            {/* Print Content Area */}
             <div id="printable-area" className="overflow-y-auto flex-1 p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-6">
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
                 <div>
@@ -818,7 +806,7 @@ export default function ExpenseManager({
                   <p className="text-[10px] text-slate-500 font-medium">Hotline: {settings.phone1 || '01715-994956'}</p>
                 </div>
                 <div className="text-right">
-                  <span className="font-black text-sm text-slate-950 uppercase tracking-widest block font-mono">OFFICIAL EXPENSE STATEMENT</span>
+                  <span className="font-black text-sm text-rose-950 uppercase tracking-widest block font-mono">OWNER'S DRAWINGS STATEMENT</span>
                   <span className="text-[10px] text-slate-400 block font-semibold">Generated: {new Date().toLocaleDateString('en-GB')}</span>
                 </div>
               </div>
@@ -826,16 +814,16 @@ export default function ExpenseManager({
               {/* Summary Stats */}
               <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-center">
                 <div>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Total Vouchers</span>
-                  <span className="text-sm font-extrabold text-slate-900 font-mono">{filteredExpenses.length}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Total Income</span>
+                  <span className="text-sm font-extrabold text-emerald-700 font-mono">৳{financialSummary.totalIncome.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Date Filter</span>
-                  <span className="text-sm font-extrabold text-slate-900 font-mono">{dateFilter}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Operating Expenses</span>
+                  <span className="text-sm font-extrabold text-amber-700 font-mono">৳{financialSummary.totalOperatingExpenses.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Total Expenditure</span>
-                  <span className="text-sm font-black text-rose-600 font-mono">৳{metrics.filteredTotal.toLocaleString()}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Owner Total Draw</span>
+                  <span className="text-sm font-black text-rose-600 font-mono">৳{financialSummary.filteredTotal.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -844,30 +832,28 @@ export default function ExpenseManager({
                 <table className="w-full text-left text-[11px] border-collapse">
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[9px]">
-                      <th className="py-2.5 px-3">SNo.</th>
+                      <th className="py-2.5 px-3">Voucher #</th>
                       <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Category</th>
-                      <th className="py-2.5 px-3">Title</th>
+                      <th className="py-2.5 px-3">Purpose / Title</th>
                       <th className="py-2.5 px-3">Method</th>
-                      <th className="py-2.5 px-3">Paid By</th>
+                      <th className="py-2.5 px-3">Drawn By</th>
                       <th className="py-2.5 px-3 text-right">Amount (BDT)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 font-medium text-slate-700">
-                    {filteredExpenses.map((exp) => (
+                    {filteredDrawings.map((exp) => (
                       <tr key={exp.id} className="hover:bg-slate-50/50">
                         <td className="py-2 px-3 font-mono font-bold text-slate-500 text-[10px]">{exp.expenseNumber}</td>
                         <td className="py-2 px-3 font-mono text-[10px]">{exp.date}</td>
-                        <td className="py-2 px-3 font-bold text-slate-900">{exp.category}</td>
-                        <td className="py-2 px-3 text-slate-600">{exp.title}</td>
+                        <td className="py-2 px-3 font-bold text-slate-900">{exp.title}</td>
                         <td className="py-2 px-3 text-slate-600 font-semibold">{exp.paymentMethod}</td>
                         <td className="py-2 px-3 text-slate-600">{exp.paidBy}</td>
-                        <td className="py-2 px-3 text-right font-black text-slate-900 font-mono">৳{exp.amount.toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right font-black text-rose-700 font-mono">৳{exp.amount.toLocaleString()}</td>
                       </tr>
                     ))}
                     <tr className="bg-slate-50 font-bold border-t border-slate-300 text-slate-900">
-                      <td colSpan={6} className="py-2.5 px-3 text-right uppercase tracking-wider text-[10px]">Grand Total:</td>
-                      <td className="py-2.5 px-3 text-right text-rose-600 text-xs font-black font-mono">৳{metrics.filteredTotal.toLocaleString()}</td>
+                      <td colSpan={5} className="py-2.5 px-3 text-right uppercase tracking-wider text-[10px]">Grand Total Draw:</td>
+                      <td className="py-2.5 px-3 text-right text-rose-700 text-xs font-black font-mono">৳{financialSummary.filteredTotal.toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -877,15 +863,15 @@ export default function ExpenseManager({
               <div className="grid grid-cols-2 gap-12 pt-12 text-center text-[10px] font-bold text-slate-500">
                 <div className="space-y-1">
                   <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800">
-                    Prepared By (Accounts)
+                    Accounts Manager
                   </div>
                   <span className="text-[9px] text-slate-400 italic block">প্রস্তুতকারকের স্বাক্ষর</span>
                 </div>
                 <div className="space-y-1">
                   <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800 font-bold">
-                    {settings.signatureName || 'Managing Director'}
+                    {settings.signatureName || 'Managing Director'} (Owner)
                   </div>
-                  <span className="text-[9px] text-slate-400 italic block">অনুমোদনকারীর স্বাক্ষর</span>
+                  <span className="text-[9px] text-slate-400 italic block">মালিকের স্বাক্ষর</span>
                 </div>
               </div>
             </div>
