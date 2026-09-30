@@ -295,4 +295,9 @@ export interface BusinessSettings {
   terms: string;
   signatureName: string;
   signatureLabel: string;
+  logoUrl?: string;
+  watermarkUrl?: string;
+  faviconUrl?: string;
+  watermarkOpacity?: number; // e.g. 0.04 to 0.20
+  showWatermark?: boolean | number;
 }

@@ -87,6 +87,14 @@ let isSeeded = false;
 async function seedInitialDataIfNeeded() {
   if (isSeeded) return;
   try {
+    // Ensure all required columns exist in PostgreSQL
+    await pool.query(`
+      ALTER TABLE settings ADD COLUMN IF NOT EXISTS logo_url text DEFAULT '';
+      ALTER TABLE settings ADD COLUMN IF NOT EXISTS watermark_url text DEFAULT '';
+      ALTER TABLE settings ADD COLUMN IF NOT EXISTS favicon_url text DEFAULT '';
+      ALTER TABLE settings ADD COLUMN IF NOT EXISTS watermark_opacity real DEFAULT 0.04;
+      ALTER TABLE settings ADD COLUMN IF NOT EXISTS show_watermark integer DEFAULT 1;
+    `).catch((e) => console.error('Column check notice:', e));
     const existingProducts = await db.select().from(products).limit(1).catch(() => []);
     if (existingProducts.length === 0) {
       console.log('Seeding initial products into Cloud SQL...');
@@ -497,6 +505,11 @@ app.post('/api/settings', async (req, res) => {
         terms: item.terms || '',
         signatureName: item.signatureName || '',
         signatureLabel: item.signatureLabel || '',
+        logoUrl: item.logoUrl || '',
+        watermarkUrl: item.watermarkUrl || '',
+        faviconUrl: item.faviconUrl || '',
+        watermarkOpacity: item.watermarkOpacity !== undefined ? item.watermarkOpacity : 0.04,
+        showWatermark: item.showWatermark !== undefined ? item.showWatermark : 1,
       },
     });
     notifyChange('settings', 'save', item);

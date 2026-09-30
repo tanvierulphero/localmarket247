@@ -109,7 +109,12 @@ export const DEFAULT_SETTINGS: BusinessSettings = {
   taxRate: 5, // 5% VAT
   terms: "1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50% advance with work order & 50% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.",
   signatureName: "MD MAHI UDDIN",
-  signatureLabel: "Managing Director"
+  signatureLabel: "Managing Director",
+  logoUrl: "",
+  watermarkUrl: "",
+  faviconUrl: "",
+  watermarkOpacity: 0.04,
+  showWatermark: 1
 };
 
 export const INITIAL_PRODUCTS: Product[] = [

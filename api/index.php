@@ -341,6 +341,23 @@ try {
         // ----------------------------------------------------
         case 'settings':
             if ($method === 'GET') {
+                // Auto-add columns if not exists
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN logo_url TEXT DEFAULT NULL");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN watermark_url TEXT DEFAULT NULL");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN favicon_url TEXT DEFAULT NULL");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN watermark_opacity DOUBLE DEFAULT 0.04");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN show_watermark INT DEFAULT 1");
+                } catch (Exception $e) {}
+
                 $stmt = $pdo->query("SELECT * FROM settings WHERE id = 'global_settings'");
                 $row = $stmt->fetch();
                 if ($row) {
@@ -351,42 +368,73 @@ try {
                     $row['taxRate'] = (float)$row['tax_rate'];
                     $row['signatureName'] = $row['signature_name'];
                     $row['signatureLabel'] = $row['signature_label'];
+                    $row['logoUrl'] = $row['logo_url'] ?? '';
+                    $row['watermarkUrl'] = $row['watermark_url'] ?? '';
+                    $row['faviconUrl'] = $row['favicon_url'] ?? '';
+                    $row['watermarkOpacity'] = isset($row['watermark_opacity']) ? (float)$row['watermark_opacity'] : 0.04;
+                    $row['showWatermark'] = isset($row['show_watermark']) ? (int)$row['show_watermark'] : 1;
                     unset(
                         $row['invoice_prefix'], $row['quote_prefix'], $row['offer_prefix'],
                         $row['bill_prefix'], $row['tax_rate'], $row['signature_name'],
-                        $row['signature_label'], $row['updated_at']
+                        $row['signature_label'], $row['logo_url'], $row['watermark_url'],
+                        $row['favicon_url'], $row['watermark_opacity'], $row['show_watermark'],
+                        $row['updated_at']
                     );
                     echo json_encode($row);
                 } else {
                     echo json_encode([
                         'id' => 'global_settings',
-                        'name' => 'hitachisolutioncenter',
+                        'name' => 'Jubayer Machineries',
                         'slogan' => 'Your Problem Solution is Sustainable Partner',
                         'address' => 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.',
                         'phone1' => '01715-994956',
                         'phone2' => '01799-498199',
-                        'email' => 'info@hitachisolutioncenter.com',
+                        'email' => 'jubayermachineries@gmail.com',
                         'website' => 'www.hitachiairsolutioncenter.com',
-                        'invoicePrefix' => 'HSC/INV/2026/',
-                        'quotePrefix' => 'HSC/QT/2026/',
-                        'offerPrefix' => 'HSC/OF/2026/',
-                        'billPrefix' => 'HSC/BILL/2026/',
+                        'invoicePrefix' => 'JM/INV/2026/',
+                        'quotePrefix' => 'JM/QT/2026/',
+                        'offerPrefix' => 'JM/OF/2026/',
+                        'billPrefix' => 'JM/BILL/2026/',
                         'taxRate' => 5,
                         'terms' => '1. Delivery: Within 7 working days upon receipt of order.',
                         'signatureName' => 'MD MAHI UDDIN',
-                        'signatureLabel' => 'Managing Director'
+                        'signatureLabel' => 'Managing Director',
+                        'logoUrl' => '',
+                        'watermarkUrl' => '',
+                        'faviconUrl' => '',
+                        'watermarkOpacity' => 0.04,
+                        'showWatermark' => 1
                     ]);
                 }
             } elseif ($method === 'POST') {
+                // Auto-add columns if not exists
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN logo_url TEXT DEFAULT NULL");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN watermark_url TEXT DEFAULT NULL");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN favicon_url TEXT DEFAULT NULL");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN watermark_opacity DOUBLE DEFAULT 0.04");
+                } catch (Exception $e) {}
+                try {
+                    $pdo->exec("ALTER TABLE settings ADD COLUMN show_watermark INT DEFAULT 1");
+                } catch (Exception $e) {}
+
                 $stmt = $pdo->prepare("
                     INSERT INTO settings (
                         id, name, slogan, address, phone1, phone2, email, website,
                         invoice_prefix, quote_prefix, offer_prefix, bill_prefix,
-                        tax_rate, terms, signature_name, signature_label
+                        tax_rate, terms, signature_name, signature_label,
+                        logo_url, watermark_url, favicon_url, watermark_opacity, show_watermark
                     ) VALUES (
                         'global_settings', :name, :slogan, :address, :phone1, :phone2, :email, :website,
                         :invoice_prefix, :quote_prefix, :offer_prefix, :bill_prefix,
-                        :tax_rate, :terms, :signature_name, :signature_label
+                        :tax_rate, :terms, :signature_name, :signature_label,
+                        :logo_url, :watermark_url, :favicon_url, :watermark_opacity, :show_watermark
                     ) ON DUPLICATE KEY UPDATE
                         name = VALUES(name), slogan = VALUES(slogan), address = VALUES(address),
                         phone1 = VALUES(phone1), phone2 = VALUES(phone2), email = VALUES(email),
@@ -394,24 +442,32 @@ try {
                         quote_prefix = VALUES(quote_prefix), offer_prefix = VALUES(offer_prefix),
                         bill_prefix = VALUES(bill_prefix), tax_rate = VALUES(tax_rate),
                         terms = VALUES(terms), signature_name = VALUES(signature_name),
-                        signature_label = VALUES(signature_label)
+                        signature_label = VALUES(signature_label),
+                        logo_url = VALUES(logo_url), watermark_url = VALUES(watermark_url),
+                        favicon_url = VALUES(favicon_url), watermark_opacity = VALUES(watermark_opacity),
+                        show_watermark = VALUES(show_watermark)
                 ");
                 $stmt->execute([
-                    ':name' => $inputData['name'] ?? 'hitachisolutioncenter',
+                    ':name' => $inputData['name'] ?? 'Jubayer Machineries',
                     ':slogan' => $inputData['slogan'] ?? '',
                     ':address' => $inputData['address'] ?? '',
                     ':phone1' => $inputData['phone1'] ?? '',
                     ':phone2' => $inputData['phone2'] ?? '',
                     ':email' => $inputData['email'] ?? '',
                     ':website' => $inputData['website'] ?? '',
-                    ':invoice_prefix' => $inputData['invoicePrefix'] ?? 'HSC/INV/2026/',
-                    ':quote_prefix' => $inputData['quotePrefix'] ?? 'HSC/QT/2026/',
-                    ':offer_prefix' => $inputData['offerPrefix'] ?? 'HSC/OF/2026/',
-                    ':bill_prefix' => $inputData['billPrefix'] ?? 'HSC/BILL/2026/',
+                    ':invoice_prefix' => $inputData['invoicePrefix'] ?? 'JM/INV/2026/',
+                    ':quote_prefix' => $inputData['quotePrefix'] ?? 'JM/QT/2026/',
+                    ':offer_prefix' => $inputData['offerPrefix'] ?? 'JM/OF/2026/',
+                    ':bill_prefix' => $inputData['billPrefix'] ?? 'JM/BILL/2026/',
                     ':tax_rate' => (float)($inputData['taxRate'] ?? 0),
                     ':terms' => $inputData['terms'] ?? '',
                     ':signature_name' => $inputData['signatureName'] ?? '',
                     ':signature_label' => $inputData['signatureLabel'] ?? '',
+                    ':logo_url' => $inputData['logoUrl'] ?? '',
+                    ':watermark_url' => $inputData['watermarkUrl'] ?? '',
+                    ':favicon_url' => $inputData['faviconUrl'] ?? '',
+                    ':watermark_opacity' => isset($inputData['watermarkOpacity']) ? (float)$inputData['watermarkOpacity'] : 0.04,
+                    ':show_watermark' => isset($inputData['showWatermark']) ? (int)$inputData['showWatermark'] : 1,
                 ]);
                 echo json_encode($inputData);
             }

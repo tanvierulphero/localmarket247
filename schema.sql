@@ -220,6 +220,11 @@ CREATE TABLE `settings` (
   `terms` TEXT,
   `signature_name` VARCHAR(255) DEFAULT '',
   `signature_label` VARCHAR(255) DEFAULT '',
+  `logo_url` TEXT,
+  `watermark_url` TEXT,
+  `favicon_url` TEXT,
+  `watermark_opacity` DOUBLE DEFAULT 0.04,
+  `show_watermark` INT DEFAULT 1,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

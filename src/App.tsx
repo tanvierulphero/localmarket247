@@ -56,7 +56,12 @@ import {
   Server,
   HardDrive,
   Wallet,
-  X
+  X,
+  Upload,
+  Image as ImageIcon,
+  Sparkles,
+  Eye,
+  Layers
 } from 'lucide-react';
 import { 
   apiGetProducts,
@@ -73,6 +78,7 @@ import {
   apiDeleteStaff,
   apiGetSettings,
   apiSaveSettings,
+  apiUploadImage,
   apiGetFieldDispatches,
   apiSaveFieldDispatch,
   apiDeleteFieldDispatch,
@@ -129,6 +135,39 @@ export default function App() {
   // Temporary Settings Edit Form State
   const [settingsForm, setSettingsForm] = useState<BusinessSettings>(DEFAULT_SETTINGS);
   const [settingsSavedFeedback, setSettingsSavedFeedback] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingWatermark, setIsUploadingWatermark] = useState(false);
+
+  // Logo & Watermark File Upload Handlers
+  const handleLogoFileUpload = async (file: File) => {
+    setIsUploadingLogo(true);
+    try {
+      const res = await apiUploadImage(file);
+      if (res && res.url) {
+        setSettingsForm(prev => ({ ...prev, logoUrl: res.url }));
+      }
+    } catch (err) {
+      console.error('Failed to upload logo:', err);
+      alert('লোগো আপলোড করতে সমস্যা হয়েছে। অনুগ্রহ করে ছবির সাইজ চেক করে পুনরায় চেষ্টা করুন।');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleWatermarkFileUpload = async (file: File) => {
+    setIsUploadingWatermark(true);
+    try {
+      const res = await apiUploadImage(file);
+      if (res && res.url) {
+        setSettingsForm(prev => ({ ...prev, watermarkUrl: res.url, showWatermark: 1 }));
+      }
+    } catch (err) {
+      console.error('Failed to upload watermark:', err);
+      alert('জলছাপ আপলোড করতে সমস্যা হয়েছে।');
+    } finally {
+      setIsUploadingWatermark(false);
+    }
+  };
 
   // Database Diagnostics & Health Check State
   const [isDbHealthModalOpen, setIsDbHealthModalOpen] = useState(false);
@@ -902,7 +941,7 @@ export default function App() {
             <div>
               {/* Brand Header */}
               <div className="p-5 border-b border-slate-950 flex items-center justify-center h-16">
-                <Logo className="h-full w-auto text-white" light={true} />
+                <Logo className="h-full w-auto text-white" light={true} logoUrl={settings.logoUrl} alt={settings.name} />
               </div>
 
               {/* Sidebar Tabs Links */}
@@ -1355,11 +1394,310 @@ export default function App() {
 
                   {/* TAB PANEL 5: Business Settings Editor */}
                   {activeTab === 'settings' && (
-                    <div className="max-w-2xl space-y-6">
+                    <div className="max-w-4xl space-y-6">
+                      
+                      {/* 1. BRANDING, LOGO & WATERMARK MANAGEMENT CARD */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
+                        <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <ImageIcon className="w-5 h-5 text-blue-900" />
+                              <h3 className="text-sm sm:text-base font-bold text-slate-900 font-display">
+                                লোগো ও ব্যাকগ্রাউন্ড জলছাপ ব্যবস্থাপনা (Logo & Watermark Settings)
+                              </h3>
+                            </div>
+                            <p className="text-slate-500 text-[11px] mt-0.5">
+                              আপনার নিজস্ব কোম্পানি লোগো ও প্রিন্ট ডকুমেন্টের ব্যাকগ্রাউন্ড জলছাপ ম্যানুয়ালি যুক্ত করুন। এটি cPanel ও ডাটাবেজে স্থায়ীভাবে সংরক্ষিত থাকবে।
+                            </p>
+                          </div>
+                          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-lg">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                            cPanel Synced
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Left Column: Logo & Watermark Controls */}
+                          <div className="space-y-5">
+                            
+                            {/* SECTION A: COMPANY MAIN LOGO */}
+                            <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                                  <ImageIcon className="w-3.5 h-3.5 text-blue-700" />
+                                  কোম্পানি প্রধান লোগো (Main Logo)
+                                </label>
+                                {settingsForm.logoUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSettingsForm({ ...settingsForm, logoUrl: '' })}
+                                    className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    ডিফল্ট লোগোতে ফিরুন
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Upload Button & File Input */}
+                              <div className="flex items-center gap-3">
+                                <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingLogo ? 'opacity-60 pointer-events-none' : ''}`}>
+                                  <Upload className="w-4 h-4 text-blue-700" />
+                                  <span>{isUploadingLogo ? 'লোগো আপলোড হচ্ছে...' : 'নতুন লোগো ছবি আপলোড করুন'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleLogoFileUpload(file);
+                                    }}
+                                    className="hidden"
+                                    disabled={isUploadingLogo}
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Manual Image URL Input */}
+                              <div className="space-y-1">
+                                <span className="text-[10px] text-slate-500 font-semibold">অথবা লোগোর সরাসরি লিংক / Image URL:</span>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. /api/uploads/logo.png অথবা https://example.com/logo.png"
+                                  value={settingsForm.logoUrl || ''}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono focus:border-blue-900 focus:outline-hidden"
+                                />
+                              </div>
+
+                              {/* Live Logo Preview Box */}
+                              <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
+                                <div className="w-24 h-12 flex items-center justify-center bg-slate-100/80 rounded-lg border border-slate-200 p-1 flex-shrink-0">
+                                  <Logo logoUrl={settingsForm.logoUrl} className="max-h-full max-w-full text-blue-900" alt="Logo Preview" />
+                                </div>
+                                <div className="text-[11px] text-slate-600 space-y-0.5">
+                                  <div className="font-bold text-slate-800 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>{settingsForm.logoUrl ? 'কাস্টম লোগো সক্রিয়' : 'ডিফল্ট ভেক্টর লোগো সক্রিয়'}</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400">
+                                    এটি ইনভয়েস, কোটেশন, বিল ও সাইডবার হেডারে প্রদর্শিত হবে।
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* SECTION B: DOCUMENT BACKGROUND WATERMARK */}
+                            <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                                  <Layers className="w-3.5 h-3.5 text-indigo-700" />
+                                  কাগজের ব্যাকগ্রাউন্ড জলছাপ (Background Watermark)
+                                </label>
+                              </div>
+
+                              {/* Enable/Disable Watermark Toggle */}
+                              <label className="flex items-center gap-2.5 p-2.5 bg-white border border-slate-200 rounded-xl cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={settingsForm.showWatermark !== 0 && settingsForm.showWatermark !== false}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, showWatermark: e.target.checked ? 1 : 0 })}
+                                  className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 accent-blue-900 cursor-pointer"
+                                />
+                                <div className="text-xs">
+                                  <span className="font-bold text-slate-900 block">প্রিন্ট ডকুমেন্টে ব্যাকগ্রাউন্ড জলছাপ দেখান</span>
+                                  <span className="text-[10px] text-slate-500 block">ইনভয়েস, কোটেশন, বিল ও গ্রাহক লেজারের মাঝখানে জলছাপ থাকবে</span>
+                                </div>
+                              </label>
+
+                              {(settingsForm.showWatermark !== 0 && settingsForm.showWatermark !== false) && (
+                                <div className="space-y-3 pt-2 animate-fade-in">
+                                  {/* Watermark Opacity Slider */}
+                                  <div className="space-y-1.5 bg-white border border-slate-200 p-3 rounded-xl">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="font-bold text-slate-700">জলছাপের স্বচ্ছতা (Watermark Opacity):</span>
+                                      <span className="font-mono font-black text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-xs">
+                                        {Math.round((settingsForm.watermarkOpacity ?? 0.04) * 100)}%
+                                      </span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="0.01"
+                                      max="0.25"
+                                      step="0.01"
+                                      value={settingsForm.watermarkOpacity ?? 0.04}
+                                      onChange={(e) => setSettingsForm({ ...settingsForm, watermarkOpacity: parseFloat(e.target.value) })}
+                                      className="w-full accent-blue-900 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
+                                    />
+                                    <div className="flex justify-between text-[9px] text-slate-400 font-semibold px-0.5">
+                                      <span>১% (খুব হালকা)</span>
+                                      <span>৪% (আদর্শ / Recommended)</span>
+                                      <span>২৫% (গাঢ়)</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Custom Watermark Image Upload / URL (Optional) */}
+                                  <div className="space-y-2 bg-white border border-slate-200 p-3 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-[11px] font-bold text-slate-700">আলাদা জলছাপ ছবি (ঐচ্ছিক):</span>
+                                      {settingsForm.watermarkUrl && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setSettingsForm({ ...settingsForm, watermarkUrl: '' })}
+                                          className="text-[9px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+                                        >
+                                          লোগোকে জলছাপ হিসেবে ব্যবহার করুন
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 border border-slate-300 hover:border-indigo-600 rounded-lg text-[11px] font-bold text-slate-700 hover:text-indigo-900 cursor-pointer transition-all ${isUploadingWatermark ? 'opacity-60 pointer-events-none' : ''}`}>
+                                        <Upload className="w-3.5 h-3.5 text-indigo-700" />
+                                        <span>{isUploadingWatermark ? 'আপলোড হচ্ছে...' : 'জলছাপের ছবি আপলোড'}</span>
+                                        <input
+                                          type="file"
+                                          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                          onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleWatermarkFileUpload(file);
+                                          }}
+                                          className="hidden"
+                                          disabled={isUploadingWatermark}
+                                        />
+                                      </label>
+                                    </div>
+
+                                    <input
+                                      type="text"
+                                      placeholder="আলাদা জলছাপের URL (ফাঁকা রাখলে প্রধান লোগোই জলছাপ হবে)"
+                                      value={settingsForm.watermarkUrl || ''}
+                                      onChange={(e) => setSettingsForm({ ...settingsForm, watermarkUrl: e.target.value })}
+                                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] font-mono focus:border-blue-900 focus:outline-hidden"
+                                    />
+                                    <p className="text-[9px] text-slate-400">
+                                      * আলাদা ছবি না দিলে স্বয়ংক্রিয়ভাবে প্রধান লোগোটিই জলছাপ হিসেবে ডকুমেন্টের মাঝে বসে যাবে।
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                          </div>
+
+                          {/* Right Column: Live Interactive Document Sheet Simulation */}
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                <Eye className="w-3.5 h-3.5 text-blue-800" />
+                                ডকুমেন্টে লাইভ প্রিভিউ (Live Sheet Preview)
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">A4 Sheet Simulation</span>
+                            </div>
+
+                            <div className="border border-slate-300 rounded-2xl bg-slate-100 p-3 sm:p-4 flex items-center justify-center shadow-inner">
+                              {/* Simulated A4 Mini Page */}
+                              <div className="w-full max-w-[340px] bg-white rounded-lg shadow-md border border-slate-200 p-4 relative overflow-hidden select-none space-y-3 min-h-[380px] flex flex-col justify-between">
+                                
+                                {/* Background Watermark behind text */}
+                                {(settingsForm.showWatermark !== 0 && settingsForm.showWatermark !== false) && (
+                                  <div 
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] pointer-events-none select-none z-0 flex items-center justify-center transition-opacity duration-150"
+                                    style={{ 
+                                      opacity: typeof settingsForm.watermarkOpacity === 'number' ? settingsForm.watermarkOpacity : 0.04 
+                                    }}
+                                  >
+                                    {settingsForm.watermarkUrl ? (
+                                      <img 
+                                        src={settingsForm.watermarkUrl} 
+                                        alt="Watermark Preview" 
+                                        className="w-full max-h-[160px] object-contain grayscale" 
+                                      />
+                                    ) : settingsForm.logoUrl ? (
+                                      <img 
+                                        src={settingsForm.logoUrl} 
+                                        alt="Watermark Preview" 
+                                        className="w-full max-h-[160px] object-contain grayscale" 
+                                      />
+                                    ) : (
+                                      <Logo className="w-full h-auto text-blue-900" />
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Letterhead Header */}
+                                <div className="relative z-10 border-b border-blue-900/30 pb-2 flex justify-between items-center gap-2">
+                                  <div className="h-8 w-auto flex-shrink-0">
+                                    <Logo logoUrl={settingsForm.logoUrl} className="h-full w-auto text-blue-900" alt="Logo" />
+                                  </div>
+                                  <div className="text-right text-[8px] text-slate-500 font-sans leading-tight">
+                                    <span className="font-bold text-slate-800 block text-[9px]">{settingsForm.name || 'Jubayer Machineries'}</span>
+                                    <span>{settingsForm.phone1 || '01715-994956'}</span>
+                                    <span className="block text-blue-800 font-semibold">{settingsForm.website || 'jubayermachineries.com'}</span>
+                                  </div>
+                                </div>
+
+                                {/* Mock Document Content */}
+                                <div className="relative z-10 space-y-2 flex-1 pt-1 text-[9px]">
+                                  <div className="bg-slate-100/90 p-1.5 rounded flex justify-between items-center border-l-2 border-blue-900 font-bold">
+                                    <span className="text-blue-950 font-display uppercase tracking-wider text-[9px]">INVOICE / বিল</span>
+                                    <span className="text-slate-600 font-mono text-[8px]">INV-2026-001</span>
+                                  </div>
+
+                                  <div className="text-slate-600 space-y-0.5 text-[8px]">
+                                    <p className="font-bold text-slate-800">বিল প্রাপক: Apex Holdings Ltd.</p>
+                                    <p>ঠিকানা: Konabari, Gazipur</p>
+                                  </div>
+
+                                  <div className="border border-slate-200 rounded overflow-hidden">
+                                    <table className="w-full text-left text-[8px]">
+                                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
+                                        <tr>
+                                          <th className="p-1">বিবরণ (Item)</th>
+                                          <th className="p-1 text-right">মূল্য (BDT)</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100 text-slate-600">
+                                        <tr>
+                                          <td className="p-1">Hitachi VRF Inverter 10 HP</td>
+                                          <td className="p-1 text-right font-mono font-bold">৳৪,৫০,০০০</td>
+                                        </tr>
+                                        <tr>
+                                          <td className="p-1">Copper Pipe 1/2" (100 RFT)</td>
+                                          <td className="p-1 text-right font-mono font-bold">৳২৫,০০০</td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  <div className="flex justify-between items-center pt-1 font-bold text-[9px] border-t border-slate-200">
+                                    <span>সর্বমোট প্রদেয় (Total):</span>
+                                    <span className="text-blue-900 font-black font-mono">৳৪,৭৫,০০০</span>
+                                  </div>
+                                </div>
+
+                                {/* Mock Footer Signatures */}
+                                <div className="relative z-10 pt-2 border-t border-slate-200 flex justify-between text-[7px] text-slate-400">
+                                  <div>
+                                    <p className="border-t border-slate-400 pt-0.5 font-bold text-slate-600">Customer Signature</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="border-t border-blue-900 pt-0.5 font-bold text-blue-900">{settingsForm.signatureName || 'MD ZUBAIR HOSSEN'}</p>
+                                    <p className="text-[6px] text-slate-500">{settingsForm.signatureLabel || 'Authorized Signatory'}</p>
+                                  </div>
+                                </div>
+
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+
+                      {/* 2. BUSINESS SHOWROOM METADATA & PREFERENCES */}
                       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
                         <div className="border-b border-slate-100 pb-4">
-                          <h3 className="text-sm font-bold text-slate-900 font-display">Manage Showroom Metadata</h3>
-                          <p className="text-slate-400 text-[11px] mt-0.5">Customize corporate phone numbers, prefixes, and default print guidelines.</p>
+                          <h3 className="text-sm font-bold text-slate-900 font-display">শো-রুম ও যোগাযোগ তথ্য (Showroom Details)</h3>
+                          <p className="text-slate-400 text-[11px] mt-0.5">কোম্পানির নাম, ঠিকানা, ফোন নম্বর, ইনভয়েস প্রিফিক্স ও ডিফল্ট শর্তাবলী পরিবর্তন করুন।</p>
                         </div>
 
                       <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
@@ -1524,8 +1862,9 @@ export default function App() {
 
                         {/* Feedback messages */}
                         {settingsSavedFeedback && (
-                          <p className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded-lg text-center">
-                            Showroom Settings Saved & Synced Successfully to Cloud SQL.
+                          <p className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-center flex items-center justify-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            কোম্পানি লোগো, জলছাপ ও সেটিংস সফলভাবে সংরক্ষিত ও cPanel এ সিঙ্ক হয়েছে!
                           </p>
                         )}
 
@@ -1540,14 +1879,14 @@ export default function App() {
                           
                           <button
                             type="submit"
-                            className="px-5 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold uppercase tracking-wider rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+                            className="px-6 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-2 transition-all active:scale-95"
                           >
                             <Save className="w-4 h-4" />
-                            Save & Sync
+                            Save & Sync to cPanel
                           </button>
                         </div>
                       </form>
-                    </div>
+                      </div>
 
                     {/* DATABASE HEALTH DIAGNOSTICS CARD */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 mt-6 space-y-4">

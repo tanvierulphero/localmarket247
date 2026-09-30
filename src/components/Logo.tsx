@@ -4,9 +4,25 @@ interface LogoProps {
   className?: string;
   light?: boolean;
   forPublic?: boolean; // When true, displays HITACHI AIR SOLUTION CENTER logo for public catalog website
+  logoUrl?: string; // Custom uploaded company logo image URL from cPanel / database
+  alt?: string;
 }
 
-export default function Logo({ className = "w-full h-full", light = false, forPublic = false }: LogoProps) {
+export default function Logo({ className = "w-full h-full", light = false, forPublic = false, logoUrl, alt }: LogoProps) {
+  // If custom uploaded logo exists, display it directly!
+  if (logoUrl) {
+    return (
+      <img 
+        src={logoUrl} 
+        alt={alt || "Company Logo"} 
+        className={`${className} object-contain`}
+        onError={(e) => {
+          // If custom image fails to load, gracefully fall back
+          (e.target as HTMLElement).style.display = 'none';
+        }}
+      />
+    );
+  }
   // -------------------------------------------------------------
   // PUBLIC WEBSITE LOGO (HITACHI / SUPERSTAR ENGINEERING LOGO)
   // Keeps the public site strictly isolated from the private admin pad

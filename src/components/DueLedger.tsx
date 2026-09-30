@@ -1,5 +1,6 @@
 import { useState, Fragment } from 'react';
 import { Document, Customer, DocumentStatus, BusinessSettings } from '../types';
+import Logo from './Logo';
 import { 
   DollarSign, 
   Search, 
@@ -1462,17 +1463,49 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               {/* Printable Statement Body */}
               <div id="printable-area" className="overflow-y-auto flex-1 p-4 sm:p-6 md:p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-4 sm:space-y-6">
                 
-                {/* Official Showroom Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-3 sm:pb-4 gap-2 sm:gap-0">
-                  <div>
-                    <h1 className="text-lg sm:text-xl font-black text-slate-900 font-display tracking-tight">
-                      {settings?.name || 'Jubayer Machineries'}
-                    </h1>
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}</p>
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Hotline: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'}</p>
+                {/* Background Watermark */}
+                {(settings?.showWatermark !== 0 && settings?.showWatermark !== false) && (
+                  <div 
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] max-w-[85%] pointer-events-none select-none z-0 flex items-center justify-center" 
+                    style={{ 
+                      color: '#1e3a8a', 
+                      opacity: typeof settings?.watermarkOpacity === 'number' ? settings.watermarkOpacity : 0.04 
+                    }}
+                  >
+                    {settings?.watermarkUrl ? (
+                      <img 
+                        src={settings.watermarkUrl} 
+                        alt="Watermark" 
+                        className="w-full max-h-[350px] object-contain mx-auto grayscale" 
+                      />
+                    ) : settings?.logoUrl ? (
+                      <img 
+                        src={settings.logoUrl} 
+                        alt="Watermark" 
+                        className="w-full max-h-[350px] object-contain mx-auto grayscale" 
+                      />
+                    ) : (
+                      <Logo className="w-full h-auto text-blue-900" />
+                    )}
                   </div>
-                  <div className="text-left sm:text-right">
+                )}
+
+                {/* Official Showroom Header */}
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-3 sm:pb-4 gap-3 sm:gap-0">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 sm:h-12 w-auto flex-shrink-0">
+                      <Logo logoUrl={settings?.logoUrl} className="h-full w-auto text-blue-900" alt={settings?.name} />
+                    </div>
+                    <div>
+                      <h1 className="text-base sm:text-lg font-black text-slate-900 font-display tracking-tight leading-snug">
+                        {settings?.name || 'Jubayer Machineries'}
+                      </h1>
+                      <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
+                      <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}</p>
+                      <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Hotline: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'}</p>
+                    </div>
+                  </div>
+                  <div className="text-left sm:text-right flex-shrink-0">
                     <span className="font-black text-xs sm:text-sm text-slate-950 uppercase tracking-widest block font-mono">
                       CUSTOMER DUE STATEMENT
                     </span>

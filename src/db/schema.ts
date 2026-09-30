@@ -118,6 +118,11 @@ export const settings = pgTable('settings', {
   terms: text('terms').default(''),
   signatureName: text('signature_name').default(''),
   signatureLabel: text('signature_label').default(''),
+  logoUrl: text('logo_url').default(''),
+  watermarkUrl: text('watermark_url').default(''),
+  faviconUrl: text('favicon_url').default(''),
+  watermarkOpacity: real('watermark_opacity').default(0.04),
+  showWatermark: integer('show_watermark').default(1),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 

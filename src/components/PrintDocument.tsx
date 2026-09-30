@@ -639,15 +639,37 @@ ${rawBase64Logo}
           style={{ minHeight: '297mm' }}
         >
           {/* Header Logo background watermark for crisp PDF/Print support */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] max-w-[90%] pointer-events-none select-none z-0" style={{ color: '#1e3a8a', opacity: 0.04 }}>
-            <Logo className="w-full h-auto text-blue-900" />
-          </div>
+          {(settings.showWatermark !== 0 && settings.showWatermark !== false) && (
+            <div 
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] max-w-[90%] pointer-events-none select-none z-0 flex items-center justify-center" 
+              style={{ 
+                color: '#1e3a8a', 
+                opacity: typeof settings.watermarkOpacity === 'number' ? settings.watermarkOpacity : 0.04 
+              }}
+            >
+              {settings.watermarkUrl ? (
+                <img 
+                  src={settings.watermarkUrl} 
+                  alt="Watermark" 
+                  className="w-full max-h-[420px] object-contain mx-auto grayscale" 
+                />
+              ) : settings.logoUrl ? (
+                <img 
+                  src={settings.logoUrl} 
+                  alt="Watermark" 
+                  className="w-full max-h-[420px] object-contain mx-auto grayscale" 
+                />
+              ) : (
+                <Logo className="w-full h-auto text-blue-900" />
+              )}
+            </div>
+          )}
           <div className="relative z-10 flex flex-col justify-between h-full space-y-6 flex-1">
             {/* Header Block matching uploaded image */}
             <div className="flex items-center justify-between pb-4 mb-2 border-b-2 border-[#1e3a8a]">
               {/* Left Brand Identity */}
               <div className="flex items-center gap-3 h-12 sm:h-14 md:h-16 w-auto flex-shrink-0">
-                <Logo className="h-full w-auto text-blue-900" />
+                <Logo logoUrl={settings.logoUrl} className="h-full w-auto text-blue-900" alt={settings.name} />
               </div>
 
               {/* Right Contact Details */}
