@@ -1,10 +1,33 @@
-import { Document, Product, Customer } from '../types';
-import { TrendingUp, FileText, ShoppingCart, Users, ChevronRight, ArrowUpRight, Clock, BookOpen } from 'lucide-react';
+import { useState } from 'react';
+import { Document, Product, Customer, Expense, Purchase, FieldDispatch } from '../types';
+import { 
+  TrendingUp, 
+  FileText, 
+  ShoppingCart, 
+  Users, 
+  ChevronRight, 
+  ArrowUpRight, 
+  Clock, 
+  BookOpen, 
+  Coins, 
+  Minus, 
+  Equal, 
+  ChevronDown, 
+  ChevronUp, 
+  Wallet, 
+  Receipt, 
+  TrendingDown, 
+  Calculator,
+  ArrowDownRight
+} from 'lucide-react';
 
 interface DashboardOverviewProps {
   documents: Document[];
   products: Product[];
   customers: Customer[];
+  expenses?: Expense[];
+  purchases?: Purchase[];
+  dispatches?: FieldDispatch[];
   onNavigateToTab: (tab: string) => void;
   onViewDocument: (doc: Document) => void;
 }
@@ -13,11 +36,15 @@ export default function DashboardOverview({
   documents,
   products,
   customers,
+  expenses = [],
+  purchases = [],
+  dispatches = [],
   onNavigateToTab,
   onViewDocument
 }: DashboardOverviewProps) {
+  const [showProfitBreakdown, setShowProfitBreakdown] = useState(false);
   
-  // Calculations supporting partial dues tracking
+  // Primary sales & due calculations
   const metrics = {
     totalSales: documents
       .filter(d => d.type === 'INVOICE' || d.type === 'BILL')
@@ -36,6 +63,37 @@ export default function DashboardOverview({
     totalStockValue: products.reduce((sum, p) => sum + (p.price * p.stock), 0),
     totalCustomers: customers.length
   };
+
+  // NET PROFIT CALCULATION (টোটাল ইনকাম - সকল খরচ = নীট প্রফিট)
+  
+  // 1. Total Income (ইনকাম)
+  const paidInvoiceRevenue = metrics.totalSales;
+  const paidDispatchRevenue = dispatches.reduce((sum, d) => sum + (Number(d.paidAmount) || 0), 0);
+  const totalIncome = paidInvoiceRevenue + paidDispatchRevenue;
+
+  // 2. Total Expenses (সকল খরচ)
+  const OWNER_DRAW_CAT = "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)";
+
+  const showroomExpenses = expenses
+    .filter(e => e.category !== OWNER_DRAW_CAT)
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+  const stockPurchasesCost = purchases.reduce((sum, p) => sum + (Number(p.paidAmount) || 0), 0);
+
+  const fieldTravelExpenses = dispatches.reduce((sum, d) => sum + (Number(d.expenseAmount) || 0), 0);
+
+  const totalOperatingExpenses = showroomExpenses + stockPurchasesCost + fieldTravelExpenses;
+
+  // Owner Drawings (মালিকের উত্তোলন)
+  const ownerDrawings = expenses
+    .filter(e => e.category === OWNER_DRAW_CAT)
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+  const totalAllExpensesCombined = totalOperatingExpenses + ownerDrawings;
+
+  // 3. Net Operating Profit (নীট প্রফিট)
+  const netOperatingProfit = totalIncome - totalOperatingExpenses;
+  const netRetainedCash = totalIncome - totalAllExpensesCombined;
 
   // Document breakdown count
   const docCounts = {
@@ -62,6 +120,208 @@ export default function DashboardOverview({
 
   return (
     <div className="space-y-8 text-xs">
+      
+      {/* ========================================================================= */}
+      {/* 📊 FEATURED VIEW CARD: টোটাল ইনকাম - সকল খরচ = নীট প্রফিট */}
+      {/* ========================================================================= */}
+      <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-800 space-y-6 relative overflow-hidden">
+        {/* Subtle Background Glow Accent */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        {/* Card Header & Title */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 relative z-10">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg border border-emerald-500/30">
+                <Calculator className="w-4.5 h-4.5" />
+              </span>
+              <h2 className="text-base font-black font-display text-white tracking-tight flex items-center gap-2">
+                টোটাল ইনকাম - সকল খরচ = নীট প্রফিট
+              </h2>
+            </div>
+            <p className="text-slate-400 text-[11px] font-medium pl-8">
+              Net Profit Statement: ব্যবসায়িক মোট আয়, সকল পরিচালন খরচ ও নিট লাভের স্বয়ংক্রিয় লাইভ হিসাব
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              onClick={() => onNavigateToTab('reports')}
+              className="px-3.5 py-2 bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 hover:text-white font-bold rounded-xl border border-blue-500/30 transition-all text-[11px] flex items-center gap-1.5 cursor-pointer"
+            >
+              <Coins className="w-3.5 h-3.5 text-amber-300" />
+              আয় ও ব্যয় রিপোর্ট
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* 🧮 MATH EQUATION DISPLAY (INCOME - EXPENSES = NET PROFIT) */}
+        <div className="grid grid-cols-1 md:grid-cols-11 gap-3 items-center relative z-10">
+          
+          {/* BOX 1: TOTAL INCOME (টোটাল ইনকাম) */}
+          <div className="md:col-span-3 bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/30 p-4 rounded-2xl space-y-1.5 transition-all shadow-md">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                <ArrowUpRight className="w-3.5 h-3.5" /> ১. টোটাল ইনকাম (Income)
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Cash Inflow
+              </span>
+            </div>
+            <div className="text-2xl font-black font-display text-emerald-300 tracking-tight">
+              ৳{totalIncome.toLocaleString()}
+            </div>
+            <div className="text-[10px] text-slate-300 font-medium flex justify-between items-center pt-1 border-t border-slate-700/60">
+              <span>ইনভয়েস আদায়: ৳{paidInvoiceRevenue.toLocaleString()}</span>
+              {paidDispatchRevenue > 0 && <span className="text-slate-400">+ফিল্ড: ৳{paidDispatchRevenue.toLocaleString()}</span>}
+            </div>
+          </div>
+
+          {/* MINUS OPERATOR CARD */}
+          <div className="md:col-span-1 flex items-center justify-center py-1 md:py-0">
+            <div className="w-9 h-9 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center font-black text-lg shadow-inner">
+              <Minus className="w-5 h-5 stroke-[3]" />
+            </div>
+          </div>
+
+          {/* BOX 2: TOTAL EXPENSES (সকল খরচ) */}
+          <div className="md:col-span-3 bg-slate-800/90 hover:bg-slate-800 border border-amber-500/30 p-4 rounded-2xl space-y-1.5 transition-all shadow-md">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <ArrowDownRight className="w-3.5 h-3.5" /> ২. সকল খরচ (Expenses)
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Outflow
+              </span>
+            </div>
+            <div className="text-2xl font-black font-display text-amber-300 tracking-tight">
+              ৳{totalOperatingExpenses.toLocaleString()}
+            </div>
+            <div className="text-[10px] text-slate-300 font-medium flex justify-between items-center pt-1 border-t border-slate-700/60">
+              <span>শোরুম: ৳{showroomExpenses.toLocaleString()}</span>
+              <span>মাল ক্রয়: ৳{stockPurchasesCost.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* EQUAL OPERATOR CARD */}
+          <div className="md:col-span-1 flex items-center justify-center py-1 md:py-0">
+            <div className="w-9 h-9 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-black text-lg shadow-inner">
+              <Equal className="w-5 h-5 stroke-[3]" />
+            </div>
+          </div>
+
+          {/* BOX 3: NET PROFIT (নীট প্রফিট) */}
+          <div className={`md:col-span-3 ${netOperatingProfit >= 0 ? 'bg-emerald-950/80 border-emerald-500/50 hover:bg-emerald-950' : 'bg-rose-950/80 border-rose-500/50 hover:bg-rose-950'} border-2 p-4 rounded-2xl space-y-1.5 transition-all shadow-xl`}>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 text-blue-200">
+                <TrendingUp className="w-3.5 h-3.5 text-blue-400" /> ৩. নীট প্রফিট (Net Profit)
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${netOperatingProfit >= 0 ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40' : 'bg-rose-500/30 text-rose-200 border-rose-400/40'}`}>
+                {netOperatingProfit >= 0 ? 'PROFIT (লাভ)' : 'LOSS (ক্ষতি)'}
+              </span>
+            </div>
+            <div className={`text-2xl font-black font-display tracking-tight ${netOperatingProfit >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+              ৳{netOperatingProfit.toLocaleString()}
+            </div>
+            <div className="text-[10px] text-slate-300 font-semibold flex justify-between items-center pt-1 border-t border-slate-700/60">
+              <span>নিট পরিচালন লাভ</span>
+              <span className="text-slate-400 font-mono">
+                {totalIncome > 0 ? `${((netOperatingProfit / totalIncome) * 100).toFixed(1)}% Margin` : '0%'}
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* 🔽 EXPANDABLE DETAILED BREAKDOWN TOGGLE */}
+        <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+          <button
+            onClick={() => setShowProfitBreakdown(!showProfitBreakdown)}
+            className="text-[11px] font-bold text-slate-300 hover:text-white flex items-center gap-1.5 cursor-pointer py-1 px-3 bg-slate-800/80 hover:bg-slate-800 rounded-xl border border-slate-700/80 transition-all self-start"
+          >
+            {showProfitBreakdown ? <ChevronUp className="w-4 h-4 text-emerald-400" /> : <ChevronDown className="w-4 h-4 text-emerald-400" />}
+            <span>{showProfitBreakdown ? 'ইনকাম ও খরচের খাতা বন্ধ করুন' : 'বিস্তারিত ইনকাম ও খরচের হিসাব দেখুন'}</span>
+          </button>
+
+          <div className="flex items-center gap-4 text-[10px] text-slate-400 font-semibold">
+            {ownerDrawings > 0 && (
+              <span className="flex items-center gap-1 text-amber-300/90 bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-800/40">
+                <Receipt className="w-3 h-3 text-amber-400" />
+                মালিকের উত্তোলন: <strong className="text-amber-200 font-mono">৳{ownerDrawings.toLocaleString()}</strong>
+              </span>
+            )}
+            <span className="flex items-center gap-1 text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-800/40">
+              <Wallet className="w-3 h-3 text-emerald-400" />
+              উত্তোলন পর অবশিষ্ট নগদ: <strong className="text-white font-mono">৳{netRetainedCash.toLocaleString()}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* EXPANDED BREAKDOWN TABLE */}
+        {showProfitBreakdown && (
+          <div className="mt-4 pt-4 border-t border-slate-800 space-y-4 animate-fade-in relative z-10">
+            <h4 className="text-xs font-bold text-white flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-emerald-400" />
+              আয় ও ব্যয়ের আইটেমভিত্তিক বিস্তারিত স্টেটমেন্ট (Itemized Income & Expense Breakdown)
+            </h4>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs font-sans">
+              
+              {/* Left Column: Income Items */}
+              <div className="bg-slate-900/90 border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+                <div className="flex justify-between items-center border-b border-emerald-500/30 pb-2">
+                  <span className="font-bold text-emerald-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-emerald-400" /> আয়ের খাতসমূহ (Inflows)
+                  </span>
+                  <span className="font-extrabold text-emerald-300 font-mono">৳{totalIncome.toLocaleString()}</span>
+                </div>
+
+                <div className="space-y-2 text-[11px]">
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
+                    <span>১. বিক্রয় ইনভয়েস হতে ক্যাশ আদায় (Sales Collection)</span>
+                    <span className="font-mono font-bold text-white">৳{paidInvoiceRevenue.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
+                    <span>২. ফিল্ড সার্ভিস ও চালান মেমো বিল পরিশোধ (Field Dispatches)</span>
+                    <span className="font-mono font-bold text-white">৳{paidDispatchRevenue.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Expense Items */}
+              <div className="bg-slate-900/90 border border-amber-500/20 rounded-2xl p-4 space-y-3">
+                <div className="flex justify-between items-center border-b border-amber-500/30 pb-2">
+                  <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <TrendingDown className="w-4 h-4 text-amber-400" /> খরচের খাতসমূহ (Outflows)
+                  </span>
+                  <span className="font-extrabold text-amber-300 font-mono">৳{totalOperatingExpenses.toLocaleString()}</span>
+                </div>
+
+                <div className="space-y-2 text-[11px]">
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
+                    <span>১. শোরুম পরিচালনা, বিদ্যুৎ বিল ও সাধারণ খরচ (Overheads)</span>
+                    <span className="font-mono font-bold text-white">৳{showroomExpenses.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
+                    <span>২. স্টক মালামাল ও পার্টস ক্রয় বাবদ প্রদান (Inward Purchases)</span>
+                    <span className="font-mono font-bold text-white">৳{stockPurchasesCost.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
+                    <span>৩. অনসাইট সার্ভিস যাতায়াত ও ভ্রমণ খরচ (Field Conveyance)</span>
+                    <span className="font-mono font-bold text-white">৳{fieldTravelExpenses.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+      </div>
+
+
       {/* Primary Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         {/* Metric 1 */}
@@ -168,7 +428,7 @@ export default function DashboardOverview({
             <p className="text-slate-400 text-[11px] mb-6">Distribution and volume mix of documents in hitachisolutioncenter.</p>
           </div>
 
-          {/* Simple custom visual bar-graph using pure CSS & SVG */}
+          {/* Simple custom visual bar-graph using pure CSS */}
           <div className="space-y-4 py-2">
             {/* Offer Letters Bar */}
             <div className="space-y-1.5">

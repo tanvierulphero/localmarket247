@@ -1216,6 +1216,9 @@ export default function App() {
                       documents={documents}
                       products={products}
                       customers={customers}
+                      expenses={expenses}
+                      purchases={purchases}
+                      dispatches={dispatches}
                       onNavigateToTab={(tab) => setActiveTab(tab)}
                       onViewDocument={(doc) => setViewingDocument(doc)}
                     />
