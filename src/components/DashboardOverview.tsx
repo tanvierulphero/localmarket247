@@ -162,7 +162,7 @@ export default function DashboardOverview({
           <div className="bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/30 p-3.5 rounded-xl space-y-1 transition-all shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
-                <ArrowUpRight className="w-3.5 h-3.5" /> ১. টোটাল ইনকাম (INCOME)
+                <ArrowUpRight className="w-3.5 h-3.5" /> টোটাল ইনকাম (INCOME)
               </span>
               <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 Cash Inflow
@@ -181,7 +181,7 @@ export default function DashboardOverview({
           <div className="bg-slate-800/90 hover:bg-slate-800 border border-amber-500/30 p-3.5 rounded-xl space-y-1 transition-all shadow-sm flex flex-col justify-between">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                <ArrowDownRight className="w-3.5 h-3.5" /> ২. সকল খরচ (EXPENSES)
+                <ArrowDownRight className="w-3.5 h-3.5" /> সকল খরচ (EXPENSES)
               </span>
               <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                 Outflow
@@ -200,7 +200,7 @@ export default function DashboardOverview({
           <div className={`${netOperatingProfit >= 0 ? 'bg-emerald-950/80 border-emerald-500/50 hover:bg-emerald-950' : 'bg-rose-950/80 border-rose-500/50 hover:bg-rose-950'} border-2 p-3.5 rounded-xl space-y-1 transition-all shadow-md flex flex-col justify-between`}>
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 text-blue-200">
-                <TrendingUp className="w-3.5 h-3.5 text-blue-400" /> ৩. নীট প্রফিট (NET PROFIT)
+                <TrendingUp className="w-3.5 h-3.5 text-blue-400" /> নীট প্রফিট (NET PROFIT)
               </span>
               <span className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${netOperatingProfit >= 0 ? 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40' : 'bg-rose-500/30 text-rose-200 border-rose-400/40'}`}>
                 {netOperatingProfit >= 0 ? 'PROFIT (লাভ)' : 'LOSS (ক্ষতি)'}
@@ -264,11 +264,11 @@ export default function DashboardOverview({
 
                 <div className="space-y-2 text-[11px]">
                   <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
-                    <span>১. বিক্রয় ইনভয়েস হতে ক্যাশ আদায় (Sales Collection)</span>
+                    <span>বিক্রয় ইনভয়েস হতে ক্যাশ আদায় (Sales Collection)</span>
                     <span className="font-mono font-bold text-white">৳{paidInvoiceRevenue.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
-                    <span>২. ফিল্ড সার্ভিস ও চালান মেমো বিল পরিশোধ (Field Dispatches)</span>
+                    <span>ফিল্ড সার্ভিস ও চালান মেমো বিল পরিশোধ (Field Dispatches)</span>
                     <span className="font-mono font-bold text-white">৳{paidDispatchRevenue.toLocaleString()}</span>
                   </div>
                 </div>
@@ -285,15 +285,15 @@ export default function DashboardOverview({
 
                 <div className="space-y-2 text-[11px]">
                   <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
-                    <span>১. শোরুম পরিচালনা, বিদ্যুৎ বিল ও সাধারণ খরচ (Overheads)</span>
+                    <span>শোরুম পরিচালনা, বিদ্যুৎ বিল ও সাধারণ খরচ (Overheads)</span>
                     <span className="font-mono font-bold text-white">৳{showroomExpenses.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
-                    <span>২. স্টক মালামাল ও পার্টস ক্রয় বাবদ প্রদান (Inward Purchases)</span>
+                    <span>স্টক মালামাল ও পার্টস ক্রয় বাবদ প্রদান (Inward Purchases)</span>
                     <span className="font-mono font-bold text-white">৳{stockPurchasesCost.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-slate-800 text-slate-300">
-                    <span>৩. অনসাইট সার্ভিস যাতায়াত ও ভ্রমণ খরচ (Field Conveyance)</span>
+                    <span>অনসাইট সার্ভিস যাতায়াত ও ভ্রমণ খরচ (Field Conveyance)</span>
                     <span className="font-mono font-bold text-white">৳{fieldTravelExpenses.toLocaleString()}</span>
                   </div>
                 </div>
