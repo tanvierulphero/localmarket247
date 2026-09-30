@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Document, DocumentType, DocumentStatus } from '../types';
-import { Search, SlidersHorizontal, Plus, FileText, Trash2, Edit3, Printer, CheckCircle } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, FileText, Trash2, Edit3, Printer, CheckCircle, Truck } from 'lucide-react';
 
 interface DocumentListProps {
   documents: Document[];
@@ -335,6 +335,57 @@ export default function DocumentList({
                     {/* Option Triggers */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Quick View Delivery Challan for Invoice/Bill */}
+                        {(doc.type === 'INVOICE' || doc.type === 'BILL') && (
+                          <button
+                            onClick={() => {
+                              const existing = documents.find(d => 
+                                d.type === 'CHALLAN' && (
+                                  d.id === `doc-ch-${doc.id}` || 
+                                  (d.subject && d.subject.includes(doc.docNumber))
+                                )
+                              );
+                              if (existing) {
+                                onViewDocument(existing);
+                              } else {
+                                const tempChallan: Document = {
+                                  id: `doc-ch-${doc.id}`,
+                                  type: 'CHALLAN',
+                                  docNumber: doc.docNumber.replace(/^(JM\/)(INV|BL)/i, '$1CH'),
+                                  date: doc.date,
+                                  customerId: doc.customerId,
+                                  customerName: doc.customerName,
+                                  customerCompany: doc.customerCompany,
+                                  customerPhone: doc.customerPhone,
+                                  customerEmail: doc.customerEmail,
+                                  customerAddress: doc.customerAddress,
+                                  subject: `Delivery Challan for ${doc.type === 'INVOICE' ? 'Invoice' : 'Bill'} ${doc.docNumber}`,
+                                  salutation: doc.salutation || 'Dear Sir,',
+                                  openingParagraph: 'Please receive the following genuine spare parts and equipment in good condition as per order/bill.',
+                                  closingParagraph: 'Received the above goods in sound and complete condition.',
+                                  items: doc.items.map(it => ({ ...it, price: 0, total: 0 })),
+                                  subtotal: 0,
+                                  taxRate: 0,
+                                  taxAmount: 0,
+                                  discount: 0,
+                                  total: 0,
+                                  status: 'Active',
+                                  terms: '1. Please check the goods at the time of delivery.\n2. Claims regarding damages must be reported within 24 hours.',
+                                  signatureName: doc.signatureName,
+                                  signatureLabel: doc.signatureLabel,
+                                  vatEnabled: false
+                                };
+                                onViewDocument(tempChallan);
+                              }
+                            }}
+                            className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg hover:text-emerald-900 transition-colors border border-emerald-200 cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                            title="Delivery Challan (চালান) সরাসরি দেখুন ও প্রিন্ট করুন"
+                          >
+                            <Truck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>চালান</span>
+                          </button>
+                        )}
+
                         {/* View & Print */}
                         <button
                           onClick={() => onViewDocument(doc)}

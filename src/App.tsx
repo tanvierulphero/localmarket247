@@ -453,6 +453,58 @@ export default function App() {
     } else {
       list = [doc, ...documents];
     }
+
+    // Auto-generate or update corresponding Delivery Challan whenever a Bill or Invoice is created/saved
+    if (doc.type === 'INVOICE' || doc.type === 'BILL') {
+      const challanPrefix = 'JM/CH/2026/';
+      const docNumParts = doc.docNumber.split('/');
+      const numSuffix = docNumParts[docNumParts.length - 1] || Math.floor(1000 + Math.random() * 9000).toString();
+      const challanDocNumber = `${challanPrefix}${numSuffix}`;
+
+      const challanId = `doc-ch-${doc.id}`;
+      const existingChallanIndex = list.findIndex(d => d.id === challanId || d.docNumber === challanDocNumber);
+
+      const challanDoc: Document = {
+        id: existingChallanIndex >= 0 ? list[existingChallanIndex].id : challanId,
+        type: 'CHALLAN',
+        docNumber: existingChallanIndex >= 0 ? list[existingChallanIndex].docNumber : challanDocNumber,
+        date: doc.date,
+        dueDate: undefined,
+        customerId: doc.customerId,
+        customerName: doc.customerName,
+        customerCompany: doc.customerCompany,
+        customerPhone: doc.customerPhone,
+        customerEmail: doc.customerEmail,
+        customerAddress: doc.customerAddress,
+        subject: `Delivery Challan for ${doc.type === 'INVOICE' ? 'Invoice' : 'Bill'} ${doc.docNumber}`,
+        salutation: doc.salutation || 'Dear Sir,',
+        openingParagraph: 'Please receive the following genuine spare parts and equipment in good condition as per order/bill.',
+        closingParagraph: 'Received the above goods in sound and complete condition.',
+        items: doc.items.map(it => ({
+          ...it,
+          price: 0,
+          total: 0
+        })),
+        subtotal: 0,
+        taxRate: 0,
+        taxAmount: 0,
+        discount: 0,
+        total: 0,
+        status: 'Active',
+        terms: '1. Please check the goods at the time of delivery.\n2. Claims regarding damages must be reported within 24 hours.',
+        signatureName: doc.signatureName,
+        signatureLabel: doc.signatureLabel,
+        vatEnabled: false
+      };
+
+      if (existingChallanIndex >= 0) {
+        list = list.map((d, i) => i === existingChallanIndex ? challanDoc : d);
+      } else {
+        list = [challanDoc, ...list];
+      }
+      apiSaveDocument(challanDoc).catch(() => {});
+    }
+
     setDocuments(list);
     localStorage.setItem('hsc_documents', JSON.stringify(list));
 

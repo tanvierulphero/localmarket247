@@ -87,6 +87,7 @@ export default function PrintDocument({ document, settings, onBack }: PrintDocum
   const isQuotation = document.type === 'QUOTATION';
   const isInvoice = document.type === 'INVOICE';
   const isBill = document.type === 'BILL';
+  const isChallan = document.type === 'CHALLAN';
 
   // Format document titles for presentation
   const getDocTitle = () => {
@@ -426,11 +427,11 @@ Content-Location: document.html
       <thead>
         <tr>
           <th width="8%" style="text-align: center;">SL</th>
-          <th width="42%">Description of Goods / Spare Parts</th>
-          <th width="15%" style="text-align: center;">Brand</th>
+          <th width="${isChallan ? '52%' : '42%'}">Description of Goods / Spare Parts</th>
+          <th width="${isChallan ? '20%' : '15%'}" style="text-align: center;">Parts Number / Brand</th>
           <th width="10%" style="text-align: center;">Qty</th>
           <th width="10%" style="text-align: center;">Unit</th>
-          <th width="15%" style="text-align: right;">Price (BDT)</th>
+          ${!isChallan ? `<th width="15%" style="text-align: right;">Price (BDT)</th>` : ''}
         </tr>
       </thead>
       <tbody>
@@ -441,65 +442,74 @@ Content-Location: document.html
             <td style="text-align: center; font-family: monospace; font-weight: bold;">${item.brand || '—'}</td>
             <td style="text-align: center; font-weight: bold;">${item.quantity}</td>
             <td style="text-align: center; color: #64748b;">${item.unit || 'Pcs'}</td>
-            <td style="text-align: right; font-weight: bold;">${item.price.toLocaleString()}</td>
+            ${!isChallan ? `<td style="text-align: right; font-weight: bold;">${item.price.toLocaleString()}</td>` : ''}
           </tr>
         `).join('')}
       </tbody>
     </table>
   ` : ''}
 
-  <!-- Calculation details table -->
-  <table class="totals-table" border="0" cellspacing="0" cellpadding="0">
-    <tr>
-      <td width="55%" style="vertical-align: top;">
-        <div class="amount-words-box">
-          <span style="font-size: 8pt; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 3px; color: #0284c7;">Amount in Words</span>
-          <strong>${numberToWords(document.total).toUpperCase()}</strong>
-        </div>
-      </td>
-      <td width="45%" class="totals-breakdown" style="vertical-align: top;">
-        <table width="100%" border="0" cellspacing="0" cellpadding="4">
-          <tr>
-            <td style="color: #64748b;">Sub-Total:</td>
-            <td style="font-weight: bold; color: #1e293b;">${document.subtotal.toLocaleString()}</td>
-          </tr>
-          ${document.vatEnabled !== false && document.vatEnabled !== 0 ? `
+  <!-- Calculation details table (Hidden for Delivery Challan) -->
+  ${!isChallan ? `
+    <table class="totals-table" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td width="55%" style="vertical-align: top;">
+          <div class="amount-words-box">
+            <span style="font-size: 8pt; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 3px; color: #0284c7;">Amount in Words</span>
+            <strong>${numberToWords(document.total).toUpperCase()}</strong>
+          </div>
+        </td>
+        <td width="45%" class="totals-breakdown" style="vertical-align: top;">
+          <table width="100%" border="0" cellspacing="0" cellpadding="4">
             <tr>
-              <td style="color: #64748b;">VAT / Tax (${document.taxRate}%):</td>
-              <td style="font-weight: bold; color: #1e293b;">${document.taxAmount.toLocaleString()}</td>
+              <td style="color: #64748b;">Sub-Total:</td>
+              <td style="font-weight: bold; color: #1e293b;">${document.subtotal.toLocaleString()}</td>
             </tr>
-          ` : ''}
-          ${document.discount > 0 ? `
-            <tr style="color: #dc2626; font-weight: bold;">
-              <td>Special Discount:</td>
-              <td>- ${document.discount.toLocaleString()}</td>
+            ${document.vatEnabled !== false && document.vatEnabled !== 0 ? `
+              <tr>
+                <td style="color: #64748b;">VAT / Tax (${document.taxRate}%):</td>
+                <td style="font-weight: bold; color: #1e293b;">${document.taxAmount.toLocaleString()}</td>
+              </tr>
+            ` : ''}
+            ${document.discount > 0 ? `
+              <tr style="color: #dc2626; font-weight: bold;">
+                <td>Special Discount:</td>
+                <td>- ${document.discount.toLocaleString()}</td>
+              </tr>
+            ` : ''}
+            <tr class="total-payable">
+              <td style="font-weight: bold; color: #1e3a8a;">Total Payable:</td>
+              <td style="font-weight: bold; color: #1e3a8a;">${document.total.toLocaleString()}</td>
             </tr>
-          ` : ''}
-          <tr class="total-payable">
-            <td style="font-weight: bold; color: #1e3a8a;">Total Payable:</td>
-            <td style="font-weight: bold; color: #1e3a8a;">${document.total.toLocaleString()}</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
+          </table>
+        </td>
+      </tr>
+    </table>
+  ` : ''}
 
   <!-- Terms, signatures and footers -->
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 15px;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 30px;">
     <tr>
-      <td width="55%" style="vertical-align: top; padding-right: 20px;">
+      <td width="50%" style="vertical-align: top; padding-right: 20px;">
         ${document.terms ? `
           <div class="terms-box">
-            <h4 style="font-weight: bold; color: #1e293b; margin: 0 0 5px 0; text-transform: uppercase; font-size: 9pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">Terms & Conditions:</h4>
+            <h4 style="font-weight: bold; color: #1e293b; margin: 0 0 5px 0; text-transform: uppercase; font-size: 9pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">Terms & Notes:</h4>
             <p style="margin: 0; line-height: 1.4; color: #475569; font-size: 9pt;">${document.terms.replace(/\n/g, '<br/>')}</p>
           </div>
         ` : ''}
+        ${isChallan ? `
+          <div style="margin-top: 40px; text-align: left;">
+            <div style="border-top: 1px solid #475569; width: 160px; margin-bottom: 5px;"></div>
+            <strong style="color: #0f172a; font-size: 10pt;">Receiver's Signature</strong><br/>
+            <span style="font-size: 8.5pt; color: #64748b; font-weight: bold;">(গ্রহীতার স্বাক্ষর ও সিল)</span>
+          </div>
+        ` : ''}
       </td>
-      <td width="45%" class="signature-box" style="vertical-align: bottom;">
+      <td width="50%" class="signature-box" style="vertical-align: bottom; text-align: right;">
         ${(isOffer || isQuotation) && document.closingParagraph ? `
           <p style="font-style: italic; color: #64748b; margin-bottom: 20px; font-size: 9.5pt; text-align: right; line-height: 1.4;">${document.closingParagraph.replace(/\n/g, '<br/>')}</p>
         ` : ''}
-        <div class="signature-line"></div>
+        <div style="border-top: 1px solid #475569; width: 180px; margin-left: auto; margin-bottom: 5px;"></div>
         <strong style="color: #0f172a; font-size: 11pt;">${document.signatureName}</strong><br/>
         <span style="font-size: 9.5pt; color: #64748b; font-weight: bold; text-transform: uppercase;">${document.signatureLabel}</span><br/>
         <span style="font-size: 8.5pt; color: #94a3b8; font-weight: bold; text-transform: uppercase;">JUBAYER MACHINERIES</span>
@@ -726,13 +736,13 @@ ${rawBase64Logo}
                 <table className="w-full text-left text-sm sm:text-[15px] border-collapse table-fixed">
                   <thead>
                     <tr className="text-white uppercase text-xs sm:text-xs tracking-wider font-extrabold bg-[#1e3a8a]">
-                      <th className="py-3 px-1 sm:px-2 text-center rounded-l w-[6%]">SL</th>
-                      <th className="py-3 px-3 text-left w-[36%]">Description of Goods / Spare Parts</th>
-                      <th className="py-3 px-1 sm:px-2 text-center w-[16%]">Parts Number</th>
-                      <th className="py-3 px-1 sm:px-2 text-center w-[8%]">Qty</th>
-                      <th className="py-3 px-1 sm:px-2 text-center w-[8%]">Unit</th>
-                      <th className="py-3 px-2 sm:px-3 text-right w-[13%]">Unit Price</th>
-                      <th className="py-3 px-2 sm:px-3 text-right rounded-r w-[13%]">Total</th>
+                      <th className="py-3 px-1 sm:px-2 text-center rounded-l w-[8%]">SL</th>
+                      <th className={`py-3 px-3 text-left ${isChallan ? 'w-[52%]' : 'w-[36%]'}`}>Description of Goods / Spare Parts</th>
+                      <th className={`py-3 px-1 sm:px-2 text-center ${isChallan ? 'w-[20%]' : 'w-[16%]'}`}>Parts Number</th>
+                      <th className="py-3 px-1 sm:px-2 text-center w-[10%]">Qty</th>
+                      <th className={`py-3 px-1 sm:px-2 text-center ${isChallan ? 'rounded-r w-[10%]' : 'w-[10%]'}`}>Unit</th>
+                      {!isChallan && <th className="py-3 px-2 sm:px-3 text-right w-[13%]">Unit Price</th>}
+                      {!isChallan && <th className="py-3 px-2 sm:px-3 text-right rounded-r w-[13%]">Total</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-sm sm:text-[15px]">
@@ -749,8 +759,8 @@ ${rawBase64Logo}
                         </td>
                         <td className="py-3.5 px-1 sm:px-2 text-center font-extrabold text-slate-950 text-sm sm:text-[15px]">{item.quantity}</td>
                         <td className="py-3.5 px-1 sm:px-2 text-center font-semibold text-slate-600 text-xs sm:text-sm">{item.unit || 'Pcs'}</td>
-                        <td className="py-3.5 px-2 sm:px-3 text-right font-extrabold text-slate-950">{item.price.toLocaleString()}</td>
-                        <td className="py-3.5 px-2 sm:px-3 text-right font-black text-slate-950 text-sm sm:text-[16px]">{item.total.toLocaleString()}</td>
+                        {!isChallan && <td className="py-3.5 px-2 sm:px-3 text-right font-extrabold text-slate-950">{item.price.toLocaleString()}</td>}
+                        {!isChallan && <td className="py-3.5 px-2 sm:px-3 text-right font-black text-slate-950 text-sm sm:text-[16px]">{item.total.toLocaleString()}</td>}
                       </tr>
                     ))}
                   </tbody>
@@ -762,58 +772,70 @@ ${rawBase64Logo}
               </div>
             )}
 
-            {/* Pricing Totals & Word Conversion - Set to 12pt (15px-16px) */}
-            <div className="grid grid-cols-12 gap-3 sm:gap-4 items-start my-3 relative z-10">
-              {/* Word Conversion (Left column) */}
-              <div className="col-span-7 p-3 sm:p-4 rounded-xl bg-blue-50/80 border border-blue-200">
-                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest block mb-1 text-blue-900">
-                  Amount in Words
-                </span>
-                <p className="text-xs sm:text-sm font-black italic text-blue-950 leading-relaxed uppercase">
-                  {numberToWords(document.total)}
-                </p>
-              </div>
-
-              {/* Calculations Breakdown (Right column) */}
-              <div className="col-span-5 text-xs sm:text-sm space-y-1.5 font-semibold">
-                <div className="flex justify-between text-slate-600">
-                  <span>Sub-Total:</span>
-                  <span className="text-slate-900 font-bold">{document.subtotal.toLocaleString()}</span>
-                </div>
-                {document.vatEnabled !== false && document.vatEnabled !== 0 && (
-                  <div className="flex justify-between text-slate-600">
-                    <span>VAT / Tax ({document.taxRate}%):</span>
-                    <span className="text-slate-900 font-bold">{document.taxAmount.toLocaleString()}</span>
-                  </div>
-                )}
-                {document.discount > 0 && (
-                  <div className="flex justify-between text-rose-600 font-extrabold">
-                    <span>Special Discount:</span>
-                    <span>- {document.discount.toLocaleString()}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm sm:text-base font-black border-t-2 border-slate-300 pt-2 text-blue-900">
-                  <span>Total Payable:</span>
-                  <span className="text-base sm:text-lg font-black text-blue-950">{document.total.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Terms, Conditions & Closing - Increased text readability */}
-            <div className="grid grid-cols-2 gap-4 mt-3 border-t border-slate-200 pt-4 text-xs sm:text-sm relative z-10 flex-1">
-              {/* Left side: Terms of Offer */}
-              {document.terms ? (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-300">
-                  <h4 className="font-black text-slate-800 uppercase tracking-widest mb-1.5 border-b border-slate-200 pb-1 text-[10px] sm:text-xs">
-                    Terms & Conditions:
-                  </h4>
-                  <p className="whitespace-pre-line text-xs sm:text-[13px] text-slate-700 leading-relaxed font-sans font-semibold">
-                    {document.terms}
+            {/* Pricing Totals & Word Conversion - Hidden for Delivery Challans */}
+            {!isChallan && (
+              <div className="grid grid-cols-12 gap-3 sm:gap-4 items-start my-3 relative z-10">
+                {/* Word Conversion (Left column) */}
+                <div className="col-span-7 p-3 sm:p-4 rounded-xl bg-blue-50/80 border border-blue-200">
+                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest block mb-1 text-blue-900">
+                    Amount in Words
+                  </span>
+                  <p className="text-xs sm:text-sm font-black italic text-blue-950 leading-relaxed uppercase">
+                    {numberToWords(document.total)}
                   </p>
                 </div>
-              ) : <div />}
 
-              {/* Right side: Closing letter text & Signatures */}
+                {/* Calculations Breakdown (Right column) */}
+                <div className="col-span-5 text-xs sm:text-sm space-y-1.5 font-semibold">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Sub-Total:</span>
+                    <span className="text-slate-900 font-bold">{document.subtotal.toLocaleString()}</span>
+                  </div>
+                  {document.vatEnabled !== false && document.vatEnabled !== 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>VAT / Tax ({document.taxRate}%):</span>
+                      <span className="text-slate-900 font-bold">{document.taxAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {document.discount > 0 && (
+                    <div className="flex justify-between text-rose-600 font-extrabold">
+                      <span>Special Discount:</span>
+                      <span>- {document.discount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm sm:text-base font-black border-t-2 border-slate-300 pt-2 text-blue-900">
+                    <span>Total Payable:</span>
+                    <span className="text-base sm:text-lg font-black text-blue-950">{document.total.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Terms, Conditions & Closing & Signatures */}
+            <div className="grid grid-cols-2 gap-4 mt-3 border-t border-slate-200 pt-4 text-xs sm:text-sm relative z-10 flex-1">
+              {/* Left side: Terms and Receiver Signature */}
+              <div className="flex flex-col justify-between items-start text-left h-full min-h-[120px]">
+                {document.terms ? (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-300 w-full mb-3">
+                    <h4 className="font-black text-slate-800 uppercase tracking-widest mb-1.5 border-b border-slate-200 pb-1 text-[10px] sm:text-xs">
+                      Terms & Notes:
+                    </h4>
+                    <p className="whitespace-pre-line text-xs sm:text-[13px] text-slate-700 leading-relaxed font-sans font-semibold">
+                      {document.terms}
+                    </p>
+                  </div>
+                ) : <div />}
+
+                {isChallan && (
+                  <div className="mt-auto pt-3 text-left w-44 sm:w-52">
+                    <div className="h-10 w-full mb-1 border-b-2 border-slate-400"></div>
+                    <p className="font-black text-slate-950 text-xs sm:text-sm font-display leading-none">Receiver's Signature</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">(গ্রহীতার স্বাক্ষর ও তারিখ)</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Right side: Closing letter text & Authorized Signatures */}
               <div className="flex flex-col justify-between items-end text-right h-full min-h-[120px]">
                 {(isOffer || isQuotation) && document.closingParagraph && (
                   <p className="text-slate-600 font-bold italic text-xs sm:text-[13px] mb-3 leading-normal max-w-sm">
