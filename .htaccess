@@ -10,11 +10,14 @@ Options -Indexes
   RewriteEngine On
   RewriteBase /
 
-  # 1. Serve existing files directly (JS, CSS, images, api/upload.php, api/test_db.php, uploads/...)
+  # 1. Do NOT rewrite direct PHP script files (e.g. /api/test_db.php, /api/upload.php, /api/index.php)
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule ^ - [L]
 
-  # 2. Serve existing directories if they contain index
+  RewriteCond %{REQUEST_URI} \.php$ [NC]
+  RewriteRule ^ - [L]
+
+  # 2. Do NOT rewrite existing directories or files
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 

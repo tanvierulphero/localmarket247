@@ -87,15 +87,6 @@ let isSeeded = false;
 async function seedInitialDataIfNeeded() {
   if (isSeeded) return;
   try {
-    // Ensure all required columns exist in PostgreSQL
-    await pool.query(`
-      ALTER TABLE settings ADD COLUMN IF NOT EXISTS logo_url text DEFAULT '';
-      ALTER TABLE settings ADD COLUMN IF NOT EXISTS watermark_url text DEFAULT '';
-      ALTER TABLE settings ADD COLUMN IF NOT EXISTS favicon_url text DEFAULT '';
-      ALTER TABLE settings ADD COLUMN IF NOT EXISTS watermark_opacity real DEFAULT 0.04;
-      ALTER TABLE settings ADD COLUMN IF NOT EXISTS show_watermark integer DEFAULT 1;
-    `).catch((e) => console.error('Column check notice:', e));
-
     const existingStaff = await db.select().from(staffUsers).limit(1).catch(() => []);
     if (existingStaff.length === 0) {
       console.log('Seeding initial admin staff user into Cloud SQL...');
