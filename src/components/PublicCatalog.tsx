@@ -92,13 +92,13 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
         <div className="flex items-center gap-4 max-w-7xl mx-auto w-full justify-between">
           <div className="flex flex-wrap items-center gap-3 md:gap-4">
             <span className="bg-blue-800 text-blue-100 font-extrabold px-2.5 py-0.5 rounded text-[10px] tracking-wide border border-blue-700">
-              Supported by Superstar Engineering BD
+              Technical support by Jubayer Machineries
             </span>
             <span className="flex items-center gap-1">
               <Phone className="w-3.5 h-3.5 text-blue-300" /> 01715-994956, 01799-498199
             </span>
             <span className="hidden sm:flex items-center gap-1">
-              <Mail className="w-3.5 h-3.5 text-blue-300" /> ssengbd25@gmail.com
+              <Mail className="w-3.5 h-3.5 text-blue-300" /> jubayermachineries@gmail.com | hitachiairsolutioncenter@gmail.com
             </span>
           </div>
           <button 
@@ -122,10 +122,10 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
               </div>
               <div className="hidden lg:flex flex-col justify-center border-l border-slate-200 pl-3">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
-                  Technical Partner
+                  Technical Support
                 </span>
                 <span className="text-xs font-bold text-slate-800 tracking-tight mt-0.5">
-                  Superstar Engineering BD
+                  Jubayer Machineries
                 </span>
               </div>
             </div>
@@ -493,8 +493,9 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
                 <Mail className="w-5 h-5 text-rose-500 flex-shrink-0" />
                 <div>
                   <h4 className="font-bold text-white">Official Email</h4>
-                  <p className="text-slate-300 text-xs mt-1">
-                    jubayermachineries@gmail.com
+                  <p className="text-slate-300 text-xs mt-1 leading-relaxed">
+                    jubayermachineries@gmail.com<br />
+                    hitachiairsolutioncenter@gmail.com
                   </p>
                 </div>
               </div>
@@ -579,7 +580,7 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div>
             <p className="font-bold text-slate-200">
-              &copy; 2026 hitachisolutioncenter &bull; <span className="text-blue-400">Supported by Superstar Engineering BD</span>
+              &copy; 2026 hitachisolutioncenter &bull; <span className="text-blue-400">Technical support by Jubayer Machineries</span>
             </p>
             <p className="text-[11px] text-slate-500 mt-0.5">All Rights Reserved &bull; Gazipur Industrial Zone, Bangladesh</p>
           </div>
