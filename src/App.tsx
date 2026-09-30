@@ -94,6 +94,8 @@ import {
   apiGetExpenses,
   apiSaveExpense,
   apiDeleteExpense,
+  apiClearDatabase,
+  apiSeedDemoData,
   apiCheckDatabaseHealth,
   DbHealthResult
 } from './lib/api';
@@ -212,95 +214,89 @@ export default function App() {
     const cachedReturns = localStorage.getItem('hsc_returns');
     const cachedExpenses = localStorage.getItem('hsc_expenses');
 
-    if (cachedProds) setProducts(JSON.parse(cachedProds));
-    if (cachedCusts) setCustomers(JSON.parse(cachedCusts));
-    if (cachedDocs) setDocuments(JSON.parse(cachedDocs));
-    if (cachedDispatches) setDispatches(JSON.parse(cachedDispatches));
-    if (cachedSuppliers) setSuppliers(JSON.parse(cachedSuppliers));
-    if (cachedPurchases) setPurchases(JSON.parse(cachedPurchases));
-    if (cachedReturns) setSalesReturns(JSON.parse(cachedReturns));
-    if (cachedExpenses) setExpenses(JSON.parse(cachedExpenses));
+    if (cachedProds) {
+      try { setProducts(JSON.parse(cachedProds)); } catch {}
+    }
+    if (cachedCusts) {
+      try { setCustomers(JSON.parse(cachedCusts)); } catch {}
+    }
+    if (cachedDocs) {
+      try { setDocuments(JSON.parse(cachedDocs)); } catch {}
+    }
+    if (cachedDispatches) {
+      try { setDispatches(JSON.parse(cachedDispatches)); } catch {}
+    }
+    if (cachedSuppliers) {
+      try { setSuppliers(JSON.parse(cachedSuppliers)); } catch {}
+    }
+    if (cachedPurchases) {
+      try { setPurchases(JSON.parse(cachedPurchases)); } catch {}
+    }
+    if (cachedReturns) {
+      try { setSalesReturns(JSON.parse(cachedReturns)); } catch {}
+    }
+    if (cachedExpenses) {
+      try { setExpenses(JSON.parse(cachedExpenses)); } catch {}
+    }
 
     try {
       const [prods, custs, docs, staff, setts, disps, sups, purs, rets, exps] = await Promise.all([
-        apiGetProducts().catch(() => cachedProds ? JSON.parse(cachedProds) : INITIAL_PRODUCTS),
-        apiGetCustomers().catch(() => cachedCusts ? JSON.parse(cachedCusts) : INITIAL_CUSTOMERS),
-        apiGetDocuments().catch(() => cachedDocs ? JSON.parse(cachedDocs) : INITIAL_DOCUMENTS),
+        apiGetProducts().catch(() => cachedProds ? JSON.parse(cachedProds) : []),
+        apiGetCustomers().catch(() => cachedCusts ? JSON.parse(cachedCusts) : []),
+        apiGetDocuments().catch(() => cachedDocs ? JSON.parse(cachedDocs) : []),
         apiGetStaff().catch(() => INITIAL_STAFF_USERS),
         apiGetSettings().catch(() => DEFAULT_SETTINGS),
-        apiGetFieldDispatches().catch(() => cachedDispatches ? JSON.parse(cachedDispatches) : INITIAL_FIELD_DISPATCHES),
-        apiGetSuppliers().catch(() => cachedSuppliers ? JSON.parse(cachedSuppliers) : INITIAL_SUPPLIERS),
-        apiGetPurchases().catch(() => cachedPurchases ? JSON.parse(cachedPurchases) : INITIAL_PURCHASES),
-        apiGetReturns().catch(() => cachedReturns ? JSON.parse(cachedReturns) : INITIAL_SALES_RETURNS),
-        apiGetExpenses().catch(() => cachedExpenses ? JSON.parse(cachedExpenses) : INITIAL_EXPENSES),
+        apiGetFieldDispatches().catch(() => cachedDispatches ? JSON.parse(cachedDispatches) : []),
+        apiGetSuppliers().catch(() => cachedSuppliers ? JSON.parse(cachedSuppliers) : []),
+        apiGetPurchases().catch(() => cachedPurchases ? JSON.parse(cachedPurchases) : []),
+        apiGetReturns().catch(() => cachedReturns ? JSON.parse(cachedReturns) : []),
+        apiGetExpenses().catch(() => cachedExpenses ? JSON.parse(cachedExpenses) : []),
       ]);
 
-      if (prods && prods.length > 0) {
-        setProducts(prods);
-        localStorage.setItem('hsc_products', JSON.stringify(prods));
-      } else if (!cachedProds) {
-        setProducts(INITIAL_PRODUCTS);
-      }
+      const safeProds = Array.isArray(prods) ? prods : [];
+      setProducts(safeProds);
+      localStorage.setItem('hsc_products', JSON.stringify(safeProds));
 
-      if (custs && custs.length > 0) {
-        setCustomers(custs);
-        localStorage.setItem('hsc_customers', JSON.stringify(custs));
-      } else if (!cachedCusts) {
-        setCustomers(INITIAL_CUSTOMERS);
-      }
+      const safeCusts = Array.isArray(custs) ? custs : [];
+      setCustomers(safeCusts);
+      localStorage.setItem('hsc_customers', JSON.stringify(safeCusts));
 
-      if (docs && docs.length > 0) {
-        setDocuments(docs);
-        localStorage.setItem('hsc_documents', JSON.stringify(docs));
-      } else if (!cachedDocs) {
-        setDocuments(INITIAL_DOCUMENTS);
-      }
+      const safeDocs = Array.isArray(docs) ? docs : [];
+      setDocuments(safeDocs);
+      localStorage.setItem('hsc_documents', JSON.stringify(safeDocs));
 
-      if (disps && disps.length > 0) {
-        setDispatches(disps);
-        localStorage.setItem('hsc_dispatches', JSON.stringify(disps));
-      } else if (!cachedDispatches) {
-        setDispatches(INITIAL_FIELD_DISPATCHES);
-      }
+      const safeDisps = Array.isArray(disps) ? disps : [];
+      setDispatches(safeDisps);
+      localStorage.setItem('hsc_dispatches', JSON.stringify(safeDisps));
 
-      if (sups && sups.length > 0) {
-        setSuppliers(sups);
-        localStorage.setItem('hsc_suppliers', JSON.stringify(sups));
-      } else if (!cachedSuppliers) {
-        setSuppliers(INITIAL_SUPPLIERS);
-      }
+      const safeSups = Array.isArray(sups) ? sups : [];
+      setSuppliers(safeSups);
+      localStorage.setItem('hsc_suppliers', JSON.stringify(safeSups));
 
-      if (purs && purs.length > 0) {
-        setPurchases(purs);
-        localStorage.setItem('hsc_purchases', JSON.stringify(purs));
-      } else if (!cachedPurchases) {
-        setPurchases(INITIAL_PURCHASES);
-      }
+      const safePurs = Array.isArray(purs) ? purs : [];
+      setPurchases(safePurs);
+      localStorage.setItem('hsc_purchases', JSON.stringify(safePurs));
 
-      if (rets && rets.length > 0) {
-        setSalesReturns(rets);
-        localStorage.setItem('hsc_returns', JSON.stringify(rets));
-      } else if (!cachedReturns) {
-        setSalesReturns(INITIAL_SALES_RETURNS);
-      }
+      const safeRets = Array.isArray(rets) ? rets : [];
+      setSalesReturns(safeRets);
+      localStorage.setItem('hsc_returns', JSON.stringify(safeRets));
 
-      if (exps && exps.length > 0) {
-        setExpenses(exps);
-        localStorage.setItem('hsc_expenses', JSON.stringify(exps));
-      } else if (!cachedExpenses) {
-        setExpenses(INITIAL_EXPENSES);
-      }
+      const safeExps = Array.isArray(exps) ? exps : [];
+      setExpenses(safeExps);
+      localStorage.setItem('hsc_expenses', JSON.stringify(safeExps));
 
-      setStaffUsers(staff.length > 0 ? staff : INITIAL_STAFF_USERS);
-      setSettings(setts);
-      setSettingsForm(setts);
+      setStaffUsers(staff && staff.length > 0 ? staff : INITIAL_STAFF_USERS);
+      if (setts) {
+        setSettings(setts);
+        setSettingsForm(setts);
+      }
 
       // Current active user restoration (only restore if previously logged in)
       const savedCurrentUser = localStorage.getItem('jm_current_user');
       if (savedCurrentUser) {
         try {
           const parsed = JSON.parse(savedCurrentUser);
-          const matched = staff.find(s => s.id === parsed.id) || parsed;
+          const matched = staff?.find(s => s.id === parsed.id) || parsed;
           setCurrentUser(matched);
         } catch {
           setCurrentUser(null);
@@ -341,6 +337,8 @@ export default function App() {
         apiGetReturns().then(setSalesReturns).catch(() => {});
       } else if (change.entity === 'expenses') {
         apiGetExpenses().then(setExpenses).catch(() => {});
+      } else if (change.entity === 'database') {
+        loadCloudSqlData();
       }
     });
 
@@ -401,37 +399,43 @@ export default function App() {
 
   // Clear All Data Handler (for fresh entry)
   const handleClearAllData = async () => {
-    if (window.confirm("Are you sure you want to clear ALL documents, inventory items, and customer records in Cloud SQL?")) {
+    if (window.confirm("আপনি কি নিশ্চিত যে আপনি ডাটাবেজের সমস্ত পণ্য, গ্রাহক, ইনভয়েস, পারচেজ, ডেলিভারি চালান ও খরচ তালিকা সম্পূর্ণ খালি (Clear) করতে চান? এটি করলে একদম নতুন করে ডাটাবেজ সেটআপ করতে পারবেন।")) {
       try {
-        for (const p of products) await apiDeleteProduct(p.id).catch(() => {});
-        for (const c of customers) await apiDeleteCustomer(c.id).catch(() => {});
-        for (const d of documents) await apiDeleteDocument(d.id).catch(() => {});
+        await apiClearDatabase();
         setProducts([]);
         setCustomers([]);
         setDocuments([]);
-        alert("Cloud SQL Database cleared successfully!");
-      } catch (e) {
-        alert("Error clearing database. Please try again.");
+        setDispatches([]);
+        setSuppliers([]);
+        setPurchases([]);
+        setSalesReturns([]);
+        setExpenses([]);
+        localStorage.setItem('hsc_products', '[]');
+        localStorage.setItem('hsc_customers', '[]');
+        localStorage.setItem('hsc_documents', '[]');
+        localStorage.setItem('hsc_dispatches', '[]');
+        localStorage.setItem('hsc_suppliers', '[]');
+        localStorage.setItem('hsc_purchases', '[]');
+        localStorage.setItem('hsc_returns', '[]');
+        localStorage.setItem('hsc_expenses', '[]');
+        alert("ডাটাবেজ সফলভাবে সম্পূর্ণ খালি করা হয়েছে! এখন আপনি নতুন করে ডাটা সেটআপ করতে পারবেন।");
+      } catch (e: any) {
+        console.error('Error clearing database:', e);
+        alert("ডাটাবেজ ক্লিয়ার করতে সমস্যা হয়েছে: " + (e.message || ''));
       }
     }
   };
 
   // Restore Sample Demo Data Handler
   const handleRestoreSampleData = async () => {
-    if (window.confirm("Restore sample demo products, customers, and documents to Cloud SQL?")) {
+    if (window.confirm("আপনি কি ডেমো স্যাম্পল ডাটা ডাটাবেজে রিস্টোর করতে চান?")) {
       try {
-        setProducts(INITIAL_PRODUCTS);
-        setCustomers(INITIAL_CUSTOMERS);
-        setDocuments(INITIAL_DOCUMENTS);
-
-        for (const p of INITIAL_PRODUCTS) await apiSaveProduct(p);
-        for (const c of INITIAL_CUSTOMERS) await apiSaveCustomer(c);
-        for (const d of INITIAL_DOCUMENTS) await apiSaveDocument(d);
-
-        alert("Sample demo data restored successfully to Cloud SQL!");
-      } catch (e) {
+        await apiSeedDemoData();
+        await loadCloudSqlData();
+        alert("ডেমো ডাটা সফলভাবে রিস্টোর হয়েছে!");
+      } catch (e: any) {
         console.error('Error restoring sample data:', e);
-        alert('Error restoring demo data.');
+        alert('ডেমো ডাটা রিস্টোর করতে সমস্যা হয়েছে।');
       }
     }
   };

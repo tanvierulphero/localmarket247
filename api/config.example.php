@@ -5,13 +5,16 @@
 // ========================================================
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', ''); // e.g. 'cpaneluser_hitachidb'
+define('DB_NAME', ''); // e.g. 'cpaneluser_dbname'
 define('DB_USER', ''); // e.g. 'cpaneluser_dbuser'
-define('DB_PASS', ''); // e.g. 'YourStrongPassword123'
+define('DB_PASS', ''); // e.g. 'YourPassword123'
 
 function getDbConnection() {
     static $pdo = null;
     if ($pdo === null) {
+        if (empty(DB_NAME) || empty(DB_USER)) {
+            return null;
+        }
         $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
         $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,

@@ -788,8 +788,28 @@ try {
             }
             break;
 
-        // ----------------------------------------------------
-        // 12. DATABASE & SERVER HEALTH CHECK
+        // 12. DATABASE CLEAR / RESET ACTION
+        case 'database-clear':
+        case 'clear-database':
+            if ($method === 'POST') {
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+                $pdo->exec("TRUNCATE TABLE products");
+                $pdo->exec("TRUNCATE TABLE customers");
+                $pdo->exec("TRUNCATE TABLE documents");
+                $pdo->exec("TRUNCATE TABLE field_dispatches");
+                $pdo->exec("TRUNCATE TABLE suppliers");
+                $pdo->exec("TRUNCATE TABLE purchases");
+                try { $pdo->exec("TRUNCATE TABLE sales_returns"); } catch (Exception $e) {}
+                try { $pdo->exec("TRUNCATE TABLE expenses"); } catch (Exception $e) {}
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Database tables cleared successfully.'
+                ]);
+            }
+            break;
+
+        // 13. DATABASE & SERVER HEALTH CHECK
         // ----------------------------------------------------
         case 'health':
             $startTime = microtime(true);

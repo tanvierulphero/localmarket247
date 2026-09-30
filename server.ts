@@ -95,49 +95,10 @@ async function seedInitialDataIfNeeded() {
       ALTER TABLE settings ADD COLUMN IF NOT EXISTS watermark_opacity real DEFAULT 0.04;
       ALTER TABLE settings ADD COLUMN IF NOT EXISTS show_watermark integer DEFAULT 1;
     `).catch((e) => console.error('Column check notice:', e));
-    const existingProducts = await db.select().from(products).limit(1).catch(() => []);
-    if (existingProducts.length === 0) {
-      console.log('Seeding initial products into Cloud SQL...');
-      for (const p of INITIAL_PRODUCTS) {
-        await db.insert(products).values(p).onConflictDoNothing().catch(() => {});
-      }
-    }
-
-    const existingCustomers = await db.select().from(customers).limit(1).catch(() => []);
-    if (existingCustomers.length === 0) {
-      console.log('Seeding initial customers into Cloud SQL...');
-      for (const c of INITIAL_CUSTOMERS) {
-        await db.insert(customers).values(c).onConflictDoNothing().catch(() => {});
-      }
-    }
-
-    const existingSuppliers = await db.select().from(suppliers).limit(1).catch(() => []);
-    if (existingSuppliers.length === 0) {
-      console.log('Seeding initial suppliers into Cloud SQL...');
-      for (const s of INITIAL_SUPPLIERS) {
-        await db.insert(suppliers).values(s).onConflictDoNothing().catch(() => {});
-      }
-    }
-
-    const existingPurchases = await db.select().from(purchases).limit(1).catch(() => []);
-    if (existingPurchases.length === 0) {
-      console.log('Seeding initial purchases into Cloud SQL...');
-      for (const p of INITIAL_PURCHASES) {
-        await db.insert(purchases).values(p).onConflictDoNothing().catch(() => {});
-      }
-    }
-
-    const existingDocs = await db.select().from(documents).limit(1).catch(() => []);
-    if (existingDocs.length === 0) {
-      console.log('Seeding initial documents into Cloud SQL...');
-      for (const d of INITIAL_DOCUMENTS) {
-        await db.insert(documents).values(d).onConflictDoNothing().catch(() => {});
-      }
-    }
 
     const existingStaff = await db.select().from(staffUsers).limit(1).catch(() => []);
     if (existingStaff.length === 0) {
-      console.log('Seeding initial staff users into Cloud SQL...');
+      console.log('Seeding initial admin staff user into Cloud SQL...');
       for (const s of INITIAL_STAFF_USERS) {
         await db.insert(staffUsers).values(s).onConflictDoNothing().catch(() => {});
       }
@@ -150,69 +111,11 @@ async function seedInitialDataIfNeeded() {
         id: 'global_settings',
         ...DEFAULT_SETTINGS,
       }).onConflictDoNothing().catch(() => {});
-    } else {
-      const current = existingSettings[0];
-      if (current && (current.name !== 'Jubayer Machineries' || current.email === 'ssengbd25@gmail.com' || current.address.includes('M.R Trade'))) {
-        console.log('Updating existing settings to Jubayer Machineries...');
-        await (db.update(settings as any) as any)
-          .set({
-            name: "Jubayer Machineries",
-            slogan: "Your Problem Solution is Sustainable Partner",
-            address: "Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.",
-            phone1: "01715-994956",
-            phone2: "01799-498199",
-            email: "jubayermachineries@gmail.com",
-            website: "www.hitachiairsolutioncenter.com",
-          })
-          .where(eq(settings.id, 'global_settings'))
-          .catch(() => {});
-      }
     }
 
-    const existingDispatches = await db.select().from(fieldDispatches).limit(1).catch(() => []);
-    if (existingDispatches.length === 0) {
-      console.log('Seeding initial field dispatches into Cloud SQL...');
-      for (const fd of INITIAL_FIELD_DISPATCHES) {
-        await db.insert(fieldDispatches).values(fd).onConflictDoNothing().catch(() => {});
-      }
-    }
-
-    const existingReturns = await db.select().from(salesReturns).limit(1).catch(() => []);
-    if (existingReturns.length === 0) {
-      console.log('Seeding initial sales returns into Cloud SQL...');
-      for (const ret of INITIAL_SALES_RETURNS) {
-        await (db.insert(salesReturns) as any).values({
-          ...ret,
-          deductFromDue: ret.deductFromDue ? 1 : 0,
-          restocked: ret.restocked ? 1 : 0
-        }).onConflictDoNothing().catch(() => {});
-      }
-    }
-
-    const existingExpenses = await db.select().from(expenses).limit(1).catch(() => []);
-    if (existingExpenses.length === 0) {
-      console.log('Seeding initial daily expenses into Cloud SQL...');
-      for (const expItem of INITIAL_EXPENSES) {
-        await (db.insert(expenses) as any).values({
-          id: expItem.id,
-          expenseNumber: expItem.expenseNumber,
-          date: expItem.date,
-          category: expItem.category,
-          title: expItem.title,
-          amount: Number(expItem.amount) || 0,
-          paymentMethod: expItem.paymentMethod,
-          paidBy: expItem.paidBy || '',
-          staffId: expItem.staffId || '',
-          referenceNo: expItem.referenceNo || '',
-          notes: expItem.notes || '',
-          receiptUrl: expItem.receiptUrl || '',
-          createdAt: expItem.createdAt || '',
-        }).onConflictDoNothing().catch(() => {});
-      }
-    }
     isSeeded = true;
   } catch (err) {
-    console.error('Data seeding check encountered notice:', err);
+    console.error('Database setup check notice:', err);
   }
 }
 
@@ -873,7 +776,71 @@ app.delete('/api/expenses/:id', async (req, res) => {
   }
 });
 
-// 10. Database & Server Health Diagnostics Check
+// 11. Database Setup / Clear / Reset Management
+app.post('/api/database/clear', async (_req, res) => {
+  try {
+    await pool.query(`TRUNCATE TABLE products, customers, documents, purchases, suppliers, field_dispatches, sales_returns, expenses CASCADE;`);
+    notifyChange('database', 'clear', { timestamp: Date.now() });
+    res.json({ success: true, message: 'All transactions, products, customers, and records have been cleared. Database is empty and ready for fresh setup.' });
+  } catch (err: any) {
+    console.error('Failed to clear database:', err);
+    res.status(500).json({ error: err.message || 'Failed to clear database' });
+  }
+});
+
+app.post('/api/database/seed-demo', async (_req, res) => {
+  try {
+    for (const p of INITIAL_PRODUCTS) {
+      await db.insert(products).values(p).onConflictDoNothing().catch(() => {});
+    }
+    for (const c of INITIAL_CUSTOMERS) {
+      await db.insert(customers).values(c).onConflictDoNothing().catch(() => {});
+    }
+    for (const s of INITIAL_SUPPLIERS) {
+      await db.insert(suppliers).values(s).onConflictDoNothing().catch(() => {});
+    }
+    for (const p of INITIAL_PURCHASES) {
+      await db.insert(purchases).values(p).onConflictDoNothing().catch(() => {});
+    }
+    for (const d of INITIAL_DOCUMENTS) {
+      await db.insert(documents).values(d).onConflictDoNothing().catch(() => {});
+    }
+    for (const fd of INITIAL_FIELD_DISPATCHES) {
+      await db.insert(fieldDispatches).values(fd).onConflictDoNothing().catch(() => {});
+    }
+    for (const ret of INITIAL_SALES_RETURNS) {
+      await (db.insert(salesReturns) as any).values({
+        ...ret,
+        deductFromDue: ret.deductFromDue ? 1 : 0,
+        restocked: ret.restocked ? 1 : 0
+      }).onConflictDoNothing().catch(() => {});
+    }
+    for (const expItem of INITIAL_EXPENSES) {
+      await (db.insert(expenses) as any).values({
+        id: expItem.id,
+        expenseNumber: expItem.expenseNumber,
+        date: expItem.date,
+        category: expItem.category,
+        title: expItem.title,
+        amount: Number(expItem.amount) || 0,
+        paymentMethod: expItem.paymentMethod,
+        paidBy: expItem.paidBy || '',
+        staffId: expItem.staffId || '',
+        referenceNo: expItem.referenceNo || '',
+        notes: expItem.notes || '',
+        receiptUrl: expItem.receiptUrl || '',
+        createdAt: expItem.createdAt || '',
+      }).onConflictDoNothing().catch(() => {});
+    }
+    notifyChange('database', 'seed', { timestamp: Date.now() });
+    res.json({ success: true, message: 'Demo data seeded successfully.' });
+  } catch (err: any) {
+    console.error('Failed to seed demo data:', err);
+    res.status(500).json({ error: err.message || 'Failed to seed demo data' });
+  }
+});
+
+// 12. Database & Server Health Diagnostics Check
 app.get('/api/health', async (_req, res) => {
   const startTime = Date.now();
   try {

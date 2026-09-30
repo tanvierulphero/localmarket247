@@ -149,6 +149,13 @@ export const apiSaveReturn = (salesReturn: SalesReturn): Promise<SalesReturn> =>
 export const apiDeleteReturn = (id: string): Promise<{ success: boolean }> =>
   fetchJson<{ success: boolean }>(`/api/returns/${id}`, { method: 'DELETE' });
 
+// Database Clear & Reset Management
+export const apiClearDatabase = (): Promise<{ success: boolean; message: string }> =>
+  fetchJson<{ success: boolean; message: string }>('/api/database/clear', { method: 'POST' });
+
+export const apiSeedDemoData = (): Promise<{ success: boolean; message: string }> =>
+  fetchJson<{ success: boolean; message: string }>('/api/database/seed-demo', { method: 'POST' });
+
 // Daily Expenses API
 export const apiGetExpenses = (): Promise<Expense[]> => fetchJson<Expense[]>('/api/expenses');
 export const apiSaveExpense = (expense: Expense): Promise<Expense> =>

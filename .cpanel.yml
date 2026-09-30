@@ -2,5 +2,12 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/localmar/public_html/
+    # 1. Backup live cPanel database config and uploads folder
+    - if [ -f $DEPLOYPATH/api/config.php ]; then /bin/cp $DEPLOYPATH/api/config.php /tmp/live_api_config_backup.php; fi
+    - if [ -d $DEPLOYPATH/uploads ]; then /bin/mkdir -p /tmp/live_uploads_backup && /bin/cp -R $DEPLOYPATH/uploads/* /tmp/live_uploads_backup/ 2>/dev/null || true; fi
+    # 2. Deploy updated application files from GitHub
     - /bin/cp -R * $DEPLOYPATH
     - /bin/cp -R .htaccess $DEPLOYPATH 2>/dev/null || true
+    # 3. Restore live cPanel database config and uploaded images so they are NEVER overwritten
+    - if [ -f /tmp/live_api_config_backup.php ]; then /bin/cp /tmp/live_api_config_backup.php $DEPLOYPATH/api/config.php; fi
+    - if [ -d /tmp/live_uploads_backup ]; then /bin/mkdir -p $DEPLOYPATH/uploads && /bin/cp -R /tmp/live_uploads_backup/* $DEPLOYPATH/uploads/ 2>/dev/null || true; fi
