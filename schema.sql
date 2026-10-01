@@ -252,7 +252,65 @@ CREATE TABLE `uploaded_files` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 10. Table: activity_logs (প্রতিটি ক্লিক, এন্ট্রি, এডিট, ডিলিট ও অ্যাকশন ট্র্যাকিং)
+-- 10. Table: sales_returns (পণ্য ফেরত ও রিস্টক রেকর্ড)
+-- ------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `sales_returns`;
+CREATE TABLE `sales_returns` (
+  `id` VARCHAR(128) NOT NULL,
+  `return_number` VARCHAR(100) NOT NULL,
+  `return_date` VARCHAR(50) NOT NULL,
+  `original_doc_id` VARCHAR(128) DEFAULT '',
+  `original_doc_number` VARCHAR(100) DEFAULT '',
+  `customer_id` VARCHAR(128) NOT NULL,
+  `customer_name` VARCHAR(255) NOT NULL,
+  `customer_company` VARCHAR(255) DEFAULT '',
+  `customer_phone` VARCHAR(100) DEFAULT '',
+  `product_id` VARCHAR(128) NOT NULL,
+  `product_name` VARCHAR(255) NOT NULL,
+  `sku` VARCHAR(100) DEFAULT '',
+  `parts_number` VARCHAR(100) DEFAULT '',
+  `quantity` INT NOT NULL DEFAULT 1,
+  `unit` VARCHAR(50) NOT NULL DEFAULT 'Pcs',
+  `unit_price` DOUBLE NOT NULL DEFAULT 0,
+  `refund_amount` DOUBLE DEFAULT 0,
+  `deduct_from_due` INT DEFAULT 1,
+  `restocked` INT DEFAULT 1,
+  `reason` TEXT,
+  `notes` TEXT,
+  `created_at` VARCHAR(100) DEFAULT '',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_return_number` (`return_number`),
+  KEY `idx_return_customer` (`customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------------------------
+-- 11. Table: expenses (দৈনিক খরচ ও অফিসের খরচ তালিকা)
+-- ------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `expenses`;
+CREATE TABLE `expenses` (
+  `id` VARCHAR(128) NOT NULL,
+  `expense_number` VARCHAR(100) NOT NULL,
+  `date` VARCHAR(50) NOT NULL,
+  `category` VARCHAR(100) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `amount` DOUBLE NOT NULL DEFAULT 0,
+  `payment_method` VARCHAR(50) NOT NULL DEFAULT 'Cash',
+  `paid_by` VARCHAR(255) DEFAULT '',
+  `staff_id` VARCHAR(128) DEFAULT '',
+  `reference_no` VARCHAR(100) DEFAULT '',
+  `notes` TEXT,
+  `receipt_url` TEXT,
+  `created_at` VARCHAR(100) DEFAULT '',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_expense_number` (`expense_number`),
+  KEY `idx_expense_date` (`date`),
+  KEY `idx_expense_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------------------------
+-- 12. Table: activity_logs (প্রতিটি ক্লিক, এন্ট্রি, এডিট, ডিলিট ও অ্যাকশন ট্র্যাকিং)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `activity_logs`;
 CREATE TABLE `activity_logs` (

@@ -4,6 +4,10 @@
 // Handles GET, POST, DELETE for products, customers, documents, staff, settings
 // ========================================================
 
+ob_start();
+@ini_set('display_errors', '0');
+error_reporting(0);
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
@@ -846,8 +850,8 @@ try {
                     'uploadsFolderWritable' => $uploadsWritable,
                     'timestamp' => date('c')
                 ]);
-            } catch (Exception $e) {
-                http_response_code(500);
+            } catch (Throwable $e) {
+                http_response_code(200);
                 echo json_encode([
                     'status' => 'error',
                     'connected' => false,
@@ -862,7 +866,7 @@ try {
             echo json_encode(['error' => 'Endpoint not found', 'endpoint' => $endpoint]);
             break;
     }
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+} catch (Throwable $e) {
+    http_response_code(200);
+    echo json_encode(['error' => $e->getMessage(), 'db_error' => true]);
 }
