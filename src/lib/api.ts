@@ -325,7 +325,17 @@ export async function apiCheckDatabaseHealth(): Promise<DbHealthResult> {
     clearTimeout(timeoutId);
 
     if (response.ok) {
-      return await response.json();
+      const data = await response.json();
+      if (data && data.status === 'db_config_required') {
+        return {
+          status: 'error',
+          database: 'MySQL / MariaDB (cPanel)',
+          connected: false,
+          error: data.message || 'Please configure MySQL database credentials in api/config.php',
+          timestamp: new Date().toISOString(),
+        };
+      }
+      return data;
     }
     const errData = await response.json().catch(() => ({}));
     return {

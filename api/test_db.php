@@ -64,7 +64,7 @@ header('Content-Type: text/html; charset=utf-8');
         include_once $configPath;
     } else {
         echo '<p><span class="badge-error">Missing api/config.php File ❌</span></p>';
-        echo '<p>সমাধান: <code>api/config.example.php</code> ফাইলটি কপি করে <code>api/config.php</code> নামে সেভ করুন।</p>';
+        echo '<p>সমাধান: cPanel File Manager এ <code>api/config.php</code> ফাইলটি তৈরি করে আপনার ডাটাবেজ ক্রেডেনশিয়াল বসিয়ে দিন।</p>';
     }
     ?>
 
