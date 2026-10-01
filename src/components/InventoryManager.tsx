@@ -888,30 +888,7 @@ export default function InventoryManager({
                   </div>
                 </div>
 
-                {/* 1-Click Preset Industrial Photos */}
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    Quick Preset Machinery Photos:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {PRODUCT_IMAGE_PRESETS.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: preset.url }))}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
-                          formData.imageUrl === preset.url
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
-                        }`}
-                      >
-                        {formData.imageUrl === preset.url && <Check className="w-3 h-3" />}
-                        {preset.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Direct Image URL input */}
                 <div className="space-y-1">
