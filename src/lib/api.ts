@@ -1,9 +1,12 @@
 import { Product, Customer, Document, StaffUser, BusinessSettings, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from '../types';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  // Dynamic base-path resolution for 100% cPanel subdirectory / subfolder compatibility
+  const targetUrl = url.startsWith('/api/') ? url.substring(1) : url;
+
   let response: Response;
   try {
-    response = await fetch(url, {
+    response = await fetch(targetUrl, {
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers,
@@ -14,13 +17,13 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     throw new Error(`Network Error: ${err.message || 'Server unreachable'}`);
   }
 
-  // If 404, attempt direct PHP endpoint fallback e.g. /api/index.php?endpoint=products
+  // If 404, attempt direct PHP endpoint fallback e.g. api/index.php?endpoint=products
   if (response.status === 404 && url.startsWith('/api/') && !url.startsWith('/api/index.php')) {
     const rawPath = url.replace(/^\/api\//, '');
     const parts = rawPath.split('/').filter(Boolean);
     const endpoint = parts[0] || '';
     const id = parts[1] || '';
-    const fallbackUrl = `/api/index.php?endpoint=${encodeURIComponent(endpoint)}${id ? `&id=${encodeURIComponent(id)}` : ''}`;
+    const fallbackUrl = `api/index.php?endpoint=${encodeURIComponent(endpoint)}${id ? `&id=${encodeURIComponent(id)}` : ''}`;
 
     try {
       const fallbackResponse = await fetch(fallbackUrl, {
@@ -53,13 +56,30 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return data;
 }
 
+// Helper to normalize product keys between MySQL (snake_case) and JSON/Frontend (camelCase)
+function normalizeProduct(p: any): Product {
+  if (!p) return p;
+  return {
+    ...p,
+    imageUrl: p.imageUrl || p.image_url || '',
+    costPrice: p.costPrice !== undefined ? p.costPrice : (p.cost_price !== undefined ? p.cost_price : 0),
+  };
+}
+
 // Products API
-export const apiGetProducts = (): Promise<Product[]> => fetchJson<Product[]>('/api/products');
-export const apiSaveProduct = (product: Product): Promise<Product> =>
-  fetchJson<Product>('/api/products', {
+export const apiGetProducts = async (): Promise<Product[]> => {
+  const data = await fetchJson<Product[]>('/api/products');
+  return Array.isArray(data) ? data.map(normalizeProduct) : [];
+};
+
+export const apiSaveProduct = async (product: Product): Promise<Product> => {
+  const data = await fetchJson<Product>('/api/products', {
     method: 'POST',
     body: JSON.stringify(product),
   });
+  return normalizeProduct(data);
+};
+
 export const apiDeleteProduct = (id: string): Promise<{ success: boolean }> =>
   fetchJson<{ success: boolean }>(`/api/products/${id}`, { method: 'DELETE' });
 
@@ -314,11 +334,11 @@ export async function apiCheckDatabaseHealth(): Promise<DbHealthResult> {
     // Continue to cPanel endpoint
   }
 
-  // 2. Try cPanel PHP API endpoint (/api/index.php?endpoint=health)
+  // 2. Try cPanel PHP API endpoint (api/index.php?endpoint=health)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch('/api/index.php?endpoint=health', {
+    const response = await fetch('api/index.php?endpoint=health', {
       signal: controller.signal,
       headers: { 'Cache-Control': 'no-cache' },
     });

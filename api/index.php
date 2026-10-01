@@ -119,85 +119,14 @@ function seedInitialJsonDataIfNeeded() {
         ]);
     }
 
-    // 3. Products
+    // 3. Products (Starts as an empty array for a clean setup with no demo data)
     if (!file_exists($dataDir . '/products.json')) {
-        saveJsonStorage('products', [
-            [
-                'id' => 'prod-1',
-                'name' => 'Hitachi Hiscrew 37 S-Type Screw Compressor',
-                'sku' => 'HIT-HS-37S',
-                'category' => 'Screw Air Compressor',
-                'brand' => 'Hitachi',
-                'price' => 650000,
-                'costPrice' => 480000,
-                'stock' => 3,
-                'unit' => 'Set',
-                'description' => 'High-performance S-Type oil-flooded rotary screw air compressor with advanced microprocessor control.',
-                'specs' => [
-                    ['label' => 'Motor Power', 'value' => '37 kW (50 HP)'],
-                    ['label' => 'Free Air Delivery', 'value' => '6.2 m³/min'],
-                    ['label' => 'Working Pressure', 'value' => '8.5 Bar']
-                ],
-                'imageUrl' => 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=60'
-            ],
-            [
-                'id' => 'prod-2',
-                'name' => 'Atlas Copco GA37 VSD+ Variable Speed Compressor',
-                'sku' => 'AC-GA37-VSD',
-                'category' => 'Screw Air Compressor',
-                'brand' => 'Atlas Copco',
-                'price' => 890000,
-                'costPrice' => 670000,
-                'stock' => 2,
-                'unit' => 'Set',
-                'description' => 'Premium variable speed drive (VSD+) rotary screw compressor.',
-                'specs' => [
-                    ['label' => 'Motor Power', 'value' => '37 kW (50 HP)'],
-                    ['label' => 'Working Pressure', 'value' => '4 - 13 Bar']
-                ],
-                'imageUrl' => 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=400&auto=format&fit=crop&q=60'
-            ],
-            [
-                'id' => 'prod-3',
-                'name' => 'Hitachi Synthetic Screw Oil (Food Grade) 20L',
-                'sku' => 'HIT-OIL-20L',
-                'category' => 'Lubricant Oil',
-                'brand' => 'Hitachi',
-                'price' => 18500,
-                'costPrice' => 13500,
-                'stock' => 25,
-                'unit' => 'Can',
-                'description' => 'Genuine 100% synthetic compressor oil for Hitachi rotary screw compressors.',
-                'specs' => [],
-                'imageUrl' => 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=60'
-            ]
-        ]);
+        saveJsonStorage('products', []);
     }
 
-    // 4. Customers
+    // 4. Customers (Starts as an empty array for a clean setup with no demo data)
     if (!file_exists($dataDir . '/customers.json')) {
-        saveJsonStorage('customers', [
-            [
-                'id' => 'cust-1',
-                'companyId' => 'COMP-001',
-                'name' => 'Anwar Hossain',
-                'company' => 'Ha-Meem Textile Mills Ltd.',
-                'phone' => '01711-223344',
-                'email' => 'anwar@hameemgroup.com',
-                'address' => 'Nishat Nagar, Tongi, Gazipur.',
-                'notes' => 'VIP Client - Textile Division'
-            ],
-            [
-                'id' => 'cust-2',
-                'companyId' => 'COMP-002',
-                'name' => 'Engr. Shahadat Hossain',
-                'company' => 'Square Pharmaceuticals PLC',
-                'phone' => '01819-887766',
-                'email' => 'shahadat@squaregroup.com',
-                'address' => 'Kaliyakir Industrial Zone, Gazipur.',
-                'notes' => 'Pharma Clean Air Requirement'
-            ]
-        ]);
+        saveJsonStorage('customers', []);
     }
 }
 
@@ -240,6 +169,53 @@ if ($endpoint === 'health' || $endpoint === 'ping') {
         'storage' => 'Server JSON Persistence Engine (Option 1 Active)',
         'mysql_connected' => $pdo !== null,
         'message' => 'Running smoothly with Option 1: Server Flat-File Storage Engine'
+    ]);
+    exit;
+}
+
+// Database Clear and Reset Endpoint
+if ($endpoint === 'database/clear' || $endpoint === 'database_clear') {
+    $dataDir = __DIR__ . '/data';
+    $filesToClear = ['products', 'customers', 'documents', 'field_dispatches', 'suppliers', 'purchases', 'returns', 'expenses', 'activity_logs', 'uploaded_files'];
+    foreach ($filesToClear as $f) {
+        @unlink($dataDir . '/' . $f . '.json');
+    }
+
+    if ($pdo) {
+        try {
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+            $tables = ['products', 'customers', 'documents', 'purchases', 'suppliers', 'field_dispatches', 'sales_returns', 'expenses', 'activity_logs', 'uploaded_files'];
+            foreach ($tables as $t) {
+                @$pdo->exec("TRUNCATE TABLE `$t`;");
+            }
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        } catch (Exception $e) {
+            // Non-fatal
+        }
+    }
+
+    http_response_code(200);
+    echo json_encode([
+        'success' => true,
+        'message' => 'All transaction logs, products, customers, and records have been cleared successfully.'
+    ]);
+    exit;
+}
+
+// Database Seed Demo Endpoint
+if ($endpoint === 'database/seed-demo' || $endpoint === 'database_seed_demo') {
+    $dataDir = __DIR__ . '/data';
+    $filesToClear = ['products', 'customers', 'documents', 'field_dispatches', 'suppliers', 'purchases', 'returns', 'expenses'];
+    foreach ($filesToClear as $f) {
+        @unlink($dataDir . '/' . $f . '.json');
+    }
+
+    seedInitialJsonDataIfNeeded();
+
+    http_response_code(200);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Demo transaction data has been successfully seeded.'
     ]);
     exit;
 }
