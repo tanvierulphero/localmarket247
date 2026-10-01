@@ -30,6 +30,7 @@ import OwnerDrawManager from './components/OwnerDrawManager';
 import StaffManagement from './components/StaffManagement';
 import FieldDispatchManager from './components/FieldDispatchManager';
 import CompanyProfileManager from './components/CompanyProfileManager';
+import SqlExportModal from './components/SqlExportModal';
 
 import { 
   BarChart3, 
@@ -133,6 +134,7 @@ export default function App() {
   const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [isCreatingDoc, setIsCreatingDoc] = useState<DocumentType | null>(null);
+  const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
 
   // Temporary Settings Edit Form State
   const [settingsForm, setSettingsForm] = useState<BusinessSettings>(DEFAULT_SETTINGS);
@@ -1227,6 +1229,17 @@ export default function App() {
                 </span>
                 <button
                   type="button"
+                  onClick={() => setIsSqlModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 hover:border-blue-300 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                  title="Download / Export database.sql or sync real-time entries"
+                >
+                  <Database className="w-3.5 h-3.5 text-blue-700" />
+                  <span>database.sql</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleCheckDatabase}
                   className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 hover:border-emerald-300 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs cursor-pointer transition-all"
                   title="Click to check live database connection and record metrics"
@@ -1934,6 +1947,34 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* LIVE SQL DATABASE EXPORT & SYNC CARD */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 mt-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-blue-900 font-bold">
+                          <Database className="w-5 h-5 text-blue-600" />
+                          <h3 className="text-base">Live SQL File Sync & Backup (database.sql)</h3>
+                        </div>
+                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-xs font-bold flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          Auto-Syncing Active
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Every entry created in the Admin Panel (Products, Invoices, Customers, Dispatches, Purchases, Expenses) is automatically saved into <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">database.sql</code> and <code className="bg-slate-100 text-slate-800 px-1 py-0.5 rounded font-mono">schema.sql</code>. You can download the latest SQL file anytime, copy SQL statements, or force synchronization.
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsSqlModalOpen(true)}
+                          className="px-4 py-2.5 bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+                        >
+                          <Database className="w-4 h-4 text-emerald-400" />
+                          Open SQL File & Export Center
+                        </button>
+                      </div>
+                    </div>
+
                     {/* DATABASE RESET / DATA CLEAR CARD */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-6 mt-6 space-y-4">
                       <div className="flex items-center gap-2 text-rose-700 font-bold">
@@ -2136,6 +2177,22 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* SQL Live Database Export & Sync Modal */}
+      <SqlExportModal
+        isOpen={isSqlModalOpen}
+        onClose={() => setIsSqlModalOpen(false)}
+        products={products}
+        customers={customers}
+        documents={documents}
+        staffUsers={staffUsers}
+        settings={settings}
+        dispatches={dispatches}
+        suppliers={suppliers}
+        purchases={purchases}
+        salesReturns={salesReturns}
+        expenses={expenses}
+      />
 
     </div>
   );

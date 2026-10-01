@@ -8,6 +8,7 @@ import { db, pool } from './src/db/index.ts';
 import { products, customers, documents, staffUsers, settings, fieldDispatches, suppliers, purchases, salesReturns, expenses } from './src/db/schema.ts';
 import { eq, sql } from 'drizzle-orm';
 import { INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_DOCUMENTS, INITIAL_STAFF_USERS, DEFAULT_SETTINGS, INITIAL_FIELD_DISPATCHES, INITIAL_SUPPLIERS, INITIAL_PURCHASES, INITIAL_SALES_RETURNS, INITIAL_EXPENSES } from './src/initialData.ts';
+import { appendSqlToFiles, appendDeleteSqlToFiles } from './src/lib/sqlSync.ts';
 
 const app = express();
 const port = 3000;
@@ -146,22 +147,29 @@ app.post('/api/products', async (req, res) => {
       specs: Array.isArray(item.specs) ? item.specs : [],
       imageUrl: String(item.imageUrl || ''),
     };
-    await (db.insert(products) as any).values(productData).onConflictDoUpdate({
-      target: products.id,
-      set: {
-        name: productData.name,
-        sku: productData.sku,
-        category: productData.category,
-        brand: productData.brand,
-        price: productData.price,
-        costPrice: productData.costPrice,
-        stock: productData.stock,
-        unit: productData.unit,
-        description: productData.description,
-        specs: productData.specs,
-        imageUrl: productData.imageUrl,
-      },
-    });
+    // Sync to SQL file immediately
+    appendSqlToFiles('products', productData);
+
+    try {
+      await (db.insert(products) as any).values(productData).onConflictDoUpdate({
+        target: products.id,
+        set: {
+          name: productData.name,
+          sku: productData.sku,
+          category: productData.category,
+          brand: productData.brand,
+          price: productData.price,
+          costPrice: productData.costPrice,
+          stock: productData.stock,
+          unit: productData.unit,
+          description: productData.description,
+          specs: productData.specs,
+          imageUrl: productData.imageUrl,
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('products', 'save', productData);
     res.json(productData);
   } catch (err: any) {
@@ -173,7 +181,13 @@ app.post('/api/products', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(products).where(eq(products.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('products', id);
+    try {
+      await db.delete(products).where(eq(products.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('products', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -200,18 +214,25 @@ app.post('/api/customers', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing customer ID' });
     }
-    await (db.insert(customers) as any).values(item).onConflictDoUpdate({
-      target: customers.id,
-      set: {
-        companyId: item.companyId || '',
-        name: item.name,
-        company: item.company || '',
-        phone: item.phone,
-        email: item.email || '',
-        address: item.address || '',
-        notes: item.notes || '',
-      },
-    });
+    // Sync to SQL file
+    appendSqlToFiles('customers', item);
+
+    try {
+      await (db.insert(customers) as any).values(item).onConflictDoUpdate({
+        target: customers.id,
+        set: {
+          companyId: item.companyId || '',
+          name: item.name,
+          company: item.company || '',
+          phone: item.phone,
+          email: item.email || '',
+          address: item.address || '',
+          notes: item.notes || '',
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('customers', 'save', item);
     res.json(item);
   } catch (err: any) {
@@ -223,7 +244,13 @@ app.post('/api/customers', async (req, res) => {
 app.delete('/api/customers/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(customers).where(eq(customers.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('customers', id);
+    try {
+      await db.delete(customers).where(eq(customers.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('customers', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -254,39 +281,47 @@ app.post('/api/documents', async (req, res) => {
       ...item,
       vatEnabled: item.vatEnabled === false || item.vatEnabled === 0 ? 0 : 1
     };
-    await (db.insert(documents) as any).values(dbItem).onConflictDoUpdate({
-      target: documents.id,
-      set: {
-        type: item.type,
-        docNumber: item.docNumber,
-        date: item.date,
-        dueDate: item.dueDate || null,
-        customerId: item.customerId,
-        customerName: item.customerName,
-        customerCompany: item.customerCompany || '',
-        customerPhone: item.customerPhone || '',
-        customerEmail: item.customerEmail || '',
-        customerAddress: item.customerAddress || '',
-        subject: item.subject || null,
-        salutation: item.salutation || null,
-        openingParagraph: item.openingParagraph || null,
-        closingParagraph: item.closingParagraph || null,
-        items: item.items || [],
-        subtotal: item.subtotal,
-        taxRate: item.taxRate || 0,
-        taxAmount: item.taxAmount || 0,
-        discount: item.discount || 0,
-        total: item.total,
-        paidAmount: item.paidAmount || 0,
-        dueAmount: item.dueAmount || 0,
-        status: item.status,
-        terms: item.terms || '',
-        notes: item.notes || null,
-        signatureLabel: item.signatureLabel || 'Authorized Signature',
-        signatureName: item.signatureName || 'Hitachi Air Solution Center',
-        vatEnabled: item.vatEnabled === false || item.vatEnabled === 0 ? 0 : 1,
-      },
-    });
+
+    // Sync to SQL file immediately
+    appendSqlToFiles('documents', dbItem);
+
+    try {
+      await (db.insert(documents) as any).values(dbItem).onConflictDoUpdate({
+        target: documents.id,
+        set: {
+          type: item.type,
+          docNumber: item.docNumber,
+          date: item.date,
+          dueDate: item.dueDate || null,
+          customerId: item.customerId,
+          customerName: item.customerName,
+          customerCompany: item.customerCompany || '',
+          customerPhone: item.customerPhone || '',
+          customerEmail: item.customerEmail || '',
+          customerAddress: item.customerAddress || '',
+          subject: item.subject || null,
+          salutation: item.salutation || null,
+          openingParagraph: item.openingParagraph || null,
+          closingParagraph: item.closingParagraph || null,
+          items: item.items || [],
+          subtotal: item.subtotal,
+          taxRate: item.taxRate || 0,
+          taxAmount: item.taxAmount || 0,
+          discount: item.discount || 0,
+          total: item.total,
+          paidAmount: item.paidAmount || 0,
+          dueAmount: item.dueAmount || 0,
+          status: item.status,
+          terms: item.terms || '',
+          notes: item.notes || null,
+          signatureLabel: item.signatureLabel || 'Authorized Signature',
+          signatureName: item.signatureName || 'Hitachi Air Solution Center',
+          vatEnabled: item.vatEnabled === false || item.vatEnabled === 0 ? 0 : 1,
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('documents', 'save', dbItem);
     res.json(dbItem);
   } catch (err: any) {
@@ -298,7 +333,13 @@ app.post('/api/documents', async (req, res) => {
 app.delete('/api/documents/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(documents).where(eq(documents.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('documents', id);
+    try {
+      await db.delete(documents).where(eq(documents.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('documents', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -325,20 +366,27 @@ app.post('/api/staff', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing staff user ID' });
     }
-    await (db.insert(staffUsers) as any).values(item).onConflictDoUpdate({
-      target: staffUsers.id,
-      set: {
-        name: item.name,
-        email: item.email,
-        phone: item.phone || '',
-        passcode: item.passcode,
-        role: item.role,
-        designation: item.designation || '',
-        status: item.status,
-        permissions: item.permissions || [],
-        createdAt: item.createdAt || new Date().toISOString().split('T')[0],
-      },
-    });
+    // Sync to SQL file
+    appendSqlToFiles('staff_users', item);
+
+    try {
+      await (db.insert(staffUsers) as any).values(item).onConflictDoUpdate({
+        target: staffUsers.id,
+        set: {
+          name: item.name,
+          email: item.email,
+          phone: item.phone || '',
+          passcode: item.passcode,
+          role: item.role,
+          designation: item.designation || '',
+          status: item.status,
+          permissions: item.permissions || [],
+          createdAt: item.createdAt || new Date().toISOString().split('T')[0],
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('staff', 'save', item);
     res.json(item);
   } catch (err: any) {
@@ -350,7 +398,13 @@ app.post('/api/staff', async (req, res) => {
 app.delete('/api/staff/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(staffUsers).where(eq(staffUsers.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('staff_users', id);
+    try {
+      await db.delete(staffUsers).where(eq(staffUsers.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('staff', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -378,34 +432,41 @@ app.get('/api/settings', async (_req, res) => {
 app.post('/api/settings', async (req, res) => {
   try {
     const item = req.body;
-    await (db.insert(settings) as any).values({
-      id: 'global_settings',
-      ...item,
-    }).onConflictDoUpdate({
-      target: settings.id,
-      set: {
-        name: item.name,
-        slogan: item.slogan || '',
-        address: item.address || '',
-        phone1: item.phone1 || '',
-        phone2: item.phone2 || '',
-        email: item.email || '',
-        website: item.website || '',
-        invoicePrefix: item.invoicePrefix || 'INV',
-        quotePrefix: item.quotePrefix || 'QUO',
-        offerPrefix: item.offerPrefix || 'OFF',
-        billPrefix: item.billPrefix || 'BIL',
-        taxRate: item.taxRate || 0,
-        terms: item.terms || '',
-        signatureName: item.signatureName || '',
-        signatureLabel: item.signatureLabel || '',
-        logoUrl: item.logoUrl || '',
-        watermarkUrl: item.watermarkUrl || '',
-        faviconUrl: item.faviconUrl || '',
-        watermarkOpacity: item.watermarkOpacity !== undefined ? item.watermarkOpacity : 0.04,
-        showWatermark: item.showWatermark !== undefined ? item.showWatermark : 1,
-      },
-    });
+    // Sync to SQL file
+    appendSqlToFiles('settings', item);
+
+    try {
+      await (db.insert(settings) as any).values({
+        id: 'global_settings',
+        ...item,
+      }).onConflictDoUpdate({
+        target: settings.id,
+        set: {
+          name: item.name,
+          slogan: item.slogan || '',
+          address: item.address || '',
+          phone1: item.phone1 || '',
+          phone2: item.phone2 || '',
+          email: item.email || '',
+          website: item.website || '',
+          invoicePrefix: item.invoicePrefix || 'INV',
+          quotePrefix: item.quotePrefix || 'QUO',
+          offerPrefix: item.offerPrefix || 'OFF',
+          billPrefix: item.billPrefix || 'BIL',
+          taxRate: item.taxRate || 0,
+          terms: item.terms || '',
+          signatureName: item.signatureName || '',
+          signatureLabel: item.signatureLabel || '',
+          logoUrl: item.logoUrl || '',
+          watermarkUrl: item.watermarkUrl || '',
+          faviconUrl: item.faviconUrl || '',
+          watermarkOpacity: item.watermarkOpacity !== undefined ? item.watermarkOpacity : 0.04,
+          showWatermark: item.showWatermark !== undefined ? item.showWatermark : 1,
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('settings', 'save', item);
     res.json(item);
   } catch (err: any) {
@@ -432,38 +493,13 @@ app.post('/api/field-dispatches', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing field dispatch ID' });
     }
-    await (db.insert(fieldDispatches) as any).values({
-      id: item.id,
-      date: item.date || item.dispatchDate || new Date().toISOString().split('T')[0],
-      staffId: item.staffId || '',
-      staffName: item.staffName || '',
-      customerId: item.customerId || '',
-      companyName: item.companyName || item.customerCompany || '',
-      address: item.address || '',
-      phone: item.phone || item.customerPhone || '',
-      description: item.description || item.purpose || '',
-      billNo: item.billNo || item.dispatchNumber || '',
-      billAmount: item.billAmount ?? 0,
-      paidAmount: item.paidAmount ?? 0,
-      dueAmount: item.dueAmount ?? 0,
-      expenseAmount: item.expenseAmount ?? 0,
-      expenseDetails: item.expenseDetails || '',
-      paymentStatus: item.paymentStatus || 'Paid',
-      paymentMethod: item.paymentMethod || 'Cash',
-      status: item.status || 'Completed',
-      notes: item.notes || '',
-      dispatchNumber: item.dispatchNumber || item.billNo || '',
-      customerName: item.customerName || '',
-      customerCompany: item.customerCompany || item.companyName || '',
-      customerPhone: item.customerPhone || item.phone || '',
-      purpose: item.purpose || item.description || '',
-      dispatchDate: item.dispatchDate || item.date || '',
-      returnDate: item.returnDate || null,
-      items: item.items || [],
-    }).onConflictDoUpdate({
-      target: fieldDispatches.id,
-      set: {
-        date: item.date || item.dispatchDate || '',
+    // Sync to SQL file
+    appendSqlToFiles('field_dispatches', item);
+
+    try {
+      await (db.insert(fieldDispatches) as any).values({
+        id: item.id,
+        date: item.date || item.dispatchDate || new Date().toISOString().split('T')[0],
         staffId: item.staffId || '',
         staffName: item.staffName || '',
         customerId: item.customerId || '',
@@ -489,8 +525,40 @@ app.post('/api/field-dispatches', async (req, res) => {
         dispatchDate: item.dispatchDate || item.date || '',
         returnDate: item.returnDate || null,
         items: item.items || [],
-      },
-    });
+      }).onConflictDoUpdate({
+        target: fieldDispatches.id,
+        set: {
+          date: item.date || item.dispatchDate || '',
+          staffId: item.staffId || '',
+          staffName: item.staffName || '',
+          customerId: item.customerId || '',
+          companyName: item.companyName || item.customerCompany || '',
+          address: item.address || '',
+          phone: item.phone || item.customerPhone || '',
+          description: item.description || item.purpose || '',
+          billNo: item.billNo || item.dispatchNumber || '',
+          billAmount: item.billAmount ?? 0,
+          paidAmount: item.paidAmount ?? 0,
+          dueAmount: item.dueAmount ?? 0,
+          expenseAmount: item.expenseAmount ?? 0,
+          expenseDetails: item.expenseDetails || '',
+          paymentStatus: item.paymentStatus || 'Paid',
+          paymentMethod: item.paymentMethod || 'Cash',
+          status: item.status || 'Completed',
+          notes: item.notes || '',
+          dispatchNumber: item.dispatchNumber || item.billNo || '',
+          customerName: item.customerName || '',
+          customerCompany: item.customerCompany || item.companyName || '',
+          customerPhone: item.customerPhone || item.phone || '',
+          purpose: item.purpose || item.description || '',
+          dispatchDate: item.dispatchDate || item.date || '',
+          returnDate: item.returnDate || null,
+          items: item.items || [],
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('dispatches', 'save', item);
     res.json(item);
   } catch (err: any) {
@@ -502,7 +570,13 @@ app.post('/api/field-dispatches', async (req, res) => {
 app.delete('/api/field-dispatches/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(fieldDispatches).where(eq(fieldDispatches.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('field_dispatches', id);
+    try {
+      await db.delete(fieldDispatches).where(eq(fieldDispatches.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('dispatches', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -529,20 +603,27 @@ app.post('/api/suppliers', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing supplier ID' });
     }
-    await (db.insert(suppliers) as any).values(item).onConflictDoUpdate({
-      target: suppliers.id,
-      set: {
-        supplierId: item.supplierId || '',
-        name: item.name,
-        company: item.company || '',
-        phone: item.phone,
-        email: item.email || '',
-        address: item.address || '',
-        contactPerson: item.contactPerson || '',
-        notes: item.notes || '',
-        createdAt: item.createdAt || '',
-      },
-    });
+    // Sync to SQL file
+    appendSqlToFiles('suppliers', item);
+
+    try {
+      await (db.insert(suppliers) as any).values(item).onConflictDoUpdate({
+        target: suppliers.id,
+        set: {
+          supplierId: item.supplierId || '',
+          name: item.name,
+          company: item.company || '',
+          phone: item.phone,
+          email: item.email || '',
+          address: item.address || '',
+          contactPerson: item.contactPerson || '',
+          notes: item.notes || '',
+          createdAt: item.createdAt || '',
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('suppliers', 'save', item);
     res.json(item);
   } catch (err: any) {
@@ -554,7 +635,13 @@ app.post('/api/suppliers', async (req, res) => {
 app.delete('/api/suppliers/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(suppliers).where(eq(suppliers.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('suppliers', id);
+    try {
+      await db.delete(suppliers).where(eq(suppliers.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('suppliers', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -581,34 +668,41 @@ app.post('/api/purchases', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing purchase ID' });
     }
-    await (db.insert(purchases) as any).values(item).onConflictDoUpdate({
-      target: purchases.id,
-      set: {
-        purchaseNumber: item.purchaseNumber,
-        supplierInvoiceNo: item.supplierInvoiceNo || '',
-        supplierId: item.supplierId,
-        supplierName: item.supplierName,
-        supplierCompany: item.supplierCompany || '',
-        supplierPhone: item.supplierPhone || '',
-        supplierEmail: item.supplierEmail || '',
-        supplierAddress: item.supplierAddress || '',
-        purchaseDate: item.purchaseDate,
-        items: item.items || [],
-        subtotal: item.subtotal,
-        taxRate: item.taxRate || 0,
-        taxAmount: item.taxAmount || 0,
-        discount: item.discount || 0,
-        shippingCost: item.shippingCost || 0,
-        grandTotal: item.grandTotal,
-        paidAmount: item.paidAmount || 0,
-        dueAmount: item.dueAmount || 0,
-        paymentStatus: item.paymentStatus,
-        paymentMethod: item.paymentMethod,
-        status: item.status,
-        notes: item.notes || '',
-        createdAt: item.createdAt || '',
-      },
-    });
+    // Sync to SQL file
+    appendSqlToFiles('purchases', item);
+
+    try {
+      await (db.insert(purchases) as any).values(item).onConflictDoUpdate({
+        target: purchases.id,
+        set: {
+          purchaseNumber: item.purchaseNumber,
+          supplierInvoiceNo: item.supplierInvoiceNo || '',
+          supplierId: item.supplierId,
+          supplierName: item.supplierName,
+          supplierCompany: item.supplierCompany || '',
+          supplierPhone: item.supplierPhone || '',
+          supplierEmail: item.supplierEmail || '',
+          supplierAddress: item.supplierAddress || '',
+          purchaseDate: item.purchaseDate,
+          items: item.items || [],
+          subtotal: item.subtotal,
+          taxRate: item.taxRate || 0,
+          taxAmount: item.taxAmount || 0,
+          discount: item.discount || 0,
+          shippingCost: item.shippingCost || 0,
+          grandTotal: item.grandTotal,
+          paidAmount: item.paidAmount || 0,
+          dueAmount: item.dueAmount || 0,
+          paymentStatus: item.paymentStatus,
+          paymentMethod: item.paymentMethod,
+          status: item.status,
+          notes: item.notes || '',
+          createdAt: item.createdAt || '',
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('purchases', 'save', item);
     res.json(item);
   } catch (err: any) {
@@ -620,7 +714,13 @@ app.post('/api/purchases', async (req, res) => {
 app.delete('/api/purchases/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(purchases).where(eq(purchases.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('purchases', id);
+    try {
+      await db.delete(purchases).where(eq(purchases.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('purchases', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -647,36 +747,43 @@ app.post('/api/returns', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing return ID' });
     }
-    await (db.insert(salesReturns) as any).values({
-      ...item,
-      deductFromDue: item.deductFromDue ? 1 : 0,
-      restocked: item.restocked ? 1 : 0
-    }).onConflictDoUpdate({
-      target: salesReturns.id,
-      set: {
-        returnNumber: item.returnNumber,
-        returnDate: item.returnDate,
-        originalDocId: item.originalDocId || '',
-        originalDocNumber: item.originalDocNumber || '',
-        customerId: item.customerId,
-        customerName: item.customerName,
-        customerCompany: item.customerCompany || '',
-        customerPhone: item.customerPhone || '',
-        productId: item.productId,
-        productName: item.productName,
-        sku: item.sku || '',
-        partsNumber: item.partsNumber || '',
-        quantity: item.quantity,
-        unit: item.unit,
-        unitPrice: item.unitPrice,
-        refundAmount: item.refundAmount || 0,
+    // Sync to SQL file
+    appendSqlToFiles('sales_returns', item);
+
+    try {
+      await (db.insert(salesReturns) as any).values({
+        ...item,
         deductFromDue: item.deductFromDue ? 1 : 0,
-        restocked: item.restocked ? 1 : 0,
-        reason: item.reason || '',
-        notes: item.notes || '',
-        createdAt: item.createdAt || '',
-      },
-    });
+        restocked: item.restocked ? 1 : 0
+      }).onConflictDoUpdate({
+        target: salesReturns.id,
+        set: {
+          returnNumber: item.returnNumber,
+          returnDate: item.returnDate,
+          originalDocId: item.originalDocId || '',
+          originalDocNumber: item.originalDocNumber || '',
+          customerId: item.customerId,
+          customerName: item.customerName,
+          customerCompany: item.customerCompany || '',
+          customerPhone: item.customerPhone || '',
+          productId: item.productId,
+          productName: item.productName,
+          sku: item.sku || '',
+          partsNumber: item.partsNumber || '',
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          refundAmount: item.refundAmount || 0,
+          deductFromDue: item.deductFromDue ? 1 : 0,
+          restocked: item.restocked ? 1 : 0,
+          reason: item.reason || '',
+          notes: item.notes || '',
+          createdAt: item.createdAt || '',
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('returns', 'save', item);
     res.json(item);
   } catch (err: any) {
@@ -688,7 +795,13 @@ app.post('/api/returns', async (req, res) => {
 app.delete('/api/returns/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(salesReturns).where(eq(salesReturns.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('sales_returns', id);
+    try {
+      await db.delete(salesReturns).where(eq(salesReturns.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('returns', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -730,23 +843,31 @@ app.post('/api/expenses', async (req, res) => {
       receiptUrl: String(item.receiptUrl || ''),
       createdAt: String(item.createdAt || new Date().toISOString().split('T')[0]),
     };
-    await (db.insert(expenses) as any).values(expenseData).onConflictDoUpdate({
-      target: expenses.id,
-      set: {
-        expenseNumber: expenseData.expenseNumber,
-        date: expenseData.date,
-        category: expenseData.category,
-        title: expenseData.title,
-        amount: expenseData.amount,
-        paymentMethod: expenseData.paymentMethod,
-        paidBy: expenseData.paidBy,
-        staffId: expenseData.staffId,
-        referenceNo: expenseData.referenceNo,
-        notes: expenseData.notes,
-        receiptUrl: expenseData.receiptUrl,
-        createdAt: expenseData.createdAt,
-      },
-    });
+
+    // Sync to SQL file
+    appendSqlToFiles('expenses', expenseData);
+
+    try {
+      await (db.insert(expenses) as any).values(expenseData).onConflictDoUpdate({
+        target: expenses.id,
+        set: {
+          expenseNumber: expenseData.expenseNumber,
+          date: expenseData.date,
+          category: expenseData.category,
+          title: expenseData.title,
+          amount: expenseData.amount,
+          paymentMethod: expenseData.paymentMethod,
+          paidBy: expenseData.paidBy,
+          staffId: expenseData.staffId,
+          referenceNo: expenseData.referenceNo,
+          notes: expenseData.notes,
+          receiptUrl: expenseData.receiptUrl,
+          createdAt: expenseData.createdAt,
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning (written to SQL file):', dbErr);
+    }
     notifyChange('expenses', 'save', expenseData);
     res.json(expenseData);
   } catch (err: any) {
@@ -758,7 +879,13 @@ app.post('/api/expenses', async (req, res) => {
 app.delete('/api/expenses/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.delete(expenses).where(eq(expenses.id, id));
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('expenses', id);
+    try {
+      await db.delete(expenses).where(eq(expenses.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
     notifyChange('expenses', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
@@ -877,6 +1004,87 @@ app.get('/api/health', async (_req, res) => {
       error: err.message || 'Database connection error',
       timestamp: new Date().toISOString(),
     });
+  }
+});
+
+// 13. Live SQL Export & Download API
+app.get(['/api/export-sql', '/database.sql', '/schema.sql'], (req, res) => {
+  const isSchema = req.path.includes('schema');
+  const fileName = isSchema ? 'schema.sql' : 'database.sql';
+  const filePath = path.join(process.cwd(), fileName);
+  if (fs.existsSync(filePath)) {
+    // Keep public copy synchronized
+    const publicPath = path.join(process.cwd(), 'public', fileName);
+    try {
+      fs.copyFileSync(filePath, publicPath);
+    } catch {}
+
+    res.setHeader('Content-Type', 'application/sql; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ error: `${fileName} not found` });
+  }
+});
+
+app.get('/api/export-sql-text', (req, res) => {
+  try {
+    const isSchema = String(req.query.file || '').includes('schema');
+    const fileName = isSchema ? 'schema.sql' : 'database.sql';
+    const filePath = path.join(process.cwd(), fileName);
+    if (fs.existsSync(filePath)) {
+      const sqlContent = fs.readFileSync(filePath, 'utf-8');
+      res.json({ success: true, fileName, sql: sqlContent });
+    } else {
+      res.status(404).json({ error: `${fileName} not found` });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to read SQL file' });
+  }
+});
+
+app.post('/api/sync-all-to-sql', (req, res) => {
+  try {
+    const { products, customers, documents, staff, settings, fieldDispatches, suppliers, purchases, salesReturns, expenses } = req.body;
+    let count = 0;
+
+    if (Array.isArray(products)) {
+      products.forEach((p: any) => { appendSqlToFiles('products', p); count++; });
+    }
+    if (Array.isArray(customers)) {
+      customers.forEach((c: any) => { appendSqlToFiles('customers', c); count++; });
+    }
+    if (Array.isArray(documents)) {
+      documents.forEach((d: any) => { appendSqlToFiles('documents', d); count++; });
+    }
+    if (Array.isArray(staff)) {
+      staff.forEach((s: any) => { appendSqlToFiles('staff_users', s); count++; });
+    }
+    if (settings && typeof settings === 'object') {
+      appendSqlToFiles('settings', settings);
+      count++;
+    }
+    if (Array.isArray(fieldDispatches)) {
+      fieldDispatches.forEach((fd: any) => { appendSqlToFiles('field_dispatches', fd); count++; });
+    }
+    if (Array.isArray(suppliers)) {
+      suppliers.forEach((s: any) => { appendSqlToFiles('suppliers', s); count++; });
+    }
+    if (Array.isArray(purchases)) {
+      purchases.forEach((pur: any) => { appendSqlToFiles('purchases', pur); count++; });
+    }
+    if (Array.isArray(salesReturns)) {
+      salesReturns.forEach((ret: any) => { appendSqlToFiles('sales_returns', ret); count++; });
+    }
+    if (Array.isArray(expenses)) {
+      expenses.forEach((exp: any) => { appendSqlToFiles('expenses', exp); count++; });
+    }
+
+    res.json({ success: true, count, message: `Successfully synchronized ${count} records into database.sql and schema.sql!` });
+  } catch (err: any) {
+    console.error('Failed to sync all to SQL:', err);
+    res.status(500).json({ error: err.message || 'Failed to sync to SQL' });
   }
 });
 

@@ -21,6 +21,7 @@ CREATE TABLE `products` (
   `category` VARCHAR(100) NOT NULL,
   `brand` VARCHAR(100) NOT NULL,
   `price` DOUBLE NOT NULL DEFAULT 0,
+  `cost_price` DOUBLE NOT NULL DEFAULT 0,
   `stock` INT NOT NULL DEFAULT 0,
   `unit` VARCHAR(50) NOT NULL DEFAULT 'Pcs',
   `description` TEXT,
@@ -144,6 +145,7 @@ CREATE TABLE `documents` (
   `notes` TEXT,
   `signature_label` VARCHAR(255) DEFAULT 'Authorized Signature',
   `signature_name` VARCHAR(255) DEFAULT 'Hitachi Air Solution Center',
+  `vat_enabled` INT NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -153,22 +155,35 @@ CREATE TABLE `documents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 6. Table: field_dispatches (Field Movement & Delivery Challans)
+-- 6. Table: field_dispatches (Field Movement & Service Dispatches)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `field_dispatches`;
 CREATE TABLE `field_dispatches` (
   `id` VARCHAR(128) NOT NULL,
   `dispatch_number` VARCHAR(100) NOT NULL,
+  `date` VARCHAR(50) DEFAULT '',
   `staff_id` VARCHAR(128) NOT NULL,
   `staff_name` VARCHAR(255) NOT NULL,
   `customer_id` VARCHAR(128) NOT NULL,
   `customer_name` VARCHAR(255) NOT NULL,
   `customer_company` VARCHAR(255) DEFAULT '',
+  `company_name` VARCHAR(255) DEFAULT '',
+  `address` TEXT,
   `customer_phone` VARCHAR(100) DEFAULT '',
+  `phone` VARCHAR(100) DEFAULT '',
   `purpose` TEXT,
-  `dispatch_date` VARCHAR(50) NOT NULL,
+  `description` TEXT,
+  `dispatch_date` VARCHAR(50) DEFAULT '',
   `return_date` VARCHAR(50) DEFAULT NULL,
-  `status` VARCHAR(50) NOT NULL, -- Pending Return, Completed, Cancelled
+  `bill_no` VARCHAR(100) DEFAULT '',
+  `bill_amount` DOUBLE DEFAULT 0,
+  `paid_amount` DOUBLE DEFAULT 0,
+  `due_amount` DOUBLE DEFAULT 0,
+  `expense_amount` DOUBLE DEFAULT 0,
+  `expense_details` TEXT,
+  `payment_status` VARCHAR(50) DEFAULT 'Paid',
+  `payment_method` VARCHAR(50) DEFAULT 'Cash',
+  `status` VARCHAR(50) NOT NULL DEFAULT 'Completed',
   `notes` TEXT,
   `items` LONGTEXT,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -252,7 +267,65 @@ CREATE TABLE `uploaded_files` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 10. Table: activity_logs (Activity & Action Logs)
+-- 10. Table: sales_returns (Sales Returns & Restock Records)
+-- ------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `sales_returns`;
+CREATE TABLE `sales_returns` (
+  `id` VARCHAR(128) NOT NULL,
+  `return_number` VARCHAR(100) NOT NULL,
+  `return_date` VARCHAR(50) NOT NULL,
+  `original_doc_id` VARCHAR(128) DEFAULT '',
+  `original_doc_number` VARCHAR(100) DEFAULT '',
+  `customer_id` VARCHAR(128) NOT NULL,
+  `customer_name` VARCHAR(255) NOT NULL,
+  `customer_company` VARCHAR(255) DEFAULT '',
+  `customer_phone` VARCHAR(100) DEFAULT '',
+  `product_id` VARCHAR(128) NOT NULL,
+  `product_name` VARCHAR(255) NOT NULL,
+  `sku` VARCHAR(100) DEFAULT '',
+  `parts_number` VARCHAR(100) DEFAULT '',
+  `quantity` INT NOT NULL DEFAULT 1,
+  `unit` VARCHAR(50) NOT NULL DEFAULT 'Pcs',
+  `unit_price` DOUBLE NOT NULL DEFAULT 0,
+  `refund_amount` DOUBLE DEFAULT 0,
+  `deduct_from_due` INT DEFAULT 1,
+  `restocked` INT DEFAULT 1,
+  `reason` TEXT,
+  `notes` TEXT,
+  `created_at` VARCHAR(100) DEFAULT '',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_return_number` (`return_number`),
+  KEY `idx_return_customer` (`customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------------------------
+-- 11. Table: expenses (Daily & Office Expenses Table)
+-- ------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `expenses`;
+CREATE TABLE `expenses` (
+  `id` VARCHAR(128) NOT NULL,
+  `expense_number` VARCHAR(100) NOT NULL,
+  `date` VARCHAR(50) NOT NULL,
+  `category` VARCHAR(100) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `amount` DOUBLE NOT NULL DEFAULT 0,
+  `payment_method` VARCHAR(50) NOT NULL DEFAULT 'Cash',
+  `paid_by` VARCHAR(255) DEFAULT '',
+  `staff_id` VARCHAR(128) DEFAULT '',
+  `reference_no` VARCHAR(100) DEFAULT '',
+  `notes` TEXT,
+  `receipt_url` TEXT,
+  `created_at` VARCHAR(100) DEFAULT '',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_expense_number` (`expense_number`),
+  KEY `idx_expense_date` (`date`),
+  KEY `idx_expense_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------------------------
+-- 12. Table: activity_logs (Activity & Action Logs)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `activity_logs`;
 CREATE TABLE `activity_logs` (
@@ -325,5 +398,12 @@ ON DUPLICATE KEY UPDATE `doc_number` = VALUES(`doc_number`);
 -- Seed Initial Activity Log
 INSERT INTO `activity_logs` (`id`, `staff_id`, `staff_name`, `action`, `module`, `description`, `entity_id`, `ip_address`, `user_agent`) VALUES
 ('log-1', 'staff-1', 'MD MAHI UDDIN', 'LOGIN', 'AUTHENTICATION', 'System database initialized with full tracking capabilities', 'global_settings', '127.0.0.1', 'Hitachi Cloud Management System');
+
+
+-- ------------------------------------------------------------------------------
+-- REAL-TIME ADMIN PANEL LIVE ENTRIES
+-- ------------------------------------------------------------------------------
+
+
 
 SET FOREIGN_KEY_CHECKS = 1;

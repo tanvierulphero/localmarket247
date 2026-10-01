@@ -356,3 +356,54 @@ export async function apiCheckDatabaseHealth(): Promise<DbHealthResult> {
   }
 }
 
+// Sync All Live Data to SQL Files (database.sql / schema.sql)
+export const apiSyncAllToSql = (allData: {
+  products?: Product[];
+  customers?: Customer[];
+  documents?: Document[];
+  staff?: StaffUser[];
+  settings?: BusinessSettings;
+  fieldDispatches?: FieldDispatch[];
+  suppliers?: Supplier[];
+  purchases?: Purchase[];
+  salesReturns?: SalesReturn[];
+  expenses?: Expense[];
+}): Promise<{ success: boolean; count: number; message: string }> =>
+  fetchJson<{ success: boolean; count: number; message: string }>('/api/sync-all-to-sql', {
+    method: 'POST',
+    body: JSON.stringify(allData),
+  });
+
+// Get raw SQL text from server for preview / copy
+export const apiGetSqlText = async (fileName: 'database.sql' | 'schema.sql' = 'database.sql'): Promise<{ success: boolean; fileName: string; sql: string }> => {
+  try {
+    const res = await fetchJson<{ success: boolean; fileName: string; sql: string }>(`/api/export-sql-text?file=${encodeURIComponent(fileName)}`);
+    return res;
+  } catch (err: any) {
+    // Fallback: fetch directly
+    const fallbackRes = await fetch(`/${fileName}?t=${Date.now()}`);
+    if (fallbackRes.ok) {
+      const text = await fallbackRes.text();
+      return { success: true, fileName, sql: text };
+    }
+    throw err;
+  }
+};
+
+/**
+ * Direct file download trigger in browser
+ */
+export function triggerFileDownload(filename: string, content: string, mimeType: string = 'application/sql') {
+  const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+
+
