@@ -101,7 +101,7 @@ export default function DocumentList({
           </div>
           <div>
             <span className="font-bold text-slate-900 block font-display leading-tight">Offer Letter</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">অফার লেটার</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Proposal / Intro</span>
           </div>
         </button>
 
@@ -115,7 +115,7 @@ export default function DocumentList({
           </div>
           <div>
             <span className="font-bold text-slate-900 block font-display leading-tight">Quotation</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">কোটেশন</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Price Estimate</span>
           </div>
         </button>
 
@@ -129,7 +129,7 @@ export default function DocumentList({
           </div>
           <div>
             <span className="font-bold text-slate-900 block font-display leading-tight">Delivery Challan</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">ডেলিভারি চালান</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Goods Dispatch</span>
           </div>
         </button>
 
@@ -143,7 +143,7 @@ export default function DocumentList({
           </div>
           <div>
             <span className="font-bold text-slate-900 block font-display leading-tight">Sales Invoice</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">বিল / চালান</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Commercial Invoice</span>
           </div>
         </button>
 
@@ -157,7 +157,7 @@ export default function DocumentList({
           </div>
           <div>
             <span className="font-bold text-slate-900 block font-display leading-tight">Supplier Bill</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">ক্রয় বিল</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Purchase Bill</span>
           </div>
         </button>
       </div>
@@ -342,10 +342,10 @@ export default function DocumentList({
                           <button
                             onClick={() => onCreateBillFromChallan(doc)}
                             className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors border border-emerald-700 cursor-pointer flex items-center gap-1.5 text-[11px] font-bold shadow-2xs"
-                            title="এই ডেলিভারি চালান থেকে সরাসরি বিক্রয় বিল তৈরি করুন"
+                            title="Generate sales bill directly from this delivery challan"
                           >
                             <Receipt className="w-3.5 h-3.5" />
-                            <span>বিল তৈরি করুন</span>
+                            <span>Create Bill</span>
                           </button>
                         )}
 
@@ -363,10 +363,10 @@ export default function DocumentList({
                               <button
                                 onClick={() => onViewDocument(linked)}
                                 className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg hover:text-blue-900 transition-colors border border-blue-200 cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                title={`সংযুক্ত চালান দেখুন: ${linked.docNumber}`}
+                                title={`View linked challan: ${linked.docNumber}`}
                               >
                                 <Truck className="w-3.5 h-3.5 text-blue-600" />
-                                <span>চালান</span>
+                                <span>Challan</span>
                               </button>
                             );
                           }

@@ -388,11 +388,11 @@ export default function DocumentCreator({
                   disabled={!!editingDocument}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-bold text-slate-800 focus:outline-hidden cursor-pointer"
                 >
-                  <option value="OFFER_LETTER">Offer Letter (অফার লেটার)</option>
-                  <option value="QUOTATION">Quotation (কোটেশন)</option>
-                  <option value="CHALLAN">Delivery Challan (চালান)</option>
-                  <option value="INVOICE">Sales Invoice (বিক্রয় ইনভয়েস)</option>
-                  <option value="BILL">Purchase Bill (বিল)</option>
+                  <option value="OFFER_LETTER">Offer Letter</option>
+                  <option value="QUOTATION">Quotation</option>
+                  <option value="CHALLAN">Delivery Challan</option>
+                  <option value="INVOICE">Sales Invoice</option>
+                  <option value="BILL">Purchase Bill</option>
                 </select>
               </div>
 
@@ -431,9 +431,9 @@ export default function DocumentCreator({
               <div className="bg-blue-50/80 border border-blue-200 text-blue-900 rounded-xl p-3.5 flex items-start gap-3 animate-fade-in">
                 <Truck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-xs space-y-1">
-                  <span className="font-bold block">পণ্য বিক্রয়ের ডেলিভারি চালান (Delivery Challan):</span>
+                  <span className="font-bold block">Delivery Challan:</span>
                   <p className="text-slate-600 text-[11px] leading-relaxed">
-                    পণ্য বিক্রয়ের সময় আগে ডেলিভারি চালান তৈরি করুন। <strong>চালান তৈরির সময় স্টক থেকে পণ্য কমবে না।</strong> পরবর্তীতে এই চালানের ওপর ভিত্তি করে যখন চূড়ান্ত বিক্রয় বিল (Bill) বা ইনভয়েস তৈরি করবেন, <strong>ঠিক তখনই স্টক থেকে পণ্য স্বয়ংক্রিয়ভাবে মাইনাস হবে।</strong>
+                    Create the Delivery Challan first when dispatching goods. <strong>Stock will not decrease when creating a challan.</strong> When the final Sales Bill or Invoice is created later from this challan, <strong>stock will automatically decrease.</strong>
                   </p>
                 </div>
               </div>
@@ -445,10 +445,10 @@ export default function DocumentCreator({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Receipt className="w-4 h-4 text-emerald-700" />
-                    <span className="font-bold text-xs">পূর্ববর্তী ডেলিভারি চালান থেকে ডাটা লোড করুন:</span>
+                    <span className="font-bold text-xs">Load Data from Existing Delivery Challan:</span>
                   </div>
                   <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                    চালান অনুযায়ী বিল প্রস্তুত
+                    Generate Bill from Challan
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 items-center">
@@ -457,10 +457,10 @@ export default function DocumentCreator({
                     onChange={(e) => setSelectedChallanId(e.target.value)}
                     className="w-full bg-white border border-emerald-300 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:outline-hidden"
                   >
-                    <option value="">&mdash; একটি ডেলিভারি চালান সিলেক্ট করুন &mdash;</option>
+                    <option value="">&mdash; Select a Delivery Challan &mdash;</option>
                     {documents.filter(d => d.type === 'CHALLAN').map(ch => (
                       <option key={ch.id} value={ch.id}>
-                        [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; তারিখ: {ch.date} &bull; ({ch.items.length} টি পণ্য)
+                        [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; Date: {ch.date} &bull; ({ch.items.length} items)
                       </option>
                     ))}
                   </select>
@@ -471,11 +471,11 @@ export default function DocumentCreator({
                     className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs whitespace-nowrap cursor-pointer disabled:opacity-50 transition-colors shadow-2xs flex items-center justify-center gap-1.5"
                   >
                     <Package className="w-3.5 h-3.5" />
-                    চালানের তথ্য আনুন
+                    Import Challan Data
                   </button>
                 </div>
                 <p className="text-[10px] text-emerald-800 font-medium">
-                  💡 চালান সিলেক্ট করলে গ্রাহকের নাম ও চালানের সমস্ত পণ্য অটোমেটিক বসে যাবে। এই বিল সেভ করার সাথে সাথেই ইনভেন্টরি স্টক থেকে পণ্য কমে যাবে।
+                  💡 Selecting a challan automatically fills customer details and items. Saving this bill will update your inventory stock.
                 </p>
               </div>
             )}
@@ -736,7 +736,7 @@ export default function DocumentCreator({
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                           <th className="py-2.5 px-3">Description of Goods</th>
-                          <th className="py-2.5 px-3 w-32">Parts Number (পার্টস নং)</th>
+                          <th className="py-2.5 px-3 w-32">Parts Number</th>
                           <th className="py-2.5 px-3 w-16 text-center">Qty</th>
                           <th className="py-2.5 px-3 w-16 text-center">Unit</th>
                           <th className="py-2.5 px-3 w-28 text-right">Rate (BDT)</th>
@@ -763,7 +763,7 @@ export default function DocumentCreator({
                             <td className="py-2 px-1">
                               <input
                                 type="text"
-                                placeholder="Parts No. / পার্টস নং"
+                                placeholder="Parts Number / Model"
                                 value={item.brand}
                                 onChange={(e) => handleItemChange(index, 'brand', e.target.value)}
                                 className="w-full bg-white border border-slate-200 rounded p-1.5 text-xs font-semibold font-mono"
@@ -807,7 +807,7 @@ export default function DocumentCreator({
 
                             {/* Total calculated display */}
                             <td className="py-2 px-2 text-right font-extrabold text-slate-900 font-display">
-                              ৳{item.total.toLocaleString()}
+                              Tk. {item.total.toLocaleString()}
                             </td>
 
                             {/* Delete row */}
@@ -867,7 +867,7 @@ export default function DocumentCreator({
               {/* Subtotal */}
               <div className="flex justify-between">
                 <span>Sub-Total amount:</span>
-                <span className="text-slate-950">৳{subtotal.toLocaleString()}</span>
+                <span className="text-slate-950">Tk. {subtotal.toLocaleString()}</span>
               </div>
 
               {/* VAT Tax Option */}
@@ -880,7 +880,7 @@ export default function DocumentCreator({
                     className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 accent-blue-900 cursor-pointer"
                   />
                   <span className="font-bold text-slate-800 text-[11px]">
-                    ভ্যাট (VAT/Tax) যুক্ত করুন? / Include VAT?
+                    Include VAT / Tax?
                   </span>
                 </label>
 
@@ -898,12 +898,12 @@ export default function DocumentCreator({
                       />
                     </div>
                     <div className="flex justify-between text-[11px] text-slate-500 font-bold">
-                      <span>ভ্যাট হিসাব (VAT Amount):</span>
-                      <span>৳{taxAmount.toLocaleString()}</span>
+                      <span>VAT Amount:</span>
+                      <span>Tk. {taxAmount.toLocaleString()}</span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-[10px] text-slate-400 italic">ভ্যাট বিল বা চালানে যুক্ত হবে না (VAT Excluded)</p>
+                  <p className="text-[10px] text-slate-400 italic">VAT excluded from document</p>
                 )}
               </div>
 
@@ -923,7 +923,7 @@ export default function DocumentCreator({
                     className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 accent-blue-900 cursor-pointer"
                   />
                   <span className="font-bold text-slate-800 text-[11px]">
-                    ডিসকাউন্ট দিতে চান? / Apply Discount?
+                    Apply Discount?
                   </span>
                 </label>
 
@@ -932,7 +932,7 @@ export default function DocumentCreator({
                     <div className="flex justify-between items-center">
                       <span className="text-[11px] font-semibold text-slate-600">Flat Discount (BDT):</span>
                       <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs font-mono">৳</span>
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs font-mono">Tk. </span>
                         <input
                           type="number"
                           min={0}
@@ -953,7 +953,7 @@ export default function DocumentCreator({
               {/* Total Payable BDT */}
               <div className="flex justify-between text-slate-900 font-extrabold text-sm border-t border-slate-200 pt-3">
                 <span>Total Payable (BDT):</span>
-                <span className="text-base text-blue-950 font-display">৳{total.toLocaleString()}</span>
+                <span className="text-base text-blue-950 font-display">Tk. {total.toLocaleString()}</span>
               </div>
             </div>
           </div>

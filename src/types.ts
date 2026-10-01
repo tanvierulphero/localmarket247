@@ -10,7 +10,7 @@ export interface Product {
   category: string;
   brand: string;
   price: number;
-  costPrice?: number; // ক্রয় মূল্য / Buying Cost
+  costPrice?: number; // Cost Price / Buying Cost
   stock: number;
   unit: string;
   description: string;
@@ -188,22 +188,22 @@ export interface FieldDispatch {
   id: string;
   date: string;              // Date of entry (YYYY-MM-DD)
   staffId?: string;          // Staff ID if linked
-  staffName: string;         // কর্মচারীর নাম (Employee / Staff Name)
+  staffName: string;         // Staff / Employee Name
   customerId?: string;       // Customer ID if linked
-  companyName: string;       // কোম্পানির নাম (Company / Client Name)
-  address: string;           // ঠিকানা / সাইট লোকেশন (Address / Location)
-  phone?: string;            // যোগাযোগ নম্বর (Phone)
-  description: string;       // কাজের বিবরণ (Work / Service / Job Details)
-  billNo: string;            // বিল নং / মেমো নং (Bill / Voucher / Memo No)
-  billAmount: number;        // মোট বিল এমাউন্ট (Total Bill Amount ৳)
-  paidAmount: number;        // পেইড এমাউন্ট (Paid / Received Amount ৳)
-  dueAmount: number;         // বিল ডিউ (Due Amount ৳)
-  expenseAmount: number;     // কর্মচারীর খরচ (Staff Field Expense / Conveyance ৳)
-  expenseDetails?: string;   // খরচের বিবরণ (Expense Details)
-  paymentStatus: FieldPaymentStatus; // পরিশোধ স্ট্যাটাস (Paid | Partial | Due)
-  paymentMethod: 'Cash' | 'Bank Transfer' | 'bKash/Nagad' | 'Cheque'; // পেমেন্ট মেথড
-  status: FieldDispatchStatus; // কাজের স্ট্যাটাস (Completed | Pending | In Progress)
-  notes?: string;            // অতিরিক্ত মন্তব্য / নোট
+  companyName: string;       // Company / Client Name
+  address: string;           // Address / Site Location
+  phone?: string;            // Contact Phone Number
+  description: string;       // Job / Service Details
+  billNo: string;            // Bill / Memo / Voucher No
+  billAmount: number;        // Total Bill Amount
+  paidAmount: number;        // Paid / Received Amount
+  dueAmount: number;         // Due Amount
+  expenseAmount: number;     // Staff Field Expense / Conveyance
+  expenseDetails?: string;   // Expense Details
+  paymentStatus: FieldPaymentStatus; // Payment Status (Paid | Partial | Due)
+  paymentMethod: 'Cash' | 'Bank Transfer' | 'bKash/Nagad' | 'Cheque'; // Payment Method
+  status: FieldDispatchStatus; // Service Status (Completed | Pending | In Progress)
+  notes?: string;            // Additional Notes
   createdAt?: string;
 
   // Backward compatibility fields

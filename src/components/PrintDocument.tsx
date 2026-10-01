@@ -95,7 +95,7 @@ export default function PrintDocument({ document, settings, onBack, onCreateBill
     switch (document.type) {
       case 'OFFER_LETTER': return 'OFFER LETTER';
       case 'QUOTATION': return 'QUOTATION';
-      case 'CHALLAN': return 'DELIVERY CHALLAN (চালান)';
+      case 'CHALLAN': return 'DELIVERY CHALLAN';
       case 'BILL': return 'BILL';
       case 'INVOICE': return 'INVOICE';
       default: return 'DOCUMENT';
@@ -502,7 +502,7 @@ Content-Location: document.html
           <div style="margin-top: 40px; text-align: left;">
             <div style="border-top: 1px solid #475569; width: 160px; margin-bottom: 5px;"></div>
             <strong style="color: #0f172a; font-size: 10pt;">Receiver's Signature</strong><br/>
-            <span style="font-size: 8.5pt; color: #64748b; font-weight: bold;">(গ্রহীতার স্বাক্ষর ও সিল)</span>
+            <span style="font-size: 8.5pt; color: #64748b; font-weight: bold;">(Signature & Seal)</span>
           </div>
         ` : ''}
       </td>
@@ -594,10 +594,10 @@ ${rawBase64Logo}
             <button
               onClick={() => onCreateBill(document)}
               className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
-              title="এই চালান থেকে সরাসরি বিক্রয় বিল তৈরি করুন"
+              title="Create sales bill from this delivery challan"
             >
               <Receipt className="w-4 h-4 text-emerald-100" />
-              চালান থেকে বিল তৈরি করুন
+              Create Bill from Challan
             </button>
           )}
 
@@ -865,7 +865,7 @@ ${rawBase64Logo}
                   <div className="mt-auto pt-3 text-left w-44 sm:w-52">
                     <div className="h-10 w-full mb-1 border-b-2 border-slate-400"></div>
                     <p className="font-black text-slate-950 text-xs sm:text-sm font-display leading-none">Receiver's Signature</p>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">(গ্রহীতার স্বাক্ষর ও তারিখ)</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">(Signature & Date)</p>
                   </div>
                 )}
               </div>

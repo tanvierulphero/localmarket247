@@ -41,7 +41,7 @@ export const EXPENSE_CATEGORIES = [
   { name: 'Office Tea, Snacks & Entertainment', icon: Coffee, color: 'text-orange-600 bg-orange-50 border-orange-200' },
   { name: 'Shipping & Courier', icon: Package, color: 'text-teal-600 bg-teal-50 border-teal-200' },
   { name: 'Repair & Maintenance', icon: Wrench, color: 'text-rose-600 bg-rose-50 border-rose-200' },
-  { name: "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)", icon: AlertCircle, color: 'text-rose-800 bg-rose-100 border-rose-300 font-bold' },
+  { name: "Owner's Drawings / Personal Expense", icon: AlertCircle, color: 'text-rose-800 bg-rose-100 border-rose-300 font-bold' },
   { name: 'Marketing & Advertising', icon: TrendingUp, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
   { name: 'Stationery & Printing', icon: PrintIcon, color: 'text-cyan-600 bg-cyan-50 border-cyan-200' },
   { name: 'Bank Charges & Taxes', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
@@ -293,7 +293,7 @@ export default function ExpenseManager({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-900 font-display">
-                Showroom & Daily Expenses (দৈনন্দিন খরচ ও ব্যয়)
+                Showroom & Daily Expenses
               </h2>
               <p className="text-slate-400 text-[11px]">
                 Track showroom overheads, utilities, staff conveyance, courier, and miscellaneous operational costs.
@@ -327,7 +327,7 @@ export default function ExpenseManager({
             className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            + New Expense (নতুন খরচ এন্ট্রি)
+            + New Expense Entry
           </button>
         </div>
       </div>
@@ -337,13 +337,13 @@ export default function ExpenseManager({
         {/* Card 1: Total All-Time Expenses */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">Total Expenses (সর্বমোট ব্যয়)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">Total Expenses</span>
             <div className="p-1.5 bg-rose-50 text-rose-700 rounded-lg">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-slate-900 font-display">
-            ৳{metrics.totalExpense.toLocaleString()}
+            Tk. {metrics.totalExpense.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
             Across {expenses.length} recorded voucher entries
@@ -353,13 +353,13 @@ export default function ExpenseManager({
         {/* Card 2: This Month's Expenses */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">This Month (চলতি মাস)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">This Month</span>
             <div className="p-1.5 bg-blue-50 text-blue-700 rounded-lg">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-blue-900 font-display">
-            ৳{metrics.thisMonthExpense.toLocaleString()}
+            Tk. {metrics.thisMonthExpense.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
             Total operational costs this calendar month
@@ -369,13 +369,13 @@ export default function ExpenseManager({
         {/* Card 3: Today's Expenses */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">Today's Expense (আজকের খরচ)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">Today's Expenses</span>
             <div className="p-1.5 bg-amber-50 text-amber-700 rounded-lg">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-amber-800 font-display">
-            ৳{metrics.todayExpense.toLocaleString()}
+            Tk. {metrics.todayExpense.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
             Today's petty cash & direct payments
@@ -385,7 +385,7 @@ export default function ExpenseManager({
         {/* Card 4: Top Expense Category */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">Top Category (সর্বোচ্চ খাত)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">Top Category</span>
             <div className="p-1.5 bg-purple-50 text-purple-700 rounded-lg">
               <TrendingUp className="w-4 h-4" />
             </div>
@@ -394,7 +394,7 @@ export default function ExpenseManager({
             {metrics.topCat}
           </div>
           <p className="text-[10px] text-purple-700 font-bold">
-            ৳{metrics.topCatAmt.toLocaleString()} spent
+            Tk. {metrics.topCatAmt.toLocaleString()} spent
           </p>
         </div>
       </div>
@@ -422,10 +422,10 @@ export default function ExpenseManager({
               className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-hidden cursor-pointer"
             >
               <option value="ALL">All Payment Methods</option>
-              <option value="Cash">Cash (নগদ)</option>
-              <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
-              <option value="bKash/Nagad">bKash/Nagad (মোবাইল ব্যাংকিং)</option>
-              <option value="Cheque">Cheque (চেক)</option>
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="bKash/Nagad">bKash / Nagad</option>
+              <option value="Cheque">Cheque</option>
             </select>
           </div>
 
@@ -436,11 +436,11 @@ export default function ExpenseManager({
               onChange={(e) => setDateFilter(e.target.value as any)}
               className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-hidden cursor-pointer"
             >
-              <option value="ALL">All Time (সব সময়)</option>
-              <option value="TODAY">Today Only (আজকের খরচ)</option>
-              <option value="THIS_WEEK">This Week (এই সপ্তাহ)</option>
-              <option value="THIS_MONTH">This Month (চলতি মাস)</option>
-              <option value="LAST_MONTH">Last Month (গত মাস)</option>
+              <option value="ALL">All Time</option>
+              <option value="TODAY">Today Only</option>
+              <option value="THIS_WEEK">This Week</option>
+              <option value="THIS_MONTH">This Month</option>
+              <option value="LAST_MONTH">Last Month</option>
             </select>
           </div>
         </div>
@@ -490,7 +490,7 @@ export default function ExpenseManager({
             Showing {filteredExpenses.length} Expense Records
           </span>
           <span className="font-extrabold text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-            Filtered Total: ৳{metrics.filteredTotal.toLocaleString()}
+            Filtered Total: Tk. {metrics.filteredTotal.toLocaleString()}
           </span>
         </div>
 
@@ -499,7 +499,7 @@ export default function ExpenseManager({
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <th className="py-3 px-4">Voucher No. / Date</th>
-                <th className="py-3 px-3">Category (খাত)</th>
+                <th className="py-3 px-3">Category</th>
                 <th className="py-3 px-3">Description / Title</th>
                 <th className="py-3 px-3">Paid By / Ref</th>
                 <th className="py-3 px-3 text-center">Payment Method</th>
@@ -569,7 +569,7 @@ export default function ExpenseManager({
                     {/* Amount */}
                     <td className="py-3 px-4 text-right">
                       <span className="font-extrabold text-rose-700 text-sm font-display block">
-                        ৳{Number(exp.amount).toLocaleString()}
+                        Tk. {Number(exp.amount).toLocaleString()}
                       </span>
                     </td>
 
@@ -585,7 +585,7 @@ export default function ExpenseManager({
                         </button>
                         <button
                           onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete expense "${exp.title}" (৳${exp.amount.toLocaleString()})?`)) {
+                            if (window.confirm(`Are you sure you want to delete expense "${exp.title}" (Tk. ${exp.amount.toLocaleString()})?`)) {
                               onDeleteExpense(exp.id);
                             }
                           }}
@@ -621,7 +621,7 @@ export default function ExpenseManager({
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    {editingExpense ? 'Modify Expense Voucher' : 'Record New Showroom Expense (নতুন খরচ এন্ট্রি)'}
+                    {editingExpense ? 'Modify Expense Voucher' : 'Record Showroom Expense'}
                   </h3>
                   <p className="text-[10px] text-slate-400">
                     {editingExpense ? `Updating Voucher #${editingExpense.expenseNumber}` : 'Log daily operational, utility, travel, or office costs'}
@@ -647,7 +647,7 @@ export default function ExpenseManager({
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
               {/* Category */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Expense Category (খরচের খাত)</label>
+                <label className="font-bold text-slate-700">Expense Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
@@ -661,7 +661,7 @@ export default function ExpenseManager({
 
               {/* Title / Description */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Expense Title / Description (খরচের বিবরণ)</label>
+                <label className="font-bold text-slate-700">Expense Title / Description</label>
                 <input
                   type="text"
                   required
@@ -675,7 +675,7 @@ export default function ExpenseManager({
               {/* Amount & Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Amount (খরচের পরিমাণ ৳)</label>
+                  <label className="font-bold text-slate-700">Amount (Tk.)</label>
                   <input
                     type="number"
                     min={1}
@@ -688,7 +688,7 @@ export default function ExpenseManager({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Date (তারিখ)</label>
+                  <label className="font-bold text-slate-700">Date (Date)</label>
                   <input
                     type="date"
                     required
@@ -702,21 +702,21 @@ export default function ExpenseManager({
               {/* Payment Method & Paid By */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Payment Method (পরিশোধের মাধ্যম)</label>
+                  <label className="font-bold text-slate-700">Payment Method</label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as ExpensePaymentMethod)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold text-slate-800 focus:outline-hidden"
                   >
-                    <option value="Cash">Cash (নগদ)</option>
-                    <option value="Bank Transfer">Bank Transfer (ব্যাংক একাউন্ট)</option>
-                    <option value="bKash/Nagad">bKash / Nagad (বিকাশ / নগদ)</option>
-                    <option value="Cheque">Cheque (চেক)</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="bKash/Nagad">bKash / Nagad</option>
+                    <option value="Cheque">Cheque</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Paid By / Spender (প্রদানকারী)</label>
+                  <label className="font-bold text-slate-700">Paid By / Spender</label>
                   <input
                     type="text"
                     value={paidBy}
@@ -729,7 +729,7 @@ export default function ExpenseManager({
 
               {/* Reference / Voucher No. */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Money Receipt / Voucher / Memo Ref (মেমো বা ভাউচার নম্বর)</label>
+                <label className="font-bold text-slate-700">Receipt / Voucher / Memo Ref</label>
                 <input
                   type="text"
                   placeholder="e.g. SA-9821, CHQ-481940, CASH-MEMO-44"
@@ -741,7 +741,7 @@ export default function ExpenseManager({
 
               {/* Notes */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Remarks / Internal Notes (অতিরিক্ত নোট)</label>
+                <label className="font-bold text-slate-700">Remarks / Internal Notes</label>
                 <textarea
                   rows={2}
                   value={notes}
@@ -766,7 +766,7 @@ export default function ExpenseManager({
                   className="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  {isSubmitting ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Save Expense (সংরক্ষণ করুন)')}
+                  {isSubmitting ? 'Saving...' : (editingExpense ? 'Update Expense' : 'Save Expense')}
                 </button>
               </div>
             </form>
@@ -785,10 +785,10 @@ export default function ExpenseManager({
                 <Printer className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                 <div>
                   <h3 className="font-extrabold text-[11px] sm:text-xs text-white leading-tight">
-                    ব্যয় বিবরণী / Expense Statement & Audit Summary
+                    Expense Statement & Audit Summary
                   </h3>
                   <p className="text-[9px] text-slate-400 hidden sm:block">
-                    বিবরণীটি কাস্টমারকে দিতে বা নিজের সংরক্ষণের জন্য প্রিন্ট করুন
+                    Print statement for business documentation or accounts audit
                   </p>
                 </div>
               </div>
@@ -798,7 +798,7 @@ export default function ExpenseManager({
                   className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  Print (প্রিন্ট)
+                  Print
                 </button>
                 <button 
                   onClick={() => setIsPrintSummaryOpen(false)}
@@ -835,7 +835,7 @@ export default function ExpenseManager({
                 </div>
                 <div>
                   <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Total Expenditure</span>
-                  <span className="text-sm font-black text-rose-600 font-mono">৳{metrics.filteredTotal.toLocaleString()}</span>
+                  <span className="text-sm font-black text-rose-600 font-mono">Tk. {metrics.filteredTotal.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -862,12 +862,12 @@ export default function ExpenseManager({
                         <td className="py-2 px-3 text-slate-600">{exp.title}</td>
                         <td className="py-2 px-3 text-slate-600 font-semibold">{exp.paymentMethod}</td>
                         <td className="py-2 px-3 text-slate-600">{exp.paidBy}</td>
-                        <td className="py-2 px-3 text-right font-black text-slate-900 font-mono">৳{exp.amount.toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right font-black text-slate-900 font-mono">Tk. {exp.amount.toLocaleString()}</td>
                       </tr>
                     ))}
                     <tr className="bg-slate-50 font-bold border-t border-slate-300 text-slate-900">
                       <td colSpan={6} className="py-2.5 px-3 text-right uppercase tracking-wider text-[10px]">Grand Total:</td>
-                      <td className="py-2.5 px-3 text-right text-rose-600 text-xs font-black font-mono">৳{metrics.filteredTotal.toLocaleString()}</td>
+                      <td className="py-2.5 px-3 text-right text-rose-600 text-xs font-black font-mono">Tk. {metrics.filteredTotal.toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -879,13 +879,13 @@ export default function ExpenseManager({
                   <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800">
                     Prepared By (Accounts)
                   </div>
-                  <span className="text-[9px] text-slate-400 italic block">প্রস্তুতকারকের স্বাক্ষর</span>
+                  <span className="text-[9px] text-slate-400 italic block">Prepared By</span>
                 </div>
                 <div className="space-y-1">
                   <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800 font-bold">
                     {settings.signatureName || 'Managing Director'}
                   </div>
-                  <span className="text-[9px] text-slate-400 italic block">অনুমোদনকারীর স্বাক্ষর</span>
+                  <span className="text-[9px] text-slate-400 italic block">Approved By</span>
                 </div>
               </div>
             </div>

@@ -50,8 +50,8 @@ function parsePaymentsFromDoc(doc: Document) {
   }[] = [];
   
   // Pattern 1: Single Collect
-  // [Payment Received: ৳X on YYYY-MM-DD via Z - Notes]
-  const p1Regex = /\[Payment Received: ৳([\d,]+) on ([\d-]+) via ([^\]-]+) - (.*?)\]/g;
+  // [Payment Received: Tk. X on YYYY-MM-DD via Z - Notes]
+  const p1Regex = /\[Payment Received: Tk. ([\d,]+) on ([\d-]+) via ([^\]-]+) - (.*?)\]/g;
   let match;
   while ((match = p1Regex.exec(doc.notes)) !== null) {
     const amountStr = match[1].replace(/,/g, '');
@@ -75,8 +75,8 @@ function parsePaymentsFromDoc(doc: Document) {
   }
 
   // Pattern 2: Company Consolidated Collect
-  // [কোম্পানি বকেয়া জমা: ৳X via Z on YYYY-MM-DD - Notes]
-  const p2Regex = /\[কোম্পানি বকেয়া জমা: ৳([\d,]+) via ([^\]-]+) on ([\d-]+) - (.*?)\]/g;
+  // [Company Due Received: Tk. X via Z on YYYY-MM-DD - Notes]
+  const p2Regex = /\[(?:Company Due Received|\u0995\u09cb\u09ae\u09cd\u09aa\u09be\u09a8\u09bf Due \u099c\u09ae\u09be): Tk\. ([\d,]+) via ([^\]-]+) on ([\d-]+) - (.*?)\]/g;
   while ((match = p2Regex.exec(doc.notes)) !== null) {
     const amountStr = match[1].replace(/,/g, '');
     const amount = parseInt(amountStr, 10) || 0;
@@ -352,7 +352,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
     // Append standard notes if any
     let updatedNotes = collectingDoc.notes || '';
     if (paymentNotes.trim()) {
-      updatedNotes += `\n[Payment Received: ৳${paymentAmount.toLocaleString()} on ${singlePaymentDate} via ${singlePaymentMethod} - ${paymentNotes}]`;
+      updatedNotes += `\n[Payment Received: Tk. ${paymentAmount.toLocaleString()} on ${singlePaymentDate} via ${singlePaymentMethod} - ${paymentNotes}]`;
     }
 
     const updatedDoc: Document = {
@@ -428,7 +428,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
         dueAmount: newDue,
         paidAmount: newPaid,
         status: newDue === 0 ? 'Paid' : 'Partially Paid',
-        notes: (doc.notes || '') + `\n[কোম্পানি বকেয়া জমা: ৳${paymentForThisDoc.toLocaleString()} via ${companyPayMethod} on ${companyPayDate} - ${companyPayNotes || 'Ledger payment'}]`
+        notes: (doc.notes || '') + `\n[Company Due Received: Tk. ${paymentForThisDoc.toLocaleString()} via ${companyPayMethod} on ${companyPayDate} - ${companyPayNotes || 'Ledger payment'}]`
       };
       updatedDocs.push(updatedDoc);
     }
@@ -505,7 +505,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               Total Outstanding
             </span>
             <span className="text-sm sm:text-lg font-black text-slate-900 font-display block mt-1 truncate">
-              ৳{totalOutstanding.toLocaleString()}
+              Tk. {totalOutstanding.toLocaleString()}
             </span>
             <span className="text-[8px] sm:text-[9px] font-bold text-rose-500 block truncate">Uncollected credit</span>
           </div>
@@ -521,7 +521,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               Overdue Receivables
             </span>
             <span className="text-sm sm:text-lg font-black text-rose-700 font-display block mt-1 truncate">
-              ৳{overdueOutstanding.toLocaleString()}
+              Tk. {overdueOutstanding.toLocaleString()}
             </span>
             <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 block truncate">Passed due dates</span>
           </div>
@@ -537,7 +537,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               Total Received/Paid
             </span>
             <span className="text-sm sm:text-lg font-black text-emerald-700 font-display block mt-1 truncate">
-              ৳{totalPaid.toLocaleString()}
+              Tk. {totalPaid.toLocaleString()}
             </span>
             <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 block truncate">Cleared payments</span>
           </div>
@@ -578,7 +578,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
             {/* Quick Individual Customer Statement Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0 hidden md:inline">আলাদা রিপোর্ট:</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase shrink-0 hidden md:inline">Account Ledger:</span>
               <select
                 onChange={(e) => {
                   const matched = customerLedger.find(c => c.customer.id === e.target.value);
@@ -588,10 +588,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 defaultValue=""
                 className="bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs p-2 rounded-lg cursor-pointer focus:outline-hidden"
               >
-                <option value="" disabled>-- কাস্টমারের আলাদা ডিউ রিপোর্ট বেছে নিন --</option>
+                <option value="" disabled>-- Select Customer Account Ledger --</option>
                 {customerLedger.map(item => (
                   <option key={item.customer.id} value={item.customer.id}>
-                    {item.customer.company || item.customer.name} (বকেয়া: ৳{item.due.toLocaleString()})
+                    {item.customer.company || item.customer.name} (Due: Tk. {item.due.toLocaleString()})
                   </option>
                 ))}
               </select>
@@ -631,21 +631,21 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                               <span className="text-[10px] text-slate-400 font-semibold">{item.customer.company}</span>
                             </td>
                             <td className="py-4 px-4 font-mono font-bold text-slate-500">{item.customer.phone}</td>
-                            <td className="py-4 px-4 text-right font-bold text-slate-900">৳{item.invoiced.toLocaleString()}</td>
-                            <td className="py-4 px-4 text-right font-bold text-emerald-600">৳{item.paid.toLocaleString()}</td>
+                            <td className="py-4 px-4 text-right font-bold text-slate-900">Tk. {item.invoiced.toLocaleString()}</td>
+                            <td className="py-4 px-4 text-right font-bold text-emerald-600">Tk. {item.paid.toLocaleString()}</td>
                             <td className="py-4 px-4 text-right">
                               {item.due > 0 ? (
                                 <div className="inline-block bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md text-right">
                                   <span className="text-xs sm:text-sm font-black text-rose-700 font-display block leading-tight">
-                                    ৳{item.due.toLocaleString()}
+                                    Tk. {item.due.toLocaleString()}
                                   </span>
                                   <span className="text-[8px] font-bold text-rose-500 uppercase tracking-wider block">
-                                    মোট বকেয়া
+                                    Total Due
                                   </span>
                                 </div>
                               ) : (
                                 <span className="inline-block bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-bold">
-                                  বকেয়ামুক্ত
+                                  Cleared / No Due
                                 </span>
                               )}
                             </td>
@@ -663,19 +663,19 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                 <button
                                   onClick={() => setViewingCustomerReport(item)}
                                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-lg text-xs shadow-2xs transition-colors cursor-pointer"
-                                  title="প্রতিটি কোম্পানি বা কাস্টমারের জন্য আলাদা বকেয়া ও পরিশোধের লেজার রিপোর্ট দেখুন"
+                                  title="View detailed customer ledger report for this account"
                                 >
                                   <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />
-                                  আলাদা রিপোর্ট
+                                  Account Ledger
                                 </button>
                                 {item.due > 0 && (
                                   <button
                                     onClick={() => handleOpenCompanyPay(item)}
                                     className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-2xs transition-colors cursor-pointer"
-                                    title="কোম্পানির মোট বকেয়া জমা গ্রহণ করুন"
+                                    title="Collect outstanding balance for this company"
                                   >
                                     <CreditCard className="w-3.5 h-3.5" />
-                                    জমা নিন
+                                    Collect Due
                                   </button>
                                 )}
                                 <button
@@ -738,10 +738,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                                           remainingDue: p.remainingDue
                                                         })}
                                                         className="inline-flex items-center gap-0.5 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-200 px-1 py-0.5 rounded text-[8px] font-extrabold cursor-pointer transition-colors"
-                                                        title="মানি রসিদ পুনরায় প্রিন্ট করুন (Reprint Receipt)"
+                                                        title="Reprint Money Receipt"
                                                       >
                                                         <Printer className="w-2.5 h-2.5 text-emerald-600" />
-                                                        রসিদ (৳{p.amount.toLocaleString()})
+                                                        Receipt (Tk. {p.amount.toLocaleString()})
                                                       </button>
                                                     ))}
                                                   </div>
@@ -749,9 +749,9 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                               </td>
                                               <td className="py-3 px-4">{doc.date}</td>
                                               <td className="py-3 px-4 font-mono">{doc.dueDate || '--'}</td>
-                                              <td className="py-3 px-4 text-right text-slate-900 font-bold">৳{doc.total.toLocaleString()}</td>
-                                              <td className="py-3 px-4 text-right text-emerald-600">৳{paidAmt.toLocaleString()}</td>
-                                              <td className="py-3 px-4 text-right text-rose-600 font-bold">৳{dueAmt.toLocaleString()}</td>
+                                              <td className="py-3 px-4 text-right text-slate-900 font-bold">Tk. {doc.total.toLocaleString()}</td>
+                                              <td className="py-3 px-4 text-right text-emerald-600">Tk. {paidAmt.toLocaleString()}</td>
+                                              <td className="py-3 px-4 text-right text-rose-600 font-bold">Tk. {dueAmt.toLocaleString()}</td>
                                               <td className="py-3 px-4 text-center">
                                                 <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                                                   doc.status === 'Paid' 
@@ -880,10 +880,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                       remainingDue: p.remainingDue
                                     })}
                                     className="inline-flex items-center gap-0.5 bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-200 px-1 py-0.5 rounded text-[8px] font-extrabold cursor-pointer transition-colors"
-                                    title="মানি রসিদ পুনরায় প্রিন্ট করুন (Reprint Receipt)"
+                                    title="Reprint Money Receipt"
                                   >
                                     <Printer className="w-2.5 h-2.5 text-emerald-600" />
-                                    রসিদ-{idx + 1} (৳{p.amount.toLocaleString()})
+                                    Receipt-{idx + 1} (Tk. {p.amount.toLocaleString()})
                                   </button>
                                 ))}
                               </div>
@@ -895,11 +895,11 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                           </td>
                           <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{doc.date}</td>
                           <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{doc.dueDate || '--'}</td>
-                          <td className="py-4 px-4 text-right font-bold text-slate-900">৳{doc.total.toLocaleString()}</td>
-                          <td className="py-4 px-4 text-right font-bold text-emerald-600">৳{paidAmt.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right font-bold text-slate-900">Tk. {doc.total.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right font-bold text-emerald-600">Tk. {paidAmt.toLocaleString()}</td>
                           <td className="py-4 px-4 text-right font-bold text-rose-600">
                             <span className={dueAmt > 0 ? 'bg-rose-50 border border-rose-100 px-2 py-1 rounded-md' : 'text-slate-400'}>
-                              ৳{dueAmt.toLocaleString()}
+                              Tk. {dueAmt.toLocaleString()}
                             </span>
                           </td>
                           <td className="py-4 px-4 text-center">
@@ -987,27 +987,27 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 </div>
                 <div className="flex justify-between text-slate-500 font-semibold">
                   <span>Invoiced Total</span>
-                  <span className="font-bold text-slate-900">৳{collectingDoc.total.toLocaleString()}</span>
+                  <span className="font-bold text-slate-900">Tk. {collectingDoc.total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-500 font-semibold">
                   <span>Previously Paid</span>
                   <span className="font-bold text-emerald-600">
-                    ৳{(collectingDoc.paidAmount !== undefined ? collectingDoc.paidAmount : (collectingDoc.status === 'Paid' ? collectingDoc.total : 0)).toLocaleString()}
+                    Tk. {(collectingDoc.paidAmount !== undefined ? collectingDoc.paidAmount : (collectingDoc.status === 'Paid' ? collectingDoc.total : 0)).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-slate-200 pt-1.5 text-slate-800 font-bold">
                   <span>Outstanding Balance</span>
                   <span className="text-rose-600 font-extrabold">
-                    ৳{(collectingDoc.dueAmount !== undefined ? collectingDoc.dueAmount : (collectingDoc.status !== 'Paid' ? collectingDoc.total : 0)).toLocaleString()}
+                    Tk. {(collectingDoc.dueAmount !== undefined ? collectingDoc.dueAmount : (collectingDoc.status !== 'Paid' ? collectingDoc.total : 0)).toLocaleString()}
                   </span>
                 </div>
               </div>
 
               {/* Receive Payment Input */}
               <div className="space-y-1">
-                <label className="text-slate-700 font-bold block">Receive Collection Amount (৳) <span className="text-rose-600">*</span></label>
+                <label className="text-slate-700 font-bold block">Receive Collection Amount (Tk. ) <span className="text-rose-600">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base font-display">৳</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base font-display">Tk. </span>
                   <input
                     type="number"
                     required
@@ -1024,21 +1024,21 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               {/* Payment Method & Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-bold block">পেমেন্ট মেথড (Payment Method)</label>
+                  <label className="text-slate-700 font-bold block">Payment Method</label>
                   <select
                     value={singlePaymentMethod}
                     onChange={(e) => setSinglePaymentMethod(e.target.value as any)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-slate-800 focus:bg-white focus:outline-hidden"
                   >
-                    <option value="Cash">Cash (নগদ)</option>
-                    <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
                     <option value="bKash/Nagad">bKash / Nagad</option>
-                    <option value="Cheque">Cheque (চেক)</option>
+                    <option value="Cheque">Cheque</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-bold block">জমার তারিখ (Payment Date)</label>
+                  <label className="text-slate-700 font-bold block">Payment Date</label>
                   <input
                     type="date"
                     required
@@ -1051,7 +1051,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
               {/* Payment Notes */}
               <div className="space-y-1">
-                <label className="text-slate-700 font-bold block">Payment / Transaction Memo (মন্তব্য)</label>
+                <label className="text-slate-700 font-bold block">Payment / Transaction Memo (Notes)</label>
                 <input
                   type="text"
                   placeholder="e.g. Received via Bank Cheque #48104 or Cash"
@@ -1087,7 +1087,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
             <div className="bg-gradient-to-r from-slate-900 to-blue-950 text-white p-5 flex justify-between items-center">
               <div>
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block mb-0.5">Company Due Ledger &bull; পেমেন্ট গ্রহণ</span>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block mb-0.5">Company Due Ledger &bull; Collect Payment</span>
                 <h3 className="font-extrabold font-display text-sm sm:text-base">
                   {collectingCompany.customer.company || collectingCompany.customer.name}
                 </h3>
@@ -1113,27 +1113,27 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               {/* Total Balance Card */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-bold uppercase text-[10px]">কোম্পানির মোট বকেয়া (Total Outstanding)</span>
+                  <span className="text-slate-500 font-bold uppercase text-[10px]">Total Company Due (Total Outstanding)</span>
                   <span className="font-black text-rose-600 text-base font-display">
-                    ৳{collectingCompany.totalDue.toLocaleString()}
+                    Tk. {collectingCompany.totalDue.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-500 text-[11px]">
-                  <span>বকেয়া বিলের সংখ্যা (Unpaid Invoices)</span>
+                  <span>Unpaid Invoices Count</span>
                   <span className="font-bold text-slate-800 font-mono">
-                    {collectingCompany.documents.filter(d => d.status !== 'Paid').length} টি বিল
+                    {collectingCompany.documents.filter(d => d.status !== 'Paid').length} unpaid invoices
                   </span>
                 </div>
 
                 {/* Quick amount setter buttons */}
                 <div className="pt-2 border-t border-slate-200 flex flex-wrap gap-2">
-                  <span className="text-[10px] text-slate-400 font-bold block w-full">দ্রুত সিলেক্ট করুন:</span>
+                  <span className="text-[10px] text-slate-400 font-bold block w-full">Quick Select Amount:</span>
                   <button
                     type="button"
                     onClick={() => setCompanyPayAmount(collectingCompany.totalDue)}
                     className="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-md text-[11px] font-bold cursor-pointer transition-colors"
                   >
-                    সম্পূর্ণ জমা (৳{collectingCompany.totalDue.toLocaleString()})
+                    Full Payment (Tk. {collectingCompany.totalDue.toLocaleString()})
                   </button>
                   {collectingCompany.totalDue > 5000 && (
                     <button
@@ -1141,7 +1141,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                       onClick={() => setCompanyPayAmount(Math.round(collectingCompany.totalDue * 0.5))}
                       className="px-2.5 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-md text-[11px] font-bold cursor-pointer transition-colors"
                     >
-                      ৫০% জমা (৳{Math.round(collectingCompany.totalDue * 0.5).toLocaleString()})
+                      50% Partial (Tk. {Math.round(collectingCompany.totalDue * 0.5).toLocaleString()})
                     </button>
                   )}
                 </div>
@@ -1150,15 +1150,15 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
               {/* Payment Amount Input */}
               <div className="space-y-1">
                 <label className="text-slate-800 font-bold block flex justify-between items-center">
-                  <span>জমা টাকা (Payment Amount ৳) <span className="text-rose-600">*</span></span>
+                  <span>Payment Amount (Tk.) <span className="text-rose-600">*</span></span>
                   {companyPayAmount > 0 && (
                     <span className="text-[10px] text-slate-500 font-normal">
-                      অবশিষ্ট বকেয়া থাকবে: <strong className="text-rose-600">৳{Math.max(0, collectingCompany.totalDue - companyPayAmount).toLocaleString()}</strong>
+                      Remaining Due will be: <strong className="text-rose-600">Tk. {Math.max(0, collectingCompany.totalDue - companyPayAmount).toLocaleString()}</strong>
                     </span>
                   )}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base font-display">৳</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base font-display">Tk. </span>
                   <input
                     type="number"
                     required
@@ -1167,33 +1167,33 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     value={companyPayAmount || ''}
                     onChange={(e) => setCompanyPayAmount(Number(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 pl-7 focus:bg-white focus:outline-hidden font-bold text-slate-900 text-base font-mono"
-                    placeholder="জমা টাকা লিখুন..."
+                    placeholder="Enter payment amount..."
                   />
                 </div>
                 <p className="text-[10px] text-slate-400 leading-tight">
-                  জমা টাকা স্বয়ংক্রিয়ভাবে কোম্পানির বকেয়া ভাউচারগুলোর (পূর্বের থেকে বর্তমান) সাথে সমন্বয় হয়ে মোট ডিউ কমে যাবে।
+                  Payment will be automatically reconciled against the company's oldest due invoices to reduce the total outstanding balance.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Payment Method */}
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-bold block">পেমেন্ট মেথড (Payment Method)</label>
+                  <label className="text-slate-700 font-bold block">Payment Method</label>
                   <select
                     value={companyPayMethod}
                     onChange={(e) => setCompanyPayMethod(e.target.value as any)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-slate-800 focus:bg-white focus:outline-hidden"
                   >
-                    <option value="Cash">Cash (নগদ)</option>
-                    <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
                     <option value="bKash/Nagad">bKash / Nagad</option>
-                    <option value="Cheque">Cheque (চেক)</option>
+                    <option value="Cheque">Cheque</option>
                   </select>
                 </div>
 
                 {/* Date */}
                 <div className="space-y-1">
-                  <label className="text-slate-700 font-bold block">জমার তারিখ (Payment Date)</label>
+                  <label className="text-slate-700 font-bold block">Payment Date</label>
                   <input
                     type="date"
                     required
@@ -1206,10 +1206,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
               {/* Notes */}
               <div className="space-y-1">
-                <label className="text-slate-700 font-bold block">মন্তব্য / ভাউচার রেফারেন্স (Notes)</label>
+                <label className="text-slate-700 font-bold block">Reference Notes / Receipt No.</label>
                 <input
                   type="text"
-                  placeholder="যেমন: ব্যাংক ট্রানজেকশন আইডি বা নগদ গ্রহণ রসিদ নং"
+                  placeholder="e.g. Bank transaction ID or cash voucher no."
                   value={companyPayNotes}
                   onChange={(e) => setCompanyPayNotes(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:bg-white focus:outline-hidden"
@@ -1222,14 +1222,14 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   onClick={() => setCollectingCompany(null)}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-center rounded-lg transition-colors cursor-pointer"
                 >
-                  বাতিল (Dismiss)
+                  Dismiss
                 </button>
                 <button
                   type="submit"
                   disabled={companyPayAmount <= 0}
                   className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-center font-bold uppercase rounded-lg transition-colors cursor-pointer shadow-xs"
                 >
-                  জমা নিশ্চিত করুন (৳{companyPayAmount.toLocaleString()})
+                  Confirm Collection (Tk. {companyPayAmount.toLocaleString()})
                 </button>
               </div>
             </form>
@@ -1248,10 +1248,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                 <div>
                   <h3 className="font-extrabold text-[11px] sm:text-xs text-white leading-tight">
-                    পেমেন্ট রসিদ / Money Receipt Ready
+                    Payment Receipt Ready
                   </h3>
                   <p className="text-[9px] text-slate-400 hidden sm:block">
-                    রসিদটি প্রিন্ট করে কাস্টমারকে দিন
+                    Print receipt copy for customer records
                   </p>
                 </div>
               </div>
@@ -1261,7 +1261,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  Print (প্রিন্ট)
+                  Print
                 </button>
                 <button 
                   onClick={() => setRecentReceipt(null)}
@@ -1297,7 +1297,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 {/* Voucher Title */}
                 <div className="my-5 flex justify-center">
                   <span className="bg-slate-900 text-white font-black text-xs uppercase tracking-widest px-6 py-1.5 rounded-lg text-center font-mono">
-                    MONEY RECEIPT / মানি রসিদ
+                    OFFICIAL MONEY RECEIPT
                   </span>
                 </div>
 
@@ -1312,7 +1312,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     <strong className="text-slate-900 font-mono text-xs">{recentReceipt.date}</strong>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Received From (কাস্টমার):</span>
+                    <span className="text-slate-400 text-[10px] uppercase font-bold block">Received From:</span>
                     <strong className="text-slate-900 text-sm">{recentReceipt.customerName}</strong>
                     {recentReceipt.customerCompany && (
                       <span className="text-slate-500 block text-[10px]">Company: {recentReceipt.customerCompany}</span>
@@ -1341,24 +1341,24 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-black text-slate-800">
-                      Amount Received (জমাকৃত টাকা):
+                      Amount Received:
                     </span>
                     <span className="text-xl font-black text-slate-950 font-display">
-                      ৳{recentReceipt.amount.toLocaleString()}.00
+                      Tk. {recentReceipt.amount.toLocaleString()}.00
                     </span>
                   </div>
 
                   <div className="text-[10px] text-slate-600 bg-white border border-slate-100 p-2 rounded-lg font-bold italic">
                     <span className="text-slate-400 uppercase tracking-wider font-mono block text-[9px] not-italic font-bold">
-                      Amount in Words (কথায়):
+                      Amount in Words:
                     </span>
                     {numberToWords(recentReceipt.amount)}
                   </div>
 
                   <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-[10px] font-bold text-slate-500">
-                    <span>Outstanding Remaining Due (অবশিষ্ট বকেয়া):</span>
+                    <span>Remaining Outstanding Due:</span>
                     <span className="text-rose-600 font-black font-mono">
-                      ৳{recentReceipt.remainingDue.toLocaleString()}.00
+                      Tk. {recentReceipt.remainingDue.toLocaleString()}.00
                     </span>
                   </div>
                 </div>
@@ -1379,20 +1379,20 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800">
                       Customer's Signature
                     </div>
-                    <span className="text-[9px] text-slate-400 italic block">গ্রহীতার স্বাক্ষর</span>
+                    <span className="text-[9px] text-slate-400 italic block">Receiver Signature</span>
                   </div>
                   <div className="space-y-1">
                     <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800 font-bold">
                       Authorized Signature
                     </div>
-                    <span className="text-[9px] text-slate-400 italic block">কর্তৃপক্ষের স্বাক্ষর</span>
+                    <span className="text-[9px] text-slate-400 italic block">Authorized Signature</span>
                   </div>
                 </div>
 
                 {/* Copy / Seal Watermark */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none text-center rotate-12 z-0">
                   <span className="text-5xl font-black tracking-widest text-slate-900 border-8 border-slate-900 p-4 rounded-3xl block">
-                    PAID / আদায়কৃত
+                    PAID
                   </span>
                 </div>
 
@@ -1405,7 +1405,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 onClick={() => setRecentReceipt(null)}
                 className="px-5 py-2 bg-slate-900 hover:bg-slate-950 text-white text-xs font-bold uppercase rounded-xl cursor-pointer"
               >
-                Close (বন্ধ করুন)
+                Close
               </button>
             </div>
 
@@ -1428,10 +1428,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   <FileSpreadsheet className="w-5 h-5 text-amber-400 flex-shrink-0" />
                   <div>
                     <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
-                      {cust.company || cust.name} - কাস্টমার ডিউ ও পরিশোধের আলাদা রিপোর্ট
+                      {cust.company || cust.name} - Customer Due & Payment Ledger Report
                     </h3>
                     <p className="text-[10px] text-slate-400 hidden sm:block">
-                      প্রতিটি বিল এবং তারিখ অনুযায়ী পরিশোধিত টাকার বিবরণ সম্বলিত পৃথক লেজার রিপোর্ট
+                      Chronological statement of invoices, payments received, and running due balance.
                     </p>
                   </div>
                 </div>
@@ -1442,14 +1442,14 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     className="px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <Download className="w-3.5 h-3.5 text-blue-300" />
-                    CSV ডাউনলো
+                    Download CSV
                   </button>
                   <button
                     onClick={() => window.print()}
                     className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    প্রিন্ট রিপোর্ট (Print)
+                    Print Report
                   </button>
                   <button 
                     onClick={() => setViewingCustomerReport(null)}
@@ -1510,10 +1510,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                       CUSTOMER DUE STATEMENT
                     </span>
                     <span className="text-[10px] sm:text-[11px] text-rose-700 font-extrabold block">
-                      গ্রাহকভিত্তিক বকেয়া ও জমা লেজার
+                      Customer Accounts Receivable Ledger
                     </span>
                     <span className="text-[9px] sm:text-[10px] text-slate-400 block font-semibold mt-0.5">
-                      তারিখ: {new Date().toLocaleDateString('en-GB')}
+                      Date: {new Date().toLocaleDateString('en-GB')}
                     </span>
                   </div>
                 </div>
@@ -1521,32 +1521,32 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 {/* Customer Profile Box */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs">
                   <div>
-                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block">কোম্পানি / কাস্টমারের তথ্য</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Client / Company Information</span>
                     <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 mt-0.5">{cust.company || 'Private Client'}</h3>
-                    <p className="text-slate-600 font-bold text-[11px] sm:text-xs">প্রতিনিধি/নাম: <span className="text-slate-900">{cust.name}</span></p>
-                    <p className="text-slate-600 text-[11px] sm:text-xs">ঠিকানা: <span className="font-medium text-slate-800">{cust.address || 'Gazipur, Bangladesh'}</span></p>
+                    <p className="text-slate-600 font-bold text-[11px] sm:text-xs">Contact Person: <span className="text-slate-900">{cust.name}</span></p>
+                    <p className="text-slate-600 text-[11px] sm:text-xs">Address: <span className="font-medium text-slate-800">{cust.address || 'Gazipur, Bangladesh'}</span></p>
                   </div>
                   <div className="text-left sm:text-right space-y-0.5">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block">যোগাযোগ ও আইডি</span>
-                    <p className="font-bold text-slate-900 text-[11px] sm:text-xs">ফোন: <span className="font-mono text-blue-900">{cust.phone}</span></p>
-                    {cust.email && <p className="text-slate-600 text-[11px] sm:text-xs">ইমেইল: <span className="font-medium">{cust.email}</span></p>}
-                    {cust.companyId && <p className="text-slate-500 font-mono text-[9px] sm:text-[10px]">কোম্পানি আইডি: {cust.companyId}</p>}
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Contact & Account Details</span>
+                    <p className="font-bold text-slate-900 text-[11px] sm:text-xs">Phone: <span className="font-mono text-blue-900">{cust.phone}</span></p>
+                    {cust.email && <p className="text-slate-600 text-[11px] sm:text-xs">Email: <span className="font-medium">{cust.email}</span></p>}
+                    {cust.companyId && <p className="text-slate-500 font-mono text-[9px] sm:text-[10px]">Company ID: {cust.companyId}</p>}
                   </div>
                 </div>
 
                 {/* Summary Balance Metric Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
                   <div className="p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">সর্বমোট ইনভয়েস বিল</span>
-                    <span className="text-sm sm:text-base font-extrabold text-slate-900 font-mono">৳{viewingCustomerReport.invoiced.toLocaleString()}</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Total Invoiced</span>
+                    <span className="text-sm sm:text-base font-extrabold text-slate-900 font-mono">Tk. {viewingCustomerReport.invoiced.toLocaleString()}</span>
                   </div>
                   <div className="p-3 sm:p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">সর্বমোট পরিশোধিত টাকা</span>
-                    <span className="text-sm sm:text-base font-black text-emerald-700 font-mono">৳{viewingCustomerReport.paid.toLocaleString()}</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Total Received</span>
+                    <span className="text-sm sm:text-base font-black text-emerald-700 font-mono">Tk. {viewingCustomerReport.paid.toLocaleString()}</span>
                   </div>
                   <div className="p-3 sm:p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-rose-600 uppercase tracking-wider block mb-0.5">বর্তমান অবশিষ্ট বকেয়া</span>
-                    <span className="text-sm sm:text-base font-black text-rose-700 font-mono">৳{viewingCustomerReport.due.toLocaleString()}</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-rose-600 uppercase tracking-wider block mb-0.5">Current Due Balance</span>
+                    <span className="text-sm sm:text-base font-black text-rose-700 font-mono">Tk. {viewingCustomerReport.due.toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -1554,10 +1554,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 <div className="space-y-2">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 sm:gap-0">
                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      তারিখ ক্রমানুসারে ইনভয়েস বিল ও প্রতিটি পরিশোধের হিসাব (Payment Breakdown Ledger)
+                      Itemized Transaction & Payment History
                     </h3>
                     <span className="text-[10px] text-slate-400 font-mono">
-                      মোট {ledgerTransactions.length} টি এন্ট্রি
+                      Total {ledgerTransactions.length} records
                     </span>
                   </div>
 
@@ -1565,12 +1565,12 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     <table className="w-full text-left text-[11px] border-collapse min-w-[500px]">
                       <thead>
                         <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[9px]">
-                          <th className="py-2.5 px-3">তারিখ (Date)</th>
-                          <th className="py-2.5 px-3">রেফারেন্স / বিল নং</th>
-                          <th className="py-2.5 px-3">বিবরণ (Particulars)</th>
-                          <th className="py-2.5 px-3 text-right">ইনভয়েস বিল ৳</th>
-                          <th className="py-2.5 px-3 text-right">পরিশোধিত টাকা ৳</th>
-                          <th className="py-2.5 px-3 text-right">অবশিষ্ট বকেয়া ৳</th>
+                          <th className="py-2.5 px-3">Date</th>
+                          <th className="py-2.5 px-3">Invoice / Ref No.</th>
+                          <th className="py-2.5 px-3">Particulars / Description</th>
+                          <th className="py-2.5 px-3 text-right">Invoiced (Tk.)</th>
+                          <th className="py-2.5 px-3 text-right">Paid (Tk.)</th>
+                          <th className="py-2.5 px-3 text-right">Running Due (Tk.)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
@@ -1584,13 +1584,13 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                 <span className="block leading-tight text-[11px]">{tx.particulars}</span>
                               </td>
                               <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
-                                {tx.billed > 0 ? `৳${tx.billed.toLocaleString()}` : '—'}
+                                {tx.billed > 0 ? `Tk. ${tx.billed.toLocaleString()}` : '—'}
                               </td>
                               <td className="py-2.5 px-3 text-right font-mono font-black text-emerald-700 whitespace-nowrap">
-                                {tx.paid > 0 ? `+ ৳${tx.paid.toLocaleString()}` : '—'}
+                                {tx.paid > 0 ? `+ Tk. ${tx.paid.toLocaleString()}` : '—'}
                               </td>
                               <td className="py-2.5 px-3 text-right font-mono font-black text-rose-700 whitespace-nowrap">
-                                ৳{tx.runningDue.toLocaleString()}
+                                Tk. {tx.runningDue.toLocaleString()}
                               </td>
                             </tr>
                           );
@@ -1599,16 +1599,16 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                         {/* Ledger Summary Footer */}
                         <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 text-xs">
                           <td colSpan={3} className="py-3 px-3 uppercase tracking-wider text-[10px]">
-                            সর্বমোট হিসাব (Grand Total Balance):
+                            Grand Total Balance:
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-black whitespace-nowrap">
-                            ৳{viewingCustomerReport.invoiced.toLocaleString()}
+                            Tk. {viewingCustomerReport.invoiced.toLocaleString()}
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-black text-emerald-700 whitespace-nowrap">
-                            ৳{viewingCustomerReport.paid.toLocaleString()}
+                            Tk. {viewingCustomerReport.paid.toLocaleString()}
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-black text-rose-700 text-sm whitespace-nowrap">
-                            ৳{viewingCustomerReport.due.toLocaleString()}
+                            Tk. {viewingCustomerReport.due.toLocaleString()}
                           </td>
                         </tr>
                       </tbody>
@@ -1622,19 +1622,19 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800">
                       Customer Signature
                     </div>
-                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">গ্রহীতার স্বাক্ষর</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">Receiver Signature</span>
                   </div>
                   <div className="space-y-1">
                     <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800">
                       Accounts Prepared By
                     </div>
-                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">হিসাবরক্ষক</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">Accountant</span>
                   </div>
                   <div className="space-y-1">
                     <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800 font-bold">
                       {settings?.signatureName || 'Managing Director'}
                     </div>
-                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">অনুমোদনকারী</span>
+                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">Authorized By</span>
                   </div>
                 </div>
 

@@ -423,8 +423,8 @@ export default function InventoryManager({
                 <th className="py-3 px-4">Item SKU / Name</th>
                 <th className="py-3 px-3">Category</th>
                 <th className="py-3 px-3">Brand</th>
-                <th className="py-3 px-3 text-right">Selling & Purchase Price (বিক্রয় ও ক্রয়)</th>
-                <th className="py-3 px-4 text-center">Stock Volume (মজুদ)</th>
+                <th className="py-3 px-3 text-right">Selling & Cost Price</th>
+                <th className="py-3 px-4 text-center">Stock Volume</th>
                 <th className="py-3 px-3 text-center">Status</th>
                 <th className="py-3 px-4 text-right">Operations</th>
               </tr>
@@ -464,10 +464,10 @@ export default function InventoryManager({
                       {/* Price: Selling Price & Purchase Price */}
                       <td className="py-3.5 px-3 text-right">
                         <div className="font-extrabold text-slate-900 font-display text-xs">
-                          ৳{prodPrice.toLocaleString()} <span className="text-[10px] font-normal text-slate-400">/ {prodUnit}</span>
+                          Tk. {prodPrice.toLocaleString()} <span className="text-[10px] font-normal text-slate-400">/ {prodUnit}</span>
                         </div>
-                        <div className="text-[10px] font-bold text-emerald-700 bg-emerald-50 inline-block px-1.5 py-0.5 rounded border border-emerald-200 mt-0.5" title="ক্রয় মূল্য (Purchase Cost)">
-                          ক্রয়: ৳{prodCost.toLocaleString()}
+                        <div className="text-[10px] font-bold text-emerald-700 bg-emerald-50 inline-block px-1.5 py-0.5 rounded border border-emerald-200 mt-0.5" title="Purchase Cost">
+                          Cost: Tk. {prodCost.toLocaleString()}
                         </div>
                       </td>
 
@@ -633,10 +633,10 @@ export default function InventoryManager({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Selling Price (বিক্রয় মূল্য) */}
+                {/* Selling Price */}
                 <div className="space-y-1.5">
                   <label className="font-bold text-slate-700 flex items-center justify-between">
-                    <span>বিক্রয় মূল্য (Selling Price ৳)</span>
+                    <span>Selling Price (Tk.)</span>
                   </label>
                   <input
                     type="number"
@@ -648,10 +648,10 @@ export default function InventoryManager({
                   />
                 </div>
 
-                {/* Purchase Cost (ক্রয় মূল্য) */}
+                {/* Purchase Cost */}
                 <div className="space-y-1.5">
                   <label className="font-bold text-slate-700 flex items-center justify-between">
-                    <span>ক্রয় মূল্য (Purchase Cost ৳)</span>
+                    <span>Purchase Cost (Tk.)</span>
                   </label>
                   <input
                     type="number"
@@ -666,10 +666,10 @@ export default function InventoryManager({
                 {/* Stock volume */}
                 <div className="space-y-1.5">
                   <label className="font-bold text-slate-700 flex items-center justify-between">
-                    <span>স্টক পরিমাণ (Stock)</span>
+                    <span>Stock Quantity</span>
                     {editingId && (
                       <span className="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-normal">
-                        অটো-আপডেট
+                        Auto-managed
                       </span>
                     )}
                   </label>
@@ -685,7 +685,7 @@ export default function InventoryManager({
                   />
                   {editingId && (
                     <p className="text-[10px] text-slate-400 leading-tight">
-                      ক্রয় ভাউচার, সেলস চালান ও রিটার্নের মাধ্যমে স্টক নিয়ন্ত্রিত হয়।
+                      Stock levels are updated via purchases, sales challans, and returns.
                     </p>
                   )}
                 </div>
@@ -750,7 +750,7 @@ export default function InventoryManager({
                 <div className="flex items-center justify-between">
                   <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                     <ImageIcon className="w-4 h-4 text-blue-600" />
-                    Product Image (ছবি আপলোড বা ছবি নির্বাচন)
+                    Product Image Selection & Upload
                   </label>
                   {formData.imageUrl && (
                     <button
@@ -794,7 +794,7 @@ export default function InventoryManager({
                       <div className="py-3 flex flex-col items-center gap-2">
                         <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
                         <span className="text-xs font-bold text-slate-700">Compressing & Uploading Photo...</span>
-                        <span className="text-[10px] text-slate-400">ছবি প্রসেস হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন</span>
+                        <span className="text-[10px] text-slate-400">Processing image, please wait...</span>
                       </div>
                     ) : (
                       <label 
@@ -808,7 +808,7 @@ export default function InventoryManager({
                           Click to browse device or Drag & Drop photo here
                         </span>
                         <span className="text-[11px] text-slate-500 mt-0.5 block">
-                          কম্পিউটার বা মোবাইল থেকে ছবি সিলেক্ট করুন (PNG, JPG, WEBP)
+                          Choose image from device (PNG, JPG, WEBP)
                         </span>
                       </label>
                     )}
@@ -843,7 +843,7 @@ export default function InventoryManager({
                 <div className="space-y-1.5">
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-amber-500" />
-                    Quick Preset Photos (রেডিমেড প্রডাক্ট ছবি):
+                    Quick Preset Machinery Photos:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {PRODUCT_IMAGE_PRESETS.map((preset, idx) => (
@@ -868,7 +868,7 @@ export default function InventoryManager({
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
                     <Link2 className="w-3 h-3 text-slate-400" />
-                    Or Paste Image URL directly (সরাসরি ছবির লিংক):
+                    Or Paste Image URL directly:
                   </label>
                   <input
                     type="text"
@@ -962,7 +962,7 @@ export default function InventoryManager({
                 <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
                   <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Sales Revenue</span>
                   <span className="text-lg font-black font-display text-blue-950 block">
-                    ৳{productAnalytics.totalSalesRevenue.toLocaleString()}
+                    Tk. {productAnalytics.totalSalesRevenue.toLocaleString()}
                   </span>
                   <span className="text-[9px] text-slate-500 font-semibold">Total Revenue</span>
                 </div>
@@ -970,7 +970,7 @@ export default function InventoryManager({
                 <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
                   <span className="text-[9px] font-bold text-slate-400 uppercase block">Total Purchase Cost</span>
                   <span className="text-lg font-black font-display text-slate-800 block">
-                    ৳{productAnalytics.totalPurchaseCostActual.toLocaleString()}
+                    Tk. {productAnalytics.totalPurchaseCostActual.toLocaleString()}
                   </span>
                   <span className="text-[9px] text-slate-500 font-semibold">Procurement Cost</span>
                 </div>
@@ -986,7 +986,7 @@ export default function InventoryManager({
                   <span className={`text-lg font-black font-display block ${
                     productAnalytics.isProfit ? 'text-emerald-800' : 'text-rose-800'
                   }`}>
-                    ৳{Math.abs(productAnalytics.netProfitLoss).toLocaleString()}
+                    Tk. {Math.abs(productAnalytics.netProfitLoss).toLocaleString()}
                   </span>
                   <span className={`text-[9px] font-bold flex items-center gap-0.5 ${
                     productAnalytics.isProfit ? 'text-emerald-700' : 'text-rose-700'
@@ -1041,11 +1041,11 @@ export default function InventoryManager({
                             </td>
 
                             <td className="py-2.5 px-3 text-right font-bold text-slate-700">
-                              ৳{sale.unitPrice.toLocaleString()}
+                              Tk. {sale.unitPrice.toLocaleString()}
                             </td>
 
                             <td className="py-2.5 px-3 text-right font-extrabold text-slate-950 font-display">
-                              ৳{sale.lineTotal.toLocaleString()}
+                              Tk. {sale.lineTotal.toLocaleString()}
                             </td>
 
                             <td className="py-2.5 px-3 text-center">
@@ -1117,11 +1117,11 @@ export default function InventoryManager({
                             </td>
 
                             <td className="py-2.5 px-3 text-right font-semibold text-slate-700">
-                              ৳{pRec.buyPrice.toLocaleString()}
+                              Tk. {pRec.buyPrice.toLocaleString()}
                             </td>
 
                             <td className="py-2.5 px-3 text-right font-extrabold text-slate-900 font-display">
-                              ৳{pRec.lineTotal.toLocaleString()}
+                              Tk. {pRec.lineTotal.toLocaleString()}
                             </td>
                           </tr>
                         ))}

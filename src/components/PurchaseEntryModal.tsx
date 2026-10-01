@@ -338,7 +338,7 @@ export default function PurchaseEntryModal({
             </div>
             <div>
               <h2 className="text-xl font-bold">
-                {initialPurchase ? 'Edit Purchase Entry (ক্রয় এন্ট্রি সংশোধন)' : 'New Purchase / Stock Inward Entry (নতুন ক্রয় এন্ট্রি)'}
+                {initialPurchase ? 'Edit Purchase Entry' : 'New Purchase / Stock Inward Entry'}
               </h2>
               <p className="text-xs text-emerald-100">
                 Supplier procurement, inventory inward stock & payable ledger management
@@ -371,7 +371,7 @@ export default function PurchaseEntryModal({
             <div className="space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                1. Purchase Info (ক্রয় ভাউচার তথ্য)
+                1. Purchase Voucher Information
               </h3>
 
               <div>
@@ -403,7 +403,7 @@ export default function PurchaseEntryModal({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Purchase Date (ক্রয় তারিখ) *
+                  Purchase Date *
                 </label>
                 <div className="relative">
                   <input
@@ -423,7 +423,7 @@ export default function PurchaseEntryModal({
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  2. Supplier Details (সরবরাহকারী / ভেন্ডর)
+                  2. Supplier Details
                 </h3>
                 {!isQuickAddingSupplier && (
                   <button
@@ -557,12 +557,12 @@ export default function PurchaseEntryModal({
             </div>
           </div>
 
-          {/* Section 2: Items Table (ক্রয়কৃত পণ্যের তালিকা) */}
+          {/* Section 2: Items Table (Purchased Products List) */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                3. Purchased Products & Spare Parts (পণ্য ও ক্রয়মূল্য)
+                3. Purchased Products & Unit Cost
               </h3>
               <button
                 type="button"
@@ -582,8 +582,8 @@ export default function PurchaseEntryModal({
                       <th className="py-2.5 px-3 min-w-[260px]">Product / Spare Part Item</th>
                       <th className="py-2.5 px-3 w-28">Unit</th>
                       <th className="py-2.5 px-3 w-28">Quantity</th>
-                      <th className="py-2.5 px-3 w-36">Purchase Cost (৳)</th>
-                      <th className="py-2.5 px-3 w-36 text-right">Total (৳)</th>
+                      <th className="py-2.5 px-3 w-36">Purchase Cost (Tk.)</th>
+                      <th className="py-2.5 px-3 w-36 text-right">Total (Tk.)</th>
                       <th className="py-2.5 px-3 w-12 text-center"></th>
                     </tr>
                   </thead>
@@ -610,7 +610,7 @@ export default function PurchaseEntryModal({
                             <input
                               type="text"
                               required
-                              placeholder="Product Title / Description (পণ্যের নাম)"
+                              placeholder="Product Title / Description"
                               value={item.productName}
                               onChange={(e) => handleItemFieldChange(index, 'productName', e.target.value)}
                               className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
@@ -662,7 +662,7 @@ export default function PurchaseEntryModal({
                           />
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                          ৳{(item.totalCost || 0).toLocaleString()}
+                          Tk. {(item.totalCost || 0).toLocaleString()}
                         </td>
                         <td className="py-2.5 px-3 text-center">
                           <button
@@ -692,7 +692,7 @@ export default function PurchaseEntryModal({
               />
               <label htmlFor="autoUpdateStock" className="cursor-pointer font-medium flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <strong>Auto-increase product stock in Inventory</strong> (স্বয়ংক্রিয়ভাবে ইনভেন্টরিতে পণ্যের স্টক সংখ্যা বৃদ্ধি করুন)
+                <strong>Auto-increase product stock in Inventory</strong> (Automatically increase stock level upon arrival)
               </label>
             </div>
           </div>
@@ -704,7 +704,7 @@ export default function PurchaseEntryModal({
             <div className="space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                4. Payment & Delivery Status (পরিশোধ ও স্থিতি)
+                4. Payment & Delivery Status
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -717,10 +717,10 @@ export default function PurchaseEntryModal({
                     onChange={(e) => setStatus(e.target.value as PurchaseStatus)}
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg font-semibold"
                   >
-                    <option value="Received">✅ Received (পণ্য গুদামে গৃহীত)</option>
-                    <option value="Ordered">📦 Ordered (অর্ডার দেওয়া হয়েছে)</option>
-                    <option value="Pending">⏳ Pending Delivery (অপেক্ষমাণ)</option>
-                    <option value="Cancelled">❌ Cancelled (বাতিল)</option>
+                    <option value="Received">✅ Received (In Warehouse)</option>
+                    <option value="Ordered">📦 Ordered (Awaiting Dispatch)</option>
+                    <option value="Pending">⏳ Pending Delivery</option>
+                    <option value="Cancelled">❌ Cancelled</option>
                   </select>
                 </div>
 
@@ -733,17 +733,17 @@ export default function PurchaseEntryModal({
                     onChange={(e) => setPaymentMethod(e.target.value as any)}
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg"
                   >
-                    <option value="Cash">Cash (নগদ)</option>
-                    <option value="Bank Transfer">Bank Transfer (ব্যাংক ট্রান্সফার)</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
                     <option value="bKash/Nagad">bKash / Nagad</option>
-                    <option value="Cheque">Cheque (চেক)</option>
+                    <option value="Cheque">Cheque</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Notes & Internal Memo (নোট বা মন্তব্য)
+                  Notes & Internal Memo
                 </label>
                 <textarea
                   rows={2}
@@ -758,13 +758,13 @@ export default function PurchaseEntryModal({
             {/* Calculations Summary Card */}
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5 text-sm">
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
-                <span>Subtotal (সাবটোটাল):</span>
-                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">৳{subtotal.toLocaleString()}</span>
+                <span>Subtotal:</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">Tk. {subtotal.toLocaleString()}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div>
-                  <label className="text-xs text-slate-500 block mb-0.5">Discount (ছাড় ৳)</label>
+                  <label className="text-xs text-slate-500 block mb-0.5">Discount (Tk.)</label>
                   <input
                     type="number"
                     min="0"
@@ -775,7 +775,7 @@ export default function PurchaseEntryModal({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 block mb-0.5">Shipping / Transport (৳)</label>
+                  <label className="text-xs text-slate-500 block mb-0.5">Shipping / Transport (Tk.)</label>
                   <input
                     type="number"
                     min="0"
@@ -788,14 +788,14 @@ export default function PurchaseEntryModal({
               </div>
 
               <div className="flex items-center justify-between text-base font-black pt-2 border-t border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
-                <span>Grand Total (সর্বমোট ক্রয়মূল্য):</span>
-                <span className="font-mono text-emerald-600 dark:text-emerald-400">৳{grandTotal.toLocaleString()}</span>
+                <span>Grand Total:</span>
+                <span className="font-mono text-emerald-600 dark:text-emerald-400">Tk. {grandTotal.toLocaleString()}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-2 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Paid Amount (পরিশোধ)</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Paid Amount</label>
                     <button
                       type="button"
                       onClick={handleMarkFullyPaid}
@@ -816,14 +816,14 @@ export default function PurchaseEntryModal({
 
                 <div>
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                    Due Balance (বকেয়া)
+                    Due Balance
                   </label>
                   <div className={`px-2.5 py-1.5 text-xs font-mono font-bold text-right rounded-lg border ${
                     dueAmount > 0 
                       ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800' 
                       : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
                   }`}>
-                    ৳{dueAmount.toLocaleString()}
+                    Tk. {dueAmount.toLocaleString()}
                   </div>
                 </div>
               </div>

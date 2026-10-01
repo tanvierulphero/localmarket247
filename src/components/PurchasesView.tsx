@@ -175,7 +175,7 @@ export default function PurchasesView({
             <div className="p-2 bg-emerald-600/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl">
               <ShoppingCart className="w-6 h-6" />
             </div>
-            Purchase Entry & Supplier Procurement (ক্রয় ও ভেন্ডর ব্যবস্থাপনা)
+            Purchase Entry & Procurement Hub
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Record supplier purchases, stock inward entries, payments & accounts payable ledger
@@ -209,7 +209,7 @@ export default function PurchasesView({
                 }}
                 className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 hover:shadow-lg transition-all"
               >
-                <Plus className="w-4 h-4" /> + New Purchase Entry (নতুন ক্রয়)
+                <Plus className="w-4 h-4" /> + New Purchase Entry
               </button>
             </>
           )}
@@ -222,14 +222,14 @@ export default function PurchasesView({
         {/* Total Purchases Value */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Purchases (মোট ক্রয়)</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Purchases</span>
             <div className="p-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl">
               <ShoppingCart className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
             <h3 className="text-xl font-black font-mono text-slate-900 dark:text-white">
-              ৳{totalPurchaseValue.toLocaleString()}
+              Tk. {totalPurchaseValue.toLocaleString()}
             </h3>
             <p className="text-[11px] text-slate-500 mt-0.5">{totalPurchaseCount} total purchase invoices recorded</p>
           </div>
@@ -238,14 +238,14 @@ export default function PurchasesView({
         {/* Total Paid to Suppliers */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Paid to Suppliers (পরিশোধ)</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Paid to Suppliers</span>
             <div className="p-2 bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 rounded-xl">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
             <h3 className="text-xl font-black font-mono text-teal-600 dark:text-teal-400">
-              ৳{totalPaidToSuppliers.toLocaleString()}
+              Tk. {totalPaidToSuppliers.toLocaleString()}
             </h3>
             <p className="text-[11px] text-teal-600/80 dark:text-teal-400/80 mt-0.5">Cleared via Bank, Cash & Cheque</p>
           </div>
@@ -254,14 +254,14 @@ export default function PurchasesView({
         {/* Supplier Payable Due */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Supplier Payable Due (বকেয়া)</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Supplier Payable Due</span>
             <div className="p-2 bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-xl">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
             <h3 className="text-xl font-black font-mono text-rose-600 dark:text-rose-400">
-              ৳{totalSupplierPayableDue.toLocaleString()}
+              Tk. {totalSupplierPayableDue.toLocaleString()}
             </h3>
             <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80 mt-0.5">Accounts payable to vendors</p>
           </div>
@@ -270,7 +270,7 @@ export default function PurchasesView({
         {/* Suppliers Count */}
         <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Registered Suppliers (ভেন্ডর)</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Registered Suppliers</span>
             <div className="p-2 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl">
               <Building2 className="w-4 h-4" />
             </div>
@@ -374,9 +374,9 @@ export default function PurchasesView({
                     <th className="py-3 px-4">Date</th>
                     <th className="py-3 px-4">Supplier & Contact</th>
                     <th className="py-3 px-4">Items Summary</th>
-                    <th className="py-3 px-4 text-right">Grand Total (৳)</th>
-                    <th className="py-3 px-4 text-right">Paid (৳)</th>
-                    <th className="py-3 px-4 text-right">Due (৳)</th>
+                    <th className="py-3 px-4 text-right">Grand Total (Tk.)</th>
+                    <th className="py-3 px-4 text-right">Paid (Tk.)</th>
+                    <th className="py-3 px-4 text-right">Due (Tk.)</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
@@ -444,18 +444,18 @@ export default function PurchasesView({
 
                         {/* Grand Total */}
                         <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">
-                          ৳{(p.grandTotal || 0).toLocaleString()}
+                          Tk. {(p.grandTotal || 0).toLocaleString()}
                         </td>
 
                         {/* Paid */}
                         <td className="py-3 px-4 text-right font-mono font-bold text-teal-600 dark:text-teal-400">
-                          ৳{(p.paidAmount || 0).toLocaleString()}
+                          Tk. {(p.paidAmount || 0).toLocaleString()}
                         </td>
 
                         {/* Due */}
                         <td className="py-3 px-4 text-right font-mono font-bold">
                           <span className={p.dueAmount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}>
-                            ৳{(p.dueAmount || 0).toLocaleString()}
+                            Tk. {(p.dueAmount || 0).toLocaleString()}
                           </span>
                         </td>
 
@@ -624,13 +624,13 @@ export default function PurchasesView({
                     <div>
                       <span className="text-[11px] text-slate-400 block">Total Purchased</span>
                       <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                        ৳{supTotal.toLocaleString()}
+                        Tk. {supTotal.toLocaleString()}
                       </span>
                     </div>
                     <div className="text-right">
                       <span className="text-[11px] text-slate-400 block">Outstanding Due</span>
                       <span className={`font-mono font-bold ${supDue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600'}`}>
-                        ৳{supDue.toLocaleString()}
+                        Tk. {supDue.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -701,14 +701,14 @@ export default function PurchasesView({
               </div>
               <div className="flex justify-between text-slate-500">
                 <span>Current Due Balance:</span>
-                <strong className="text-rose-600 font-mono text-sm">৳{quickPayPurchase.dueAmount.toLocaleString()}</strong>
+                <strong className="text-rose-600 font-mono text-sm">Tk. {quickPayPurchase.dueAmount.toLocaleString()}</strong>
               </div>
             </div>
 
             <form onSubmit={handleQuickPaySubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Payment Amount (টাকা)
+                  Payment Amount (Tk.)
                 </label>
                 <input
                   type="number"
@@ -797,7 +797,7 @@ function SupplierModal({
         <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Building2 className="w-5 h-5 text-emerald-600" />
-            {initialSupplier ? 'Edit Supplier (ভেন্ডর তথ্য সংশোধন)' : 'Add New Supplier (নতুন ভেন্ডর)'}
+            {initialSupplier ? 'Edit Supplier Information' : 'Add New Supplier'}
           </h3>
           <button onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600">
             <X className="w-5 h-5" />
@@ -925,7 +925,7 @@ function PurchasePrintModal({
               onClick={handlePrint}
               className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
             >
-              <Printer className="w-3.5 h-3.5" /> প্রিন্ট করুন (Print)
+              <Printer className="w-3.5 h-3.5" /> Print
             </button>
             <button
               onClick={onClose}
@@ -975,8 +975,8 @@ function PurchasePrintModal({
                 <th className="py-2 px-3">Item Description</th>
                 <th className="py-2 px-3 w-20 text-center">Unit</th>
                 <th className="py-2 px-3 w-20 text-center">Qty</th>
-                <th className="py-2 px-3 w-28 text-right">Unit Rate (৳)</th>
-                <th className="py-2 px-3 w-28 text-right">Total (৳)</th>
+                <th className="py-2 px-3 w-28 text-right">Unit Rate (Tk.)</th>
+                <th className="py-2 px-3 w-28 text-right">Total (Tk.)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -986,8 +986,8 @@ function PurchasePrintModal({
                   <td className="py-2 px-3 font-semibold text-slate-900">{it.productName}</td>
                   <td className="py-2 px-3 text-center text-slate-600">{it.unit}</td>
                   <td className="py-2 px-3 text-center font-bold text-slate-900">{it.quantity}</td>
-                  <td className="py-2 px-3 text-right font-mono">৳{it.unitCost.toLocaleString()}</td>
-                  <td className="py-2 px-3 text-right font-mono font-bold">৳{(it.totalCost || 0).toLocaleString()}</td>
+                  <td className="py-2 px-3 text-right font-mono">Tk. {it.unitCost.toLocaleString()}</td>
+                  <td className="py-2 px-3 text-right font-mono font-bold">Tk. {(it.totalCost || 0).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -998,31 +998,31 @@ function PurchasePrintModal({
             <div className="w-64 space-y-1.5 text-xs text-slate-600">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span className="font-mono font-bold">৳{purchase.subtotal.toLocaleString()}</span>
+                <span className="font-mono font-bold">Tk. {purchase.subtotal.toLocaleString()}</span>
               </div>
               {purchase.discount > 0 && (
                 <div className="flex justify-between text-emerald-600">
                   <span>Discount:</span>
-                  <span className="font-mono font-bold">-৳{purchase.discount.toLocaleString()}</span>
+                  <span className="font-mono font-bold">-Tk. {purchase.discount.toLocaleString()}</span>
                 </div>
               )}
               {purchase.shippingCost > 0 && (
                 <div className="flex justify-between">
                   <span>Shipping/Transport:</span>
-                  <span className="font-mono font-bold">+৳{purchase.shippingCost.toLocaleString()}</span>
+                  <span className="font-mono font-bold">+Tk. {purchase.shippingCost.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between font-black text-sm text-slate-900 pt-1 border-t border-slate-200">
                 <span>Grand Total:</span>
-                <span className="font-mono text-emerald-700">৳{purchase.grandTotal.toLocaleString()}</span>
+                <span className="font-mono text-emerald-700">Tk. {purchase.grandTotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-teal-700 pt-0.5">
                 <span>Paid Amount:</span>
-                <span className="font-mono font-bold">৳{purchase.paidAmount.toLocaleString()}</span>
+                <span className="font-mono font-bold">Tk. {purchase.paidAmount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-rose-700 font-bold pt-0.5">
                 <span>Due Balance:</span>
-                <span className="font-mono">৳{purchase.dueAmount.toLocaleString()}</span>
+                <span className="font-mono">Tk. {purchase.dueAmount.toLocaleString()}</span>
               </div>
             </div>
           </div>

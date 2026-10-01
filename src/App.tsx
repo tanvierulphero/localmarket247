@@ -150,7 +150,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to upload logo:', err);
-      alert('লোগো আপলোড করতে সমস্যা হয়েছে। অনুগ্রহ করে ছবির সাইজ চেক করে পুনরায় চেষ্টা করুন।');
+      alert('Failed to upload logo image. Please check file size and try again.');
     } finally {
       setIsUploadingLogo(false);
     }
@@ -165,7 +165,7 @@ export default function App() {
       }
     } catch (err) {
       console.error('Failed to upload watermark:', err);
-      alert('জলছাপ আপলোড করতে সমস্যা হয়েছে।');
+      alert('Failed to upload watermark image. Please try again.');
     } finally {
       setIsUploadingWatermark(false);
     }
@@ -399,7 +399,7 @@ export default function App() {
 
   // Clear All Data Handler (for fresh entry)
   const handleClearAllData = async () => {
-    if (window.confirm("আপনি কি নিশ্চিত যে আপনি ডাটাবেজের সমস্ত পণ্য, গ্রাহক, ইনভয়েস, পারচেজ, ডেলিভারি চালান ও খরচ তালিকা সম্পূর্ণ খালি (Clear) করতে চান? এটি করলে একদম নতুন করে ডাটাবেজ সেটআপ করতে পারবেন।")) {
+    if (window.confirm("Are you sure you want to clear all products, customers, invoices, purchases, challans, and expenses from the database? This allows setting up fresh data.")) {
       try {
         await apiClearDatabase();
         setProducts([]);
@@ -418,24 +418,24 @@ export default function App() {
         localStorage.setItem('hsc_purchases', '[]');
         localStorage.setItem('hsc_returns', '[]');
         localStorage.setItem('hsc_expenses', '[]');
-        alert("ডাটাবেজ সফলভাবে সম্পূর্ণ খালি করা হয়েছে! এখন আপনি নতুন করে ডাটা সেটআপ করতে পারবেন।");
+        alert("Database successfully cleared! You can now start with fresh data.");
       } catch (e: any) {
         console.error('Error clearing database:', e);
-        alert("ডাটাবেজ ক্লিয়ার করতে সমস্যা হয়েছে: " + (e.message || ''));
+        alert("Error clearing database: " + (e.message || ''));
       }
     }
   };
 
   // Restore Sample Demo Data Handler
   const handleRestoreSampleData = async () => {
-    if (window.confirm("আপনি কি ডেমো স্যাম্পল ডাটা ডাটাবেজে রিস্টোর করতে চান?")) {
+    if (window.confirm("Are you sure you want to restore demo sample data to the database?")) {
       try {
         await apiSeedDemoData();
         await loadCloudSqlData();
-        alert("ডেমো ডাটা সফলভাবে রিস্টোর হয়েছে!");
+        alert("Demo data restored successfully!");
       } catch (e: any) {
         console.error('Error restoring sample data:', e);
-        alert('ডেমো ডাটা রিস্টোর করতে সমস্যা হয়েছে।');
+        alert('Error restoring demo data.');
       }
     }
   };
@@ -507,8 +507,8 @@ export default function App() {
     }
     
     // Inventory Stock Management for Goods Sales:
-    // চালান তৈরি করলে স্টক থেকে কমবে না।
-    // যখন বিল (BILL) বা ইনভয়েস (INVOICE) তৈরি হবে, তখনই পণ্য স্টক থেকে কমবে।
+    // Creating a challan does not deduct inventory stock.
+    // Stock is deducted only when a Bill or Invoice is created.
     if ((doc.type === 'BILL' || doc.type === 'INVOICE') && !exists) {
       const updatedProducts = products.map(prod => {
         const itemInDoc = doc.items.find(it => it.productId === prod.id);
@@ -796,7 +796,7 @@ export default function App() {
           dueAmount: newDue,
           paidAmount: newPaid,
           status: newDue === 0 ? 'Paid' : 'Partially Paid',
-          notes: (doc.notes || '') + `\n[Sales Return #${ret.returnNumber}: ৳${ret.refundAmount.toLocaleString()} adjusted against due on ${ret.returnDate}]`
+          notes: (doc.notes || '') + `\n[Sales Return #${ret.returnNumber}: Tk. ${ret.refundAmount.toLocaleString()} adjusted against due on ${ret.returnDate}]`
         };
         const updatedDocs = documents.map(d => d.id === updatedDoc.id ? updatedDoc : d);
         setDocuments(updatedDocs);
@@ -1021,7 +1021,7 @@ export default function App() {
                     }`}
                   >
                     <ShoppingCart className="w-4 h-4 text-emerald-400" />
-                    Purchase Entry (ক্রয়)
+                    Purchase Entry
                   </button>
                 )}
 
@@ -1081,7 +1081,7 @@ export default function App() {
                     }`}
                   >
                     <Wallet className="w-4 h-4 text-rose-400" />
-                    Daily Expenses (খরচ)
+                    Daily Expenses
                   </button>
                 )}
 
@@ -1096,7 +1096,7 @@ export default function App() {
                     }`}
                   >
                     <UserCheck className="w-4 h-4 text-rose-300" />
-                    Owner's Draw (মালিকের উত্তোলন)
+                    Owner's Draw
                   </button>
                 )}
 
@@ -1421,11 +1421,11 @@ export default function App() {
                             <div className="flex items-center gap-2">
                               <ImageIcon className="w-5 h-5 text-blue-900" />
                               <h3 className="text-sm sm:text-base font-bold text-slate-900 font-display">
-                                লোগো ও ব্যাকগ্রাউন্ড জলছাপ ব্যবস্থাপনা (Logo & Watermark Settings)
+                                Logo & Watermark Branding Settings
                               </h3>
                             </div>
                             <p className="text-slate-500 text-[11px] mt-0.5">
-                              আপনার নিজস্ব কোম্পানি লোগো ও প্রিন্ট ডকুমেন্টের ব্যাকগ্রাউন্ড জলছাপ ম্যানুয়ালি যুক্ত করুন। এটি cPanel ও ডাটাবেজে স্থায়ীভাবে সংরক্ষিত থাকবে।
+                              Upload your company logo and print watermark. These are permanently saved to your database and storage.
                             </p>
                           </div>
                           <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-lg">
@@ -1443,7 +1443,7 @@ export default function App() {
                               <div className="flex justify-between items-center">
                                 <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                                   <ImageIcon className="w-3.5 h-3.5 text-blue-700" />
-                                  কোম্পানি প্রধান লোগো (Main Logo)
+                                  Company Main Logo
                                 </label>
                                 {settingsForm.logoUrl && (
                                   <button
@@ -1452,7 +1452,7 @@ export default function App() {
                                     className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
                                   >
                                     <Trash2 className="w-3 h-3" />
-                                    ডিফল্ট লোগোতে ফিরুন
+                                    Reset to Default Logo
                                   </button>
                                 )}
                               </div>
@@ -1461,7 +1461,7 @@ export default function App() {
                               <div className="flex items-center gap-3">
                                 <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingLogo ? 'opacity-60 pointer-events-none' : ''}`}>
                                   <Upload className="w-4 h-4 text-blue-700" />
-                                  <span>{isUploadingLogo ? 'লোগো আপলোড হচ্ছে...' : 'নতুন লোগো ছবি আপলোড করুন'}</span>
+                                  <span>{isUploadingLogo ? 'Uploading logo...' : 'Upload New Logo'}</span>
                                   <input
                                     type="file"
                                     accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -1477,10 +1477,10 @@ export default function App() {
 
                               {/* Manual Image URL Input */}
                               <div className="space-y-1">
-                                <span className="text-[10px] text-slate-500 font-semibold">অথবা লোগোর সরাসরি লিংক / Image URL:</span>
+                                <span className="text-[10px] text-slate-500 font-semibold">Or Direct Image URL:</span>
                                 <input
                                   type="text"
-                                  placeholder="e.g. /api/uploads/logo.png অথবা https://example.com/logo.png"
+                                  placeholder="e.g. /api/uploads/logo.png or https://example.com/logo.png"
                                   value={settingsForm.logoUrl || ''}
                                   onChange={(e) => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
                                   className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono focus:border-blue-900 focus:outline-hidden"
@@ -1495,10 +1495,10 @@ export default function App() {
                                 <div className="text-[11px] text-slate-600 space-y-0.5">
                                   <div className="font-bold text-slate-800 flex items-center gap-1">
                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>{settingsForm.logoUrl ? 'কাস্টম লোগো সক্রিয়' : 'ডিফল্ট ভেক্টর লোগো সক্রিয়'}</span>
+                                    <span>{settingsForm.logoUrl ? 'Custom Logo Active' : 'Default Vector Logo Active'}</span>
                                   </div>
                                   <p className="text-[10px] text-slate-400">
-                                    এটি ইনভয়েস, কোটেশন, বিল ও সাইডবার হেডারে প্রদর্শিত হবে।
+                                    Displayed on invoices, quotations, bills, and navigation headers.
                                   </p>
                                 </div>
                               </div>
@@ -1509,7 +1509,7 @@ export default function App() {
                               <div className="flex justify-between items-center">
                                 <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                                   <Layers className="w-3.5 h-3.5 text-indigo-700" />
-                                  কাগজের ব্যাকগ্রাউন্ড জলছাপ (Background Watermark)
+                                  Print Background Watermark
                                 </label>
                               </div>
 
@@ -1522,8 +1522,8 @@ export default function App() {
                                   className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 accent-blue-900 cursor-pointer"
                                 />
                                 <div className="text-xs">
-                                  <span className="font-bold text-slate-900 block">প্রিন্ট ডকুমেন্টে ব্যাকগ্রাউন্ড জলছাপ দেখান</span>
-                                  <span className="text-[10px] text-slate-500 block">ইনভয়েস, কোটেশন, বিল ও গ্রাহক লেজারের মাঝখানে জলছাপ থাকবে</span>
+                                  <span className="font-bold text-slate-900 block">Display Background Watermark on Print Documents</span>
+                                  <span className="text-[10px] text-slate-500 block">Subtle watermark centered on invoices, quotations, bills, and customer ledgers.</span>
                                 </div>
                               </label>
 
@@ -1532,7 +1532,7 @@ export default function App() {
                                   {/* Watermark Opacity Slider */}
                                   <div className="space-y-1.5 bg-white border border-slate-200 p-3 rounded-xl">
                                     <div className="flex justify-between items-center text-xs">
-                                      <span className="font-bold text-slate-700">জলছাপের স্বচ্ছতা (Watermark Opacity):</span>
+                                      <span className="font-bold text-slate-700">Watermark Opacity:</span>
                                       <span className="font-mono font-black text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-xs">
                                         {Math.round((settingsForm.watermarkOpacity ?? 0.04) * 100)}%
                                       </span>
@@ -1547,23 +1547,23 @@ export default function App() {
                                       className="w-full accent-blue-900 cursor-pointer h-2 bg-slate-200 rounded-lg appearance-none"
                                     />
                                     <div className="flex justify-between text-[9px] text-slate-400 font-semibold px-0.5">
-                                      <span>১% (খুব হালকা)</span>
-                                      <span>৪% (আদর্শ / Recommended)</span>
-                                      <span>২৫% (গাঢ়)</span>
+                                      <span>1% (Very faint)</span>
+                                      <span>4% (Recommended)</span>
+                                      <span>25% (Darker)</span>
                                     </div>
                                   </div>
 
                                   {/* Custom Watermark Image Upload / URL (Optional) */}
                                   <div className="space-y-2 bg-white border border-slate-200 p-3 rounded-xl">
                                     <div className="flex justify-between items-center">
-                                      <span className="text-[11px] font-bold text-slate-700">আলাদা জলছাপ ছবি (ঐচ্ছিক):</span>
+                                      <span className="text-[11px] font-bold text-slate-700">Custom Watermark Image (Optional):</span>
                                       {settingsForm.watermarkUrl && (
                                         <button
                                           type="button"
                                           onClick={() => setSettingsForm({ ...settingsForm, watermarkUrl: '' })}
                                           className="text-[9px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
                                         >
-                                          লোগোকে জলছাপ হিসেবে ব্যবহার করুন
+                                          Use Main Logo as Watermark
                                         </button>
                                       )}
                                     </div>
@@ -1571,7 +1571,7 @@ export default function App() {
                                     <div className="flex items-center gap-2">
                                       <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 border border-slate-300 hover:border-indigo-600 rounded-lg text-[11px] font-bold text-slate-700 hover:text-indigo-900 cursor-pointer transition-all ${isUploadingWatermark ? 'opacity-60 pointer-events-none' : ''}`}>
                                         <Upload className="w-3.5 h-3.5 text-indigo-700" />
-                                        <span>{isUploadingWatermark ? 'আপলোড হচ্ছে...' : 'জলছাপের ছবি আপলোড'}</span>
+                                        <span>{isUploadingWatermark ? 'Uploading...' : 'Upload Watermark Image'}</span>
                                         <input
                                           type="file"
                                           accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -1587,13 +1587,13 @@ export default function App() {
 
                                     <input
                                       type="text"
-                                      placeholder="আলাদা জলছাপের URL (ফাঁকা রাখলে প্রধান লোগোই জলছাপ হবে)"
+                                      placeholder="Custom watermark URL (leave empty to use main logo)"
                                       value={settingsForm.watermarkUrl || ''}
                                       onChange={(e) => setSettingsForm({ ...settingsForm, watermarkUrl: e.target.value })}
                                       className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] font-mono focus:border-blue-900 focus:outline-hidden"
                                     />
                                     <p className="text-[9px] text-slate-400">
-                                      * আলাদা ছবি না দিলে স্বয়ংক্রিয়ভাবে প্রধান লোগোটিই জলছাপ হিসেবে ডকুমেন্টের মাঝে বসে যাবে।
+                                      * If left empty, your main logo is automatically used as the centered watermark.
                                     </p>
                                   </div>
                                 </div>
@@ -1607,7 +1607,7 @@ export default function App() {
                             <div className="flex justify-between items-center">
                               <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                 <Eye className="w-3.5 h-3.5 text-blue-800" />
-                                ডকুমেন্টে লাইভ প্রিভিউ (Live Sheet Preview)
+                                Document Live Sheet Preview
                               </span>
                               <span className="text-[10px] text-slate-400 font-mono">A4 Sheet Simulation</span>
                             </div>
@@ -1657,39 +1657,39 @@ export default function App() {
                                 {/* Mock Document Content */}
                                 <div className="relative z-10 space-y-2 flex-1 pt-1 text-[9px]">
                                   <div className="bg-slate-100/90 p-1.5 rounded flex justify-between items-center border-l-2 border-blue-900 font-bold">
-                                    <span className="text-blue-950 font-display uppercase tracking-wider text-[9px]">INVOICE / বিল</span>
+                                    <span className="text-blue-950 font-display uppercase tracking-wider text-[9px]">INVOICE</span>
                                     <span className="text-slate-600 font-mono text-[8px]">INV-2026-001</span>
                                   </div>
 
                                   <div className="text-slate-600 space-y-0.5 text-[8px]">
-                                    <p className="font-bold text-slate-800">বিল প্রাপক: Apex Holdings Ltd.</p>
-                                    <p>ঠিকানা: Konabari, Gazipur</p>
+                                    <p className="font-bold text-slate-800">Bill To: Apex Holdings Ltd.</p>
+                                    <p>Address: Konabari, Gazipur</p>
                                   </div>
 
                                   <div className="border border-slate-200 rounded overflow-hidden">
                                     <table className="w-full text-left text-[8px]">
                                       <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
                                         <tr>
-                                          <th className="p-1">বিবরণ (Item)</th>
-                                          <th className="p-1 text-right">মূল্য (BDT)</th>
+                                          <th className="p-1">Item Description</th>
+                                          <th className="p-1 text-right">Amount (BDT)</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 text-slate-600">
                                         <tr>
                                           <td className="p-1">Hitachi VRF Inverter 10 HP</td>
-                                          <td className="p-1 text-right font-mono font-bold">৳৪,৫০,০০০</td>
+                                          <td className="p-1 text-right font-mono font-bold">Tk. 450,000</td>
                                         </tr>
                                         <tr>
                                           <td className="p-1">Copper Pipe 1/2" (100 RFT)</td>
-                                          <td className="p-1 text-right font-mono font-bold">৳২৫,০০০</td>
+                                          <td className="p-1 text-right font-mono font-bold">Tk. 25,000</td>
                                         </tr>
                                       </tbody>
                                     </table>
                                   </div>
 
                                   <div className="flex justify-between items-center pt-1 font-bold text-[9px] border-t border-slate-200">
-                                    <span>সর্বমোট প্রদেয় (Total):</span>
-                                    <span className="text-blue-900 font-black font-mono">৳৪,৭৫,০০০</span>
+                                    <span>Total Payable:</span>
+                                    <span className="text-blue-900 font-black font-mono">Tk. 475,000</span>
                                   </div>
                                 </div>
 
@@ -1714,8 +1714,8 @@ export default function App() {
                       {/* 2. BUSINESS SHOWROOM METADATA & PREFERENCES */}
                       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xs space-y-6">
                         <div className="border-b border-slate-100 pb-4">
-                          <h3 className="text-sm font-bold text-slate-900 font-display">শো-রুম ও যোগাযোগ তথ্য (Showroom Details)</h3>
-                          <p className="text-slate-400 text-[11px] mt-0.5">কোম্পানির নাম, ঠিকানা, ফোন নম্বর, ইনভয়েস প্রিফিক্স ও ডিফল্ট শর্তাবলী পরিবর্তন করুন।</p>
+                          <h3 className="text-sm font-bold text-slate-900 font-display">Showroom & Business Details</h3>
+                          <p className="text-slate-400 text-[11px] mt-0.5">Update company name, address, hotline numbers, prefixes, and default terms.</p>
                         </div>
 
                       <form onSubmit={handleSaveSettings} className="space-y-4 text-xs">
@@ -1882,7 +1882,7 @@ export default function App() {
                         {settingsSavedFeedback && (
                           <p className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-center flex items-center justify-center gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            কোম্পানি লোগো, জলছাপ ও সেটিংস সফলভাবে সংরক্ষিত ও cPanel এ সিঙ্ক হয়েছে!
+                            Company logo, watermark, and settings saved successfully!
                           </p>
                         )}
 
@@ -1911,7 +1911,7 @@ export default function App() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-blue-900 font-bold">
                           <Activity className="w-5 h-5 text-emerald-600" />
-                          <h3 className="text-base">Live Database Health & Connection Diagnostics (ডাটাবেজ স্ট্যাটাস টেস্ট)</h3>
+                          <h3 className="text-base">Live Database Health & Connection Diagnostics</h3>
                         </div>
                         <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -1929,7 +1929,7 @@ export default function App() {
                           className="px-4 py-2.5 bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
                         >
                           <Activity className="w-4 h-4 text-emerald-400" />
-                          Run Database Health Check (ডাটাবেজ চেক করুন)
+                          Run Database Health Check
                         </button>
                       </div>
                     </div>
@@ -2007,7 +2007,7 @@ export default function App() {
                 <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
                   <RefreshCw className="w-10 h-10 text-blue-600 animate-spin" />
                   <span className="text-sm font-bold text-slate-800">Testing Database Connection...</span>
-                  <span className="text-xs text-slate-500">ডাটাবেজ সংযোগ ও টেবিল ডাটা ভেরিফাই করা হচ্ছে</span>
+                  <span className="text-xs text-slate-500">Verifying database connection and table records...</span>
                 </div>
               ) : dbHealthData ? (
                 <div className="space-y-4">
@@ -2028,7 +2028,7 @@ export default function App() {
                       </h4>
                       <p className="text-xs mt-0.5 opacity-90">
                         {dbHealthData.connected 
-                          ? 'ডাটাবেজ সঠিকভাবে যুক্ত আছে এবং রিয়েল-টাইম সিঙ্ক সক্রিয় রয়েছে।' 
+                          ? 'Database is connected and real-time sync is active.' 
                           : (dbHealthData.error || 'Could not reach database server.')}
                       </p>
                     </div>
@@ -2072,7 +2072,7 @@ export default function App() {
                   {dbHealthData.tables && (
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-                        Database Tables & Row Counts (সংরক্ষিত ডাটার তালিকা):
+                        Database Tables & Row Counts:
                       </span>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                         <div className="bg-white p-2 rounded-lg border border-slate-200 flex justify-between items-center">

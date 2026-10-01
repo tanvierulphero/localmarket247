@@ -36,7 +36,7 @@ interface OwnerDrawManagerProps {
   onDeleteExpense: (id: string) => Promise<void> | void;
 }
 
-export const OWNER_DRAW_CATEGORY = "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)";
+export const OWNER_DRAW_CATEGORY = "Owner's Drawings / Personal Expense";
 
 export default function OwnerDrawManager({
   expenses,
@@ -192,7 +192,7 @@ export default function OwnerDrawManager({
   // Open Modal Create
   const handleOpenCreate = () => {
     setEditingExpense(null);
-    setTitle('মালিকের প্রয়োজনীয় ব্যক্তিগত নগদ উত্তোলন');
+    setTitle('Owner Personal Cash Drawing');
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setPaymentMethod('Cash');
@@ -223,11 +223,11 @@ export default function OwnerDrawManager({
     setFormError('');
 
     if (!title.trim()) {
-      setFormError('উত্তোলনের বিবরণ বা কারণ লিখুন (Enter description).');
+      setFormError('Please enter a description or reason for the withdrawal.');
       return;
     }
     if (!amount || Number(amount) <= 0) {
-      setFormError('সঠিক টাকার পরিমাণ দিন (Enter valid amount).');
+      setFormError('Please enter a valid amount.');
       return;
     }
 
@@ -251,7 +251,7 @@ export default function OwnerDrawManager({
       await onSaveExpense(expenseItem);
       setIsModalOpen(false);
     } catch (err: any) {
-      setFormError(err.message || 'উত্তোলন সংরক্ষণ করতে ব্যর্থ হয়েছে');
+      setFormError(err.message || 'Failed to save owner draw entry');
     } finally {
       setIsSubmitting(false);
     }
@@ -287,10 +287,10 @@ export default function OwnerDrawManager({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-900 font-display">
-                মালিকের ব্যক্তিগত খরচ বা উত্তোলন (Owner's Personal Expenses & Drawings)
+                Owner's Personal Expenses & Drawings
               </h2>
               <p className="text-slate-500 text-[11px]">
-                ব্যবসায়িক পরিচালন খরচের বাইরে মালিকের পারিবারিক প্রয়োজন, নিজস্ব গাড়ি ও ব্যক্তিগত উত্তোলন আলাদাভাবে ট্র্যাক করুন।
+                Track owner's personal drawings, family requirements, and private vehicle expenses separate from business operating costs.
               </p>
             </div>
           </div>
@@ -304,7 +304,7 @@ export default function OwnerDrawManager({
             title="Print Statement"
           >
             <Printer className="w-4 h-4 text-slate-600" />
-            প্রিন্ট বিবরণী (Print Statement)
+            Print Statement
           </button>
 
           <button
@@ -320,18 +320,18 @@ export default function OwnerDrawManager({
             className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            + নতুন উত্তোলন এন্ট্রি (Add Owner Draw)
+            + Log New Owner Draw (Add Owner Draw)
           </button>
         </div>
       </div>
 
-      {/* COMPREHENSIVE P&L FINANCIAL BALANCE SUMMARY BAR (টোটাল ইনকাম - বিভিন্ন ধরণের খরচ - মালিকের উত্তোলন) */}
+      {/* COMPREHENSIVE P&L FINANCIAL BALANCE SUMMARY BAR (Total Income - Operating Expenses - Owner Drawings) */}
       <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-lg border border-slate-800 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
           <div className="flex items-center gap-2">
             <Coins className="w-5 h-5 text-amber-400" />
             <h3 className="font-extrabold text-sm font-display text-white">
-              হিসাব সংক্ষেপ: টোটাল ইনকাম - বিভিন্ন ধরণের খরচ - মালিকের উত্তোলন
+              Summary: Total Income - Operating Expenses - Owner's Drawings
             </h3>
           </div>
           <span className="text-[10px] bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-mono border border-slate-700">
@@ -343,56 +343,56 @@ export default function OwnerDrawManager({
           {/* Card 1: Total Business Income */}
           <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-400">টোটাল ইনকাম (Total Income)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-400">Total Income</span>
               <ArrowUpRight className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-lg sm:text-xl font-black font-display text-emerald-300">
-              ৳{financialSummary.totalIncome.toLocaleString()}
+              Tk. {financialSummary.totalIncome.toLocaleString()}
             </div>
             <p className="text-[9px] sm:text-[10px] text-slate-400">
-              বিক্রয় ইনভয়েস: ৳{financialSummary.paidInvoicesIncome.toLocaleString()} + ফিল্ড সেবা: ৳{financialSummary.fieldDispatchesIncome.toLocaleString()}
+              Sales Invoices: Tk. {financialSummary.paidInvoicesIncome.toLocaleString()} + Field Services: Tk. {financialSummary.fieldDispatchesIncome.toLocaleString()}
             </p>
           </div>
 
           {/* Card 2: Various Operating Expenses */}
           <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-amber-400">পরিচালন খরচ (Operating Expenses)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-amber-400">Operating Expenses</span>
               <ArrowDownRight className="w-4 h-4 text-amber-400" />
             </div>
             <div className="text-lg sm:text-xl font-black font-display text-amber-300">
-              ৳{financialSummary.totalOperatingExpenses.toLocaleString()}
+              Tk. {financialSummary.totalOperatingExpenses.toLocaleString()}
             </div>
             <p className="text-[9px] sm:text-[10px] text-slate-400">
-              শোরুম খরচ: ৳{financialSummary.showroomExpenses.toLocaleString()} + মালামাল ক্রয়: ৳{financialSummary.purchaseExpenses.toLocaleString()}
+              Showroom Overheads: Tk. {financialSummary.showroomExpenses.toLocaleString()} + Stock Purchases: Tk. {financialSummary.purchaseExpenses.toLocaleString()}
             </p>
           </div>
 
           {/* Card 3: Owner's Drawings */}
           <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-rose-400">মালিকের উত্তোলন (Owner's Draw)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-rose-400">Owner's Draw</span>
               <UserCheck className="w-4 h-4 text-rose-400" />
             </div>
             <div className="text-lg sm:text-xl font-black font-display text-rose-300">
-              ৳{financialSummary.totalOwnerDrawings.toLocaleString()}
+              Tk. {financialSummary.totalOwnerDrawings.toLocaleString()}
             </div>
             <p className="text-[9px] sm:text-[10px] text-slate-400">
-              চলতি মাসে উত্তোলন: ৳{financialSummary.thisMonthDraw.toLocaleString()}
+              This Month's Draw: Tk. {financialSummary.thisMonthDraw.toLocaleString()}
             </p>
           </div>
 
           {/* Card 4: Net Surplus Balance */}
           <div className="bg-slate-950 border border-emerald-500/30 rounded-xl p-3.5 sm:p-4 space-y-1.5">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="font-bold text-[10px] uppercase tracking-wider text-blue-300">অবশিষ্ট তহবিল (Net Cash Flow)</span>
+              <span className="font-bold text-[10px] uppercase tracking-wider text-blue-300">Net Retained Cash Flow</span>
               <Wallet className="w-4 h-4 text-blue-400" />
             </div>
             <div className={`text-lg sm:text-xl font-black font-display ${financialSummary.netRetainedCash >= 0 ? 'text-blue-300' : 'text-rose-400'}`}>
-              ৳{financialSummary.netRetainedCash.toLocaleString()}
+              Tk. {financialSummary.netRetainedCash.toLocaleString()}
             </div>
             <p className="text-[9px] sm:text-[10px] text-emerald-400 font-semibold">
-              ইনকাম হতে সকল খরচ ও উত্তোলন বাদ দিয়ে অবশিষ্ট
+              Surplus cash remaining after all operating expenses and owner drawings
             </p>
           </div>
         </div>
@@ -403,48 +403,48 @@ export default function OwnerDrawManager({
         {/* Total Draw All Time */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">সর্বমোট উত্তোলন (Total All-Time Draw)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">Total All-Time Drawings</span>
             <div className="p-1.5 bg-rose-50 text-rose-700 rounded-lg">
               <Coins className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-rose-800 font-display">
-            ৳{financialSummary.totalOwnerDrawings.toLocaleString()}
+            Tk. {financialSummary.totalOwnerDrawings.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
-            মোট {ownerDrawingsList.length} টি উত্তোলন ভাউচার সম্পন্ন
+            Total {ownerDrawingsList.length} drawings vouchers logged
           </p>
         </div>
 
         {/* This Month Draw */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">চলতি মাসের উত্তোলন (This Month)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">This Month's Drawings</span>
             <div className="p-1.5 bg-blue-50 text-blue-700 rounded-lg">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-blue-900 font-display">
-            ৳{financialSummary.thisMonthDraw.toLocaleString()}
+            Tk. {financialSummary.thisMonthDraw.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
-            চলতি ক্যালেণ্ডার মাসের মোট উত্তোলন
+            Total drawings in current calendar month
           </p>
         </div>
 
         {/* Today's Draw */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-bold text-[10px] uppercase tracking-wider">আজকের উত্তোলন (Today's Draw)</span>
+            <span className="font-bold text-[10px] uppercase tracking-wider">Today's Drawings</span>
             <div className="p-1.5 bg-amber-50 text-amber-700 rounded-lg">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="text-xl font-extrabold text-amber-800 font-display">
-            ৳{financialSummary.todayDraw.toLocaleString()}
+            Tk. {financialSummary.todayDraw.toLocaleString()}
           </div>
           <p className="text-[10px] text-slate-400 font-medium">
-            আজকের নগদ বা পেটি ক্যাশ ব্যক্তিগত উত্তোলন
+            Today's personal drawings from cash box
           </p>
         </div>
       </div>
@@ -472,10 +472,10 @@ export default function OwnerDrawManager({
               className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-hidden cursor-pointer"
             >
               <option value="ALL">All Payment Methods</option>
-              <option value="Cash">Cash (নগদ)</option>
-              <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
-              <option value="bKash/Nagad">bKash/Nagad (বিকাশ/নগদ)</option>
-              <option value="Cheque">Cheque (চেক)</option>
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="bKash/Nagad">bKash / Nagad</option>
+              <option value="Cheque">Cheque</option>
             </select>
           </div>
 
@@ -486,11 +486,11 @@ export default function OwnerDrawManager({
               onChange={(e) => setDateFilter(e.target.value as any)}
               className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-hidden cursor-pointer"
             >
-              <option value="ALL">All Time (সব সময়)</option>
-              <option value="TODAY">Today Only (আজকের উত্তোলন)</option>
-              <option value="THIS_WEEK">This Week (এই সপ্তাহ)</option>
-              <option value="THIS_MONTH">This Month (চলতি মাস)</option>
-              <option value="LAST_MONTH">Last Month (গত মাস)</option>
+              <option value="ALL">All Time</option>
+              <option value="TODAY">Today Only</option>
+              <option value="THIS_WEEK">This Week</option>
+              <option value="THIS_MONTH">This Month</option>
+              <option value="LAST_MONTH">Last Month</option>
             </select>
           </div>
         </div>
@@ -503,7 +503,7 @@ export default function OwnerDrawManager({
             Showing {filteredDrawings.length} Owner Draw Records
           </span>
           <span className="font-extrabold text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
-            Filtered Total Draw: ৳{financialSummary.filteredTotal.toLocaleString()}
+            Filtered Total Draw: Tk. {financialSummary.filteredTotal.toLocaleString()}
           </span>
         </div>
 
@@ -512,7 +512,7 @@ export default function OwnerDrawManager({
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <th className="py-3 px-4">Voucher No. / Date</th>
-                <th className="py-3 px-3">Withdrawal Purpose / Title (উদ্দেশ্য)</th>
+                <th className="py-3 px-3">Withdrawal Purpose / Title (Purpose)</th>
                 <th className="py-3 px-3">Drawn By / Paid To</th>
                 <th className="py-3 px-3 text-center">Method</th>
                 <th className="py-3 px-3">Memo / Ref No.</th>
@@ -571,7 +571,7 @@ export default function OwnerDrawManager({
                     {/* Amount */}
                     <td className="py-3 px-4 text-right">
                       <span className="font-extrabold text-rose-700 text-sm font-display block">
-                        ৳{Number(exp.amount).toLocaleString()}
+                        Tk. {Number(exp.amount).toLocaleString()}
                       </span>
                     </td>
 
@@ -587,7 +587,7 @@ export default function OwnerDrawManager({
                         </button>
                         <button
                           onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete owner draw record "${exp.title}" (৳${exp.amount.toLocaleString()})?`)) {
+                            if (window.confirm(`Are you sure you want to delete owner draw record "${exp.title}" (Tk. ${exp.amount.toLocaleString()})?`)) {
                               onDeleteExpense(exp.id);
                             }
                           }}
@@ -603,7 +603,7 @@ export default function OwnerDrawManager({
               ) : (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-slate-400 italic">
-                    {searchQuery ? 'No owner drawings matched your search filter.' : 'No owner personal expenses or drawings recorded yet. Click "+ নতুন উত্তোলন এন্ট্রি" above to log.'}
+                    {searchQuery ? 'No owner drawings matched your search filter.' : 'No owner personal expenses or drawings recorded yet. Click "+ Log New Owner Draw" above to log.'}
                   </td>
                 </tr>
               )}
@@ -623,10 +623,10 @@ export default function OwnerDrawManager({
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    {editingExpense ? 'মালিকের উত্তোলন সংশোধন' : 'মালিকের ব্যক্তিগত খরচ বা উত্তোলন এন্ট্রি (Owner Draw)'}
+                    {editingExpense ? 'Edit Owner Draw Entry' : "Record Owner's Personal Draw / Expense"}
                   </h3>
                   <p className="text-[10px] text-slate-400">
-                    শোরুম বা ব্যাংক একাউন্ট থেকে মালিকের ব্যক্তিগত নগদ উত্তোলন বা পারিবারিক খরচ যুক্ত করুন
+                    Log owner personal drawings or withdrawals from cash counter or bank
                   </p>
                 </div>
               </div>
@@ -649,11 +649,11 @@ export default function OwnerDrawManager({
             <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
               {/* Title / Description */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">উত্তোলনের উদ্দেশ্য / বিবরণ (Withdrawal Purpose / Title)</label>
+                <label className="font-bold text-slate-700">Withdrawal Purpose / Title</label>
                 <input
                   type="text"
                   required
-                  placeholder="যেমন: মালিকের ব্যক্তিগত প্রয়োজনীয় নগদ উত্তোলন, পারিবারিক খরচ, নিজস্ব গাড়ি ফুয়েল ইত্যাদি"
+                  placeholder="e.g. Owner personal draw, family needs, personal vehicle fuel"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold focus:bg-white focus:outline-hidden"
@@ -663,7 +663,7 @@ export default function OwnerDrawManager({
               {/* Amount & Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">উত্তোলনের পরিমাণ (Amount ৳)</label>
+                  <label className="font-bold text-slate-700">Withdrawal Amount (Tk.)</label>
                   <input
                     type="number"
                     min={1}
@@ -676,7 +676,7 @@ export default function OwnerDrawManager({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">তারিখ (Date)</label>
+                  <label className="font-bold text-slate-700">Date</label>
                   <input
                     type="date"
                     required
@@ -690,21 +690,21 @@ export default function OwnerDrawManager({
               {/* Payment Method & Paid By */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">গ্রহণের মাধ্যম (Withdrawal Method)</label>
+                  <label className="font-bold text-slate-700">Withdrawal Method</label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as ExpensePaymentMethod)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold text-slate-800 focus:outline-hidden"
                   >
-                    <option value="Cash">Cash (নগদ ক্যাশ)</option>
-                    <option value="Bank Transfer">Bank Transfer (ব্যাংক)</option>
-                    <option value="bKash/Nagad">bKash / Nagad (বিকাশ / নগদ)</option>
-                    <option value="Cheque">Cheque (চেক)</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="bKash/Nagad">bKash / Nagad</option>
+                    <option value="Cheque">Cheque</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">উত্তোলনকারী (Drawn By / Owner Name)</label>
+                  <label className="font-bold text-slate-700">Drawn By / Owner Name</label>
                   <input
                     type="text"
                     value={paidBy}
@@ -717,7 +717,7 @@ export default function OwnerDrawManager({
 
               {/* Reference / Voucher No. */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">মেমো / ব্যাংক লেনদেন রেফারেন্স (Ref / Cheque / Txn ID)</label>
+                <label className="font-bold text-slate-700">Cheque / Transaction Ref ID</label>
                 <input
                   type="text"
                   placeholder="e.g. CASH-DRAW-01, CHQ-99214"
@@ -729,12 +729,12 @@ export default function OwnerDrawManager({
 
               {/* Notes */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">অতিরিক্ত নোট বা মন্তব্য (Remarks)</label>
+                <label className="font-bold text-slate-700">Remarks / Internal Notes</label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="যেমন: ঘর ভাড়া, চিকিৎসা খরচ বা ব্যক্তিগত ক্রয়..."
+                  placeholder="e.g. Family expense, medical, personal travel..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold focus:bg-white focus:outline-hidden"
                 />
               </div>
@@ -754,7 +754,7 @@ export default function OwnerDrawManager({
                   className="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  {isSubmitting ? 'Saving...' : (editingExpense ? 'আপডেট করুন' : 'উত্তোলন সংরক্ষণ করুন')}
+                  {isSubmitting ? 'Saving...' : (editingExpense ? 'Update' : 'Save Owner Draw')}
                 </button>
               </div>
             </form>
@@ -773,10 +773,10 @@ export default function OwnerDrawManager({
                 <Printer className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                 <div>
                   <h3 className="font-extrabold text-[11px] sm:text-xs text-white leading-tight">
-                    মালিকের উত্তোলন ও ব্যক্তিগত খরচ স্টেটমেন্ট (Owner's Drawings Statement)
+                    Owner's Drawings & Personal Expense Statement
                   </h3>
                   <p className="text-[9px] text-slate-400 hidden sm:block">
-                    অফিসিয়াল হিসাব বিবরণী প্রিন্ট বা সংরক্ষণের জন্য ব্যবহার করুন
+                    Use for internal financial tracking and audit records
                   </p>
                 </div>
               </div>
@@ -786,7 +786,7 @@ export default function OwnerDrawManager({
                   className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  Print (প্রিন্ট)
+                  Print
                 </button>
                 <button 
                   onClick={() => setIsPrintSummaryOpen(false)}
@@ -815,15 +815,15 @@ export default function OwnerDrawManager({
               <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-center">
                 <div>
                   <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Total Income</span>
-                  <span className="text-sm font-extrabold text-emerald-700 font-mono">৳{financialSummary.totalIncome.toLocaleString()}</span>
+                  <span className="text-sm font-extrabold text-emerald-700 font-mono">Tk. {financialSummary.totalIncome.toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Operating Expenses</span>
-                  <span className="text-sm font-extrabold text-amber-700 font-mono">৳{financialSummary.totalOperatingExpenses.toLocaleString()}</span>
+                  <span className="text-sm font-extrabold text-amber-700 font-mono">Tk. {financialSummary.totalOperatingExpenses.toLocaleString()}</span>
                 </div>
                 <div>
                   <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider mb-0.5">Owner Total Draw</span>
-                  <span className="text-sm font-black text-rose-600 font-mono">৳{financialSummary.filteredTotal.toLocaleString()}</span>
+                  <span className="text-sm font-black text-rose-600 font-mono">Tk. {financialSummary.filteredTotal.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -848,12 +848,12 @@ export default function OwnerDrawManager({
                         <td className="py-2 px-3 font-bold text-slate-900">{exp.title}</td>
                         <td className="py-2 px-3 text-slate-600 font-semibold">{exp.paymentMethod}</td>
                         <td className="py-2 px-3 text-slate-600">{exp.paidBy}</td>
-                        <td className="py-2 px-3 text-right font-black text-rose-700 font-mono">৳{exp.amount.toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right font-black text-rose-700 font-mono">Tk. {exp.amount.toLocaleString()}</td>
                       </tr>
                     ))}
                     <tr className="bg-slate-50 font-bold border-t border-slate-300 text-slate-900">
                       <td colSpan={5} className="py-2.5 px-3 text-right uppercase tracking-wider text-[10px]">Grand Total Draw:</td>
-                      <td className="py-2.5 px-3 text-right text-rose-700 text-xs font-black font-mono">৳{financialSummary.filteredTotal.toLocaleString()}</td>
+                      <td className="py-2.5 px-3 text-right text-rose-700 text-xs font-black font-mono">Tk. {financialSummary.filteredTotal.toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -865,13 +865,13 @@ export default function OwnerDrawManager({
                   <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800">
                     Accounts Manager
                   </div>
-                  <span className="text-[9px] text-slate-400 italic block">প্রস্তুতকারকের স্বাক্ষর</span>
+                  <span className="text-[9px] text-slate-400 italic block">Prepared By</span>
                 </div>
                 <div className="space-y-1">
                   <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800 font-bold">
                     {settings.signatureName || 'Managing Director'} (Owner)
                   </div>
-                  <span className="text-[9px] text-slate-400 italic block">মালিকের স্বাক্ষর</span>
+                  <span className="text-[9px] text-slate-400 italic block">Owner's Signature</span>
                 </div>
               </div>
             </div>

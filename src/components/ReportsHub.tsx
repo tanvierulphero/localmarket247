@@ -67,7 +67,7 @@ export default function ReportsHub({
   const [returnDate, setReturnDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [returnRestocked, setReturnRestocked] = useState(true);
   const [returnDeductDue, setReturnDeductDue] = useState(true);
-  const [returnReason, setReturnReason] = useState('Wrong Specification / সাইজ বা স্পেক অমিল');
+  const [returnReason, setReturnReason] = useState('Wrong Specification / Parameter Mismatch');
   const [returnNotes, setReturnNotes] = useState('');
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
   const [returnError, setReturnError] = useState('');
@@ -184,7 +184,7 @@ export default function ReportsHub({
     const totalIncome = paidInvoicesVal + paidDispatchesVal;
 
     // Showroom Overhead Expenses (Excluding Owner Draw)
-    const OWNER_DRAW_CAT = "Owner's Drawings / Personal Expense (মালিকের ব্যক্তিগত খরচ/উত্তোলন)";
+    const OWNER_DRAW_CAT = "Owner's Drawings / Personal Expense";
     const showroomExpensesVal = expenses
       .filter(e => e.category !== OWNER_DRAW_CAT)
       .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
@@ -367,10 +367,10 @@ export default function ReportsHub({
       csvContent += `NET RETAINED SURPLUS CASH,${incomeExpensesMetrics.netRetainedCash},Net Cash Balance\n`;
     } else if (reportType === 'sales') {
       csvContent += "Metric Label,Value (BDT / Count)\n";
-      csvContent += `Total Sales Revenue (Paid Invoices),৳${salesMetrics.totalSalesValue}\n`;
-      csvContent += `Total VAT/Tax Collected,৳${salesMetrics.totalTaxValue}\n`;
-      csvContent += `Outstanding Receivables (Unpaid),৳${salesMetrics.outstandingValue}\n`;
-      csvContent += `Draft Invoices Value,৳${salesMetrics.draftValue}\n`;
+      csvContent += `Total Sales Revenue (Paid Invoices),Tk. ${salesMetrics.totalSalesValue}\n`;
+      csvContent += `Total VAT/Tax Collected,Tk. ${salesMetrics.totalTaxValue}\n`;
+      csvContent += `Outstanding Receivables (Unpaid),Tk. ${salesMetrics.outstandingValue}\n`;
+      csvContent += `Draft Invoices Value,Tk. ${salesMetrics.draftValue}\n`;
       csvContent += `Total Billing Invoice Count,${salesMetrics.totalInvoicesCount}\n`;
       csvContent += `Cleared Invoices,${salesMetrics.paidCount}\n`;
       csvContent += `Outstanding Invoices,${salesMetrics.unpaidCount}\n`;
@@ -426,7 +426,7 @@ export default function ReportsHub({
             }`}
           >
             <Coins className="w-3.5 h-3.5 text-amber-300" />
-            আয় ও বিভিন্ন খরচ (Income vs Expenses)
+            Income vs Expenses
           </button>
           
           <button
@@ -472,7 +472,7 @@ export default function ReportsHub({
               className="px-4 py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
-              + New Sales Return (নতুন রিটার্ন এন্ট্রি)
+              + New Sales Return Entry
             </button>
           )}
 
@@ -488,7 +488,7 @@ export default function ReportsHub({
 
       {/* RENDER DYNAMIC TAB CONTENT */}
 
-      {/* Tab: Total Income vs Various Expenses (টোটাল ইনকাম - বিভিন্ন ধরণের খরচ ও মালিকের উত্তোলন) */}
+      {/* Tab: Total Income vs Various Expenses (Total Income - Various Expenses & Owner Drawings) */}
       {activeReportTab === 'income_expenses' && (
         <div className="space-y-6 animate-fade-in">
           {/* Top KPI Summary Banner */}
@@ -497,7 +497,7 @@ export default function ReportsHub({
               <div className="flex items-center gap-2">
                 <Coins className="w-5 h-5 text-amber-400" />
                 <h3 className="font-extrabold text-sm font-display text-white">
-                  টোটাল ইনকাম ও বিভিন্ন ধরণের খরচের বাৎসরিক/মাসিক লাভ-ক্ষতি হিসাব
+                  Annual / Monthly Profit & Loss Statement (Income vs Expenses)
                 </h3>
               </div>
               <span className="text-[10px] bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-mono border border-slate-700">
@@ -507,29 +507,29 @@ export default function ReportsHub({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-slate-800/90 border border-slate-700 p-3.5 sm:p-4 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">টোটাল ইনকাম (Total Revenue)</span>
-                <span className="text-lg sm:text-xl font-black font-display text-emerald-300 block">৳{incomeExpensesMetrics.totalIncome.toLocaleString()}</span>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block">চালান সংগ্রহ + ফিল্ড সার্ভিস ক্যাশ</span>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Total Revenue</span>
+                <span className="text-lg sm:text-xl font-black font-display text-emerald-300 block">Tk. {incomeExpensesMetrics.totalIncome.toLocaleString()}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block">Invoice Collections + Field Service Cash</span>
               </div>
 
               <div className="bg-slate-800/90 border border-slate-700 p-3.5 sm:p-4 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">পরিচালন খরচ (Operating Costs)</span>
-                <span className="text-lg sm:text-xl font-black font-display text-amber-300 block">৳{incomeExpensesMetrics.totalOperatingExpenses.toLocaleString()}</span>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block">শোরুম ইউটিলিটি + পার্টস ক্রয় + ভ্রমণ</span>
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Operating Expenses</span>
+                <span className="text-lg sm:text-xl font-black font-display text-amber-300 block">Tk. {incomeExpensesMetrics.totalOperatingExpenses.toLocaleString()}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block">Showroom Utilities + Parts Purchases + Travel</span>
               </div>
 
               <div className="bg-slate-800/90 border border-slate-700 p-3.5 sm:p-4 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">মালিকের ব্যক্তিগত উত্তোলন</span>
-                <span className="text-lg sm:text-xl font-black font-display text-rose-300 block">৳{incomeExpensesMetrics.ownerDrawingsVal.toLocaleString()}</span>
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block">মালিকের নিজস্ব ও পারিবারিক খরচ</span>
+                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Owner's Drawings</span>
+                <span className="text-lg sm:text-xl font-black font-display text-rose-300 block">Tk. {incomeExpensesMetrics.ownerDrawingsVal.toLocaleString()}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block">Owner's Personal & Family Withdrawals</span>
               </div>
 
               <div className="bg-slate-950 border border-emerald-500/30 p-3.5 sm:p-4 rounded-xl space-y-1">
-                <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider block">নিট অবশিষ্ট নগদ (Net Surplus)</span>
+                <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider block">Net Surplus Cash Flow</span>
                 <span className={`text-lg sm:text-xl font-black font-display block ${incomeExpensesMetrics.netRetainedCash >= 0 ? 'text-blue-300' : 'text-rose-400'}`}>
-                  ৳{incomeExpensesMetrics.netRetainedCash.toLocaleString()}
+                  Tk. {incomeExpensesMetrics.netRetainedCash.toLocaleString()}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-emerald-400 block font-semibold">সকল খরচ ও উত্তোলনের পর অবশিষ্ট</span>
+                <span className="text-[9px] sm:text-[10px] text-emerald-400 block font-semibold">Remaining balance after all expenses & drawings</span>
               </div>
             </div>
           </div>
@@ -538,90 +538,90 @@ export default function ReportsHub({
           <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-2xs space-y-3 sm:space-y-4">
             <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-display flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-blue-900" />
-              বিশদ ইনকাম ও ব্যয় বিবরণী (Financial Income & Expense Statement)
+              Financial Income & Expense Statement
             </h3>
 
             <div className="border border-slate-200 rounded-xl overflow-x-auto font-sans">
               <table className="w-full text-left border-collapse min-w-[500px]">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-2.5 sm:py-3 px-3 sm:px-4">খাত / বিবরণী (Category Item)</th>
-                    <th className="py-2.5 sm:py-3 px-3 sm:px-4 text-center">টাইপ (Type)</th>
-                    <th className="py-2.5 sm:py-3 px-3 sm:px-4 text-right">টাকার পরিমাণ (BDT)</th>
+                    <th className="py-2.5 sm:py-3 px-3 sm:px-4">Particulars / Category</th>
+                    <th className="py-2.5 sm:py-3 px-3 sm:px-4 text-center">Type</th>
+                    <th className="py-2.5 sm:py-3 px-3 sm:px-4 text-right">Amount (BDT)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs font-semibold">
                   {/* Revenue Row 1 */}
                   <tr className="bg-emerald-50/40">
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-900 font-bold">বিক্রয় ইনভয়েস হতে সংগৃহীত টাকা (Sales Invoices Collection)</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-900 font-bold">Sales Invoices Collections (Paid Invoices)</td>
                     <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-center text-emerald-700 font-bold">INCOME</td>
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-emerald-800 font-mono whitespace-nowrap">৳{incomeExpensesMetrics.paidInvoicesVal.toLocaleString()}</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-emerald-800 font-mono whitespace-nowrap">Tk. {incomeExpensesMetrics.paidInvoicesVal.toLocaleString()}</td>
                   </tr>
 
                   {/* Revenue Row 2 */}
                   <tr className="bg-emerald-50/40">
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-900 font-bold">ফিল্ড সার্ভিস ও মেমো বিল পরিশোধ (Field Dispatches Payment)</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-900 font-bold">Field Service & Memo Cash Collections</td>
                     <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-center text-emerald-700 font-bold">INCOME</td>
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-emerald-800 font-mono whitespace-nowrap">৳{incomeExpensesMetrics.paidDispatchesVal.toLocaleString()}</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-emerald-800 font-mono whitespace-nowrap">Tk. {incomeExpensesMetrics.paidDispatchesVal.toLocaleString()}</td>
                   </tr>
 
                   {/* Subtotal Income */}
                   <tr className="bg-emerald-100/70 border-t-2 border-emerald-300 font-extrabold">
-                    <td className="py-3 px-3 sm:px-4 text-emerald-950 font-black uppercase tracking-wider text-[11px] sm:text-xs">সর্বমোট ব্যবসায়িক আয় (TOTAL INCOME / REVENUE)</td>
+                    <td className="py-3 px-3 sm:px-4 text-emerald-950 font-black uppercase tracking-wider text-[11px] sm:text-xs">TOTAL BUSINESS REVENUE (TOTAL INFLOW)</td>
                     <td className="py-3 px-3 sm:px-4 text-center text-emerald-900 text-[10px] sm:text-xs">TOTAL INFLOW</td>
-                    <td className="py-3 px-3 sm:px-4 text-right font-black text-emerald-900 font-mono text-xs sm:text-sm whitespace-nowrap">৳{incomeExpensesMetrics.totalIncome.toLocaleString()}</td>
+                    <td className="py-3 px-3 sm:px-4 text-right font-black text-emerald-900 font-mono text-xs sm:text-sm whitespace-nowrap">Tk. {incomeExpensesMetrics.totalIncome.toLocaleString()}</td>
                   </tr>
 
                   {/* Expense Row 1 */}
                   <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-800 font-bold">শোরুম পরিচালনা, বিদ্যুৎ বিল, ভাড়া ও আপ্যায়ন (Showroom & Utilities)</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-800 font-bold">Showroom Operations, Utilities, Rent & Entertainment</td>
                     <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-center text-amber-700 font-bold">EXPENSE</td>
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-slate-900 font-mono whitespace-nowrap">৳{incomeExpensesMetrics.showroomExpensesVal.toLocaleString()}</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-slate-900 font-mono whitespace-nowrap">Tk. {incomeExpensesMetrics.showroomExpensesVal.toLocaleString()}</td>
                   </tr>
 
                   {/* Expense Row 2 */}
                   <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-800 font-bold">পার্টস ও মালামাল ক্রয় বাবদ খরচ (Stock Purchases Inward Cost)</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-800 font-bold">Spare Parts & Stock Purchases (Inward Cost)</td>
                     <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-center text-amber-700 font-bold">EXPENSE</td>
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-slate-900 font-mono whitespace-nowrap">৳{incomeExpensesMetrics.purchasesCostVal.toLocaleString()}</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-slate-900 font-mono whitespace-nowrap">Tk. {incomeExpensesMetrics.purchasesCostVal.toLocaleString()}</td>
                   </tr>
 
                   {/* Expense Row 3 */}
                   <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-800 font-bold">টেকনিশিয়ানদের ফিল্ড যাতায়াত ও খরচ (Field Service Conveyance)</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-slate-800 font-bold">Technicians Field Service Conveyance & Expenses</td>
                     <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-center text-amber-700 font-bold">EXPENSE</td>
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-slate-900 font-mono whitespace-nowrap">৳{incomeExpensesMetrics.fieldExpensesVal.toLocaleString()}</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-extrabold text-slate-900 font-mono whitespace-nowrap">Tk. {incomeExpensesMetrics.fieldExpensesVal.toLocaleString()}</td>
                   </tr>
 
                   {/* Subtotal Operating Expenses */}
                   <tr className="bg-amber-50 border-t-2 border-amber-300 font-extrabold">
-                    <td className="py-3 px-3 sm:px-4 text-amber-950 font-black uppercase tracking-wider text-[11px] sm:text-xs">সর্বমোট পরিচালন খরচ (TOTAL OPERATING EXPENSES)</td>
+                    <td className="py-3 px-3 sm:px-4 text-amber-950 font-black uppercase tracking-wider text-[11px] sm:text-xs">TOTAL OPERATING EXPENSES (OUTFLOW)</td>
                     <td className="py-3 px-3 sm:px-4 text-center text-amber-900 text-[10px] sm:text-xs">OPERATING OUTFLOW</td>
-                    <td className="py-3 px-3 sm:px-4 text-right font-black text-amber-900 font-mono text-xs sm:text-sm whitespace-nowrap">৳{incomeExpensesMetrics.totalOperatingExpenses.toLocaleString()}</td>
+                    <td className="py-3 px-3 sm:px-4 text-right font-black text-amber-900 font-mono text-xs sm:text-sm whitespace-nowrap">Tk. {incomeExpensesMetrics.totalOperatingExpenses.toLocaleString()}</td>
                   </tr>
 
                   {/* Operating Profit before Owner Draw */}
                   <tr className="bg-blue-50 border-t border-b border-blue-200 font-extrabold">
-                    <td className="py-3 px-3 sm:px-4 text-blue-950 font-black uppercase tracking-wider text-[11px] sm:text-xs">ব্যবসায়িক নিট পরিচালন লাভ (NET OPERATING PROFIT)</td>
+                    <td className="py-3 px-3 sm:px-4 text-blue-950 font-black uppercase tracking-wider text-[11px] sm:text-xs">NET OPERATING PROFIT</td>
                     <td className="py-3 px-3 sm:px-4 text-center text-blue-900 text-[10px] sm:text-xs">INCOME - EXPENSES</td>
-                    <td className="py-3 px-3 sm:px-4 text-right font-black text-blue-950 font-mono text-xs sm:text-sm whitespace-nowrap">৳{incomeExpensesMetrics.netProfitBeforeDraw.toLocaleString()}</td>
+                    <td className="py-3 px-3 sm:px-4 text-right font-black text-blue-950 font-mono text-xs sm:text-sm whitespace-nowrap">Tk. {incomeExpensesMetrics.netProfitBeforeDraw.toLocaleString()}</td>
                   </tr>
 
                   {/* Owner's Draw Row */}
                   <tr className="bg-rose-50/60">
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-rose-950 font-black">মালিকের ব্যক্তিগত খরচ বা উত্তোলন (OWNER'S PERSONAL DRAWINGS)</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-rose-950 font-black">OWNER'S PERSONAL DRAWINGS</td>
                     <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-center text-rose-800 font-bold">OWNER DRAW</td>
-                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-black text-rose-700 font-mono text-xs sm:text-sm whitespace-nowrap">৳{incomeExpensesMetrics.ownerDrawingsVal.toLocaleString()}</td>
+                    <td className="py-2.5 sm:py-3 px-3 sm:px-4 text-right font-black text-rose-700 font-mono text-xs sm:text-sm whitespace-nowrap">Tk. {incomeExpensesMetrics.ownerDrawingsVal.toLocaleString()}</td>
                   </tr>
 
                   {/* Final Net Cash Retained */}
                   <tr className="bg-slate-900 text-white font-extrabold border-t-2 border-slate-950">
                     <td className="py-3.5 sm:py-4 px-3 sm:px-4 font-black text-white text-[11px] sm:text-xs uppercase tracking-wider">
-                      উত্তোলনের পর অবশিষ্ট নিট নগদ তহবিল (NET SURPLUS CASH FLOW)
+                      NET SURPLUS RETAINED CASH FLOW
                     </td>
                     <td className="py-3.5 sm:py-4 px-3 sm:px-4 text-center text-slate-300 text-[10px] sm:text-xs whitespace-nowrap">FINAL CASH BALANCE</td>
                     <td className={`py-3.5 sm:py-4 px-3 sm:px-4 text-right font-black text-sm sm:text-base font-mono whitespace-nowrap ${incomeExpensesMetrics.netRetainedCash >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      ৳{incomeExpensesMetrics.netRetainedCash.toLocaleString()}
+                      Tk. {incomeExpensesMetrics.netRetainedCash.toLocaleString()}
                     </td>
                   </tr>
                 </tbody>
@@ -641,7 +641,7 @@ export default function ReportsHub({
                 <DollarSign className="w-4 h-4 text-emerald-600" />
                 <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-600">Cleared Sales Revenue</span>
               </div>
-              <h4 className="text-xl font-extrabold font-display">৳{salesMetrics.totalSalesValue.toLocaleString()}</h4>
+              <h4 className="text-xl font-extrabold font-display">Tk. {salesMetrics.totalSalesValue.toLocaleString()}</h4>
               <p className="text-[10px] text-emerald-600/70 font-semibold">From {salesMetrics.paidCount} paid invoice receipts</p>
             </div>
 
@@ -650,7 +650,7 @@ export default function ReportsHub({
                 <DollarSign className="w-4 h-4 text-amber-600" />
                 <span className="font-bold text-[10px] uppercase tracking-wider text-amber-600">Outstanding Receivables</span>
               </div>
-              <h4 className="text-xl font-extrabold font-display">৳{salesMetrics.outstandingValue.toLocaleString()}</h4>
+              <h4 className="text-xl font-extrabold font-display">Tk. {salesMetrics.outstandingValue.toLocaleString()}</h4>
               <p className="text-[10px] text-amber-600/70 font-semibold">From {salesMetrics.unpaidCount} unpaid/overdue invoices</p>
             </div>
 
@@ -659,7 +659,7 @@ export default function ReportsHub({
                 <BarChart3 className="w-4 h-4 text-blue-600" />
                 <span className="font-bold text-[10px] uppercase tracking-wider text-blue-600">Tax / VAT Collected</span>
               </div>
-              <h4 className="text-xl font-extrabold font-display">৳{salesMetrics.totalTaxValue.toLocaleString()}</h4>
+              <h4 className="text-xl font-extrabold font-display">Tk. {salesMetrics.totalTaxValue.toLocaleString()}</h4>
               <p className="text-[10px] text-blue-600/70 font-semibold">Average 5% brand tax on completed billing</p>
             </div>
           </div>
@@ -680,19 +680,19 @@ export default function ReportsHub({
                 <tbody className="divide-y divide-slate-100">
                   <tr>
                     <td className="py-3 px-4 font-bold text-slate-800">Total Invoice Billing Volume</td>
-                    <td className="py-3 px-4 text-right font-extrabold text-slate-900 font-display">৳{(salesMetrics.totalSalesValue + salesMetrics.outstandingValue).toLocaleString()}</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-slate-900 font-display">Tk. {(salesMetrics.totalSalesValue + salesMetrics.outstandingValue).toLocaleString()}</td>
                     <td className="py-3 px-4 text-slate-500 font-medium">All completed & outstanding client transactions</td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4 font-bold text-slate-800">Completed Payments Received</td>
-                    <td className="py-3 px-4 text-right font-extrabold text-emerald-700 font-display">৳{salesMetrics.totalSalesValue.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-emerald-700 font-display">Tk. {salesMetrics.totalSalesValue.toLocaleString()}</td>
                     <td className="py-3 px-4 text-emerald-600 font-bold flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Fully Cleared BDT Balance
                     </td>
                   </tr>
                   <tr>
                     <td className="py-3 px-4 font-bold text-slate-800">Uncollected Customer Outstanding</td>
-                    <td className="py-3 px-4 text-right font-extrabold text-amber-700 font-display">৳{salesMetrics.outstandingValue.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-amber-700 font-display">Tk. {salesMetrics.outstandingValue.toLocaleString()}</td>
                     <td className="py-3 px-4 text-slate-500 font-medium">Accounts Receivable pending showroom review</td>
                   </tr>
                   <tr>
@@ -767,13 +767,13 @@ export default function ReportsHub({
 
                         {/* Total Paid BDT */}
                         <td className="py-3.5 px-3 text-right font-extrabold text-slate-900 font-display">
-                          ৳{c.paidAmt.toLocaleString()}
+                          Tk. {c.paidAmt.toLocaleString()}
                         </td>
 
                         {/* Pending Amt */}
                         <td className="py-3.5 px-3 text-right">
                           <span className={`font-extrabold font-display ${hasOutstanding ? 'text-rose-600' : 'text-slate-500'}`}>
-                            ৳{c.pendingAmt.toLocaleString()}
+                            Tk. {c.pendingAmt.toLocaleString()}
                           </span>
                         </td>
 
@@ -855,7 +855,7 @@ export default function ReportsHub({
 
                         {/* Standard price */}
                         <td className="py-3.5 px-3 text-right font-extrabold text-slate-950 font-display">
-                          ৳{p.price.toLocaleString()} / {p.unit}
+                          Tk. {p.price.toLocaleString()} / {p.unit}
                         </td>
 
                         {/* Remaining stock */}
@@ -872,7 +872,7 @@ export default function ReportsHub({
 
                         {/* Total Revenue */}
                         <td className="py-3.5 px-4 text-right font-black text-slate-900 font-display">
-                          ৳{p.totalRevenue.toLocaleString()}
+                          Tk. {p.totalRevenue.toLocaleString()}
                         </td>
                       </tr>
                     );
@@ -901,7 +901,7 @@ export default function ReportsHub({
                 <span className="font-bold text-[10px] uppercase tracking-wider text-rose-600">Total Returns Recorded</span>
               </div>
               <h4 className="text-xl font-extrabold font-display">{returnsMetrics.totalCount} Vouchers</h4>
-              <p className="text-[10px] text-rose-700/80 font-semibold">গ্রাহকের ফেরত সংক্রান্ত সম্পূর্ণ হিসাব</p>
+              <p className="text-[10px] text-rose-700/80 font-semibold">Complete tracking of customer sales returns</p>
             </div>
 
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-emerald-900 space-y-1.5">
@@ -910,7 +910,7 @@ export default function ReportsHub({
                 <span className="font-bold text-[10px] uppercase tracking-wider text-emerald-600">Restocked Into Inventory</span>
               </div>
               <h4 className="text-xl font-extrabold font-display">+{returnsMetrics.totalUnitsRestocked} Units</h4>
-              <p className="text-[10px] text-emerald-700/80 font-semibold">স্বয়ংক্রিয়ভাবে ইনভেন্টরিতে রি-স্টক সম্পন্ন</p>
+              <p className="text-[10px] text-emerald-700/80 font-semibold">Inventory stock restored automatically</p>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-blue-900 space-y-1.5">
@@ -918,8 +918,8 @@ export default function ReportsHub({
                 <DollarSign className="w-4 h-4 text-blue-600" />
                 <span className="font-bold text-[10px] uppercase tracking-wider text-blue-600">Refund / Due Adjustment Value</span>
               </div>
-              <h4 className="text-xl font-extrabold font-display">৳{returnsMetrics.totalRefundAmount.toLocaleString()}</h4>
-              <p className="text-[10px] text-blue-700/80 font-semibold">বকেয়া থেকে সমন্বয় ও রিফান্ড মূল্য</p>
+              <h4 className="text-xl font-extrabold font-display">Tk. {returnsMetrics.totalRefundAmount.toLocaleString()}</h4>
+              <p className="text-[10px] text-blue-700/80 font-semibold">Deducted from customer receivables or refunded</p>
             </div>
           </div>
 
@@ -941,7 +941,7 @@ export default function ReportsHub({
               className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
             >
               <PlusCircle className="w-4 h-4" />
-              + New Sales Return (নতুন রিটার্ন এন্ট্রি)
+              + New Sales Return Entry
             </button>
           </div>
 
@@ -1018,7 +1018,7 @@ export default function ReportsHub({
                         {/* Refund Value */}
                         <td className="py-3.5 px-3 text-right">
                           <span className="font-black text-slate-900 font-display text-xs block">
-                            ৳{(ret.refundAmount || 0).toLocaleString()}
+                            Tk. {(ret.refundAmount || 0).toLocaleString()}
                           </span>
                           {ret.deductFromDue ? (
                             <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
@@ -1095,8 +1095,8 @@ export default function ReportsHub({
                   <RotateCcw className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">New Sales Return Entry (সেলস রিটার্ন এন্ট্রি)</h3>
-                  <p className="text-[10px] text-slate-400">১ মাস বা ২ মাস পূর্বে বিক্রিত পণ্য ফেরত হলে স্টক রিস্টক করুন ও রেকর্ড রাখুন</p>
+                  <h3 className="text-sm font-bold text-slate-900">New Sales Return Entry</h3>
+                  <p className="text-[10px] text-slate-400">Restore inventory stock and update customer account when sold products are returned.</p>
                 </div>
               </div>
               <button
@@ -1119,7 +1119,7 @@ export default function ReportsHub({
               {/* Row 1: Invoice Selection & Return Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Past Sales Invoice (চালান/ইনভয়েস নির্বাচন)</label>
+                  <label className="font-bold text-slate-700">Select Past Sales Invoice / Bill</label>
                   <select
                     value={returnDocId}
                     onChange={(e) => handleSelectInvoice(e.target.value)}
@@ -1135,7 +1135,7 @@ export default function ReportsHub({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Return Date (ফেরতের তারিখ)</label>
+                  <label className="font-bold text-slate-700">Return Date</label>
                   <input
                     type="date"
                     value={returnDate}
@@ -1149,14 +1149,14 @@ export default function ReportsHub({
               {/* If invoice has multiple items, let user pick which item was returned */}
               {selectedInvoice && selectedInvoice.items && selectedInvoice.items.length > 0 && (
                 <div className="space-y-1 bg-blue-50/60 p-3 rounded-xl border border-blue-100">
-                  <label className="font-bold text-blue-900 block">Select Item from Invoice (ইনভয়েসের কোন পণ্যটি ফেরত এসেছে?)</label>
+                  <label className="font-bold text-blue-900 block">Select Returned Item from Invoice</label>
                   <select
                     onChange={(e) => handleSelectInvoiceItem(e.target.value)}
                     className="w-full bg-white border border-blue-200 rounded-lg p-2 font-semibold text-slate-800 focus:outline-hidden"
                   >
                     {selectedInvoice.items.map(item => (
                       <option key={item.id} value={item.id}>
-                        {item.name} ({item.brand || 'No Parts No'} | Qty: {item.quantity} | Rate: ৳{item.price.toLocaleString()})
+                        {item.name} ({item.brand || 'No Parts No'} | Qty: {item.quantity} | Rate: Tk. {item.price.toLocaleString()})
                       </option>
                     ))}
                   </select>
@@ -1166,7 +1166,7 @@ export default function ReportsHub({
               {/* Row 2: Customer Selection (if direct return) */}
               {!selectedInvoice && (
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Customer (কাস্টমার)</label>
+                  <label className="font-bold text-slate-700">Customer</label>
                   <select
                     value={returnCustomerId}
                     onChange={(e) => setReturnCustomerId(e.target.value)}
@@ -1185,7 +1185,7 @@ export default function ReportsHub({
               {/* Row 3: Product Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Product Name (পণ্যের নাম)</label>
+                  <label className="font-bold text-slate-700">Product Name</label>
                   <input
                     type="text"
                     required
@@ -1197,7 +1197,7 @@ export default function ReportsHub({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Parts Number / SKU (পার্টস নং)</label>
+                  <label className="font-bold text-slate-700">Parts Number / SKU</label>
                   <input
                     type="text"
                     value={returnSku}
@@ -1211,7 +1211,7 @@ export default function ReportsHub({
               {/* Row 4: Quantity & Pricing */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Quantity (পরিমাণ)</label>
+                  <label className="font-bold text-slate-700">Quantity</label>
                   <input
                     type="number"
                     min={1}
@@ -1227,7 +1227,7 @@ export default function ReportsHub({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Unit Price (একক দর)</label>
+                  <label className="font-bold text-slate-700">Unit Price</label>
                   <input
                     type="number"
                     min={0}
@@ -1242,7 +1242,7 @@ export default function ReportsHub({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Total Refund / Val (টাকার অংক)</label>
+                  <label className="font-bold text-slate-700">Total Refund Value</label>
                   <input
                     type="number"
                     min={0}
@@ -1264,7 +1264,7 @@ export default function ReportsHub({
                   />
                   <span className="flex items-center gap-1.5 text-emerald-800 font-bold">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    ইনভেন্টরিতে স্টক রি-স্টক করুন (Auto-Increase Inventory Stock)
+                    Auto-Increase Inventory Stock
                   </span>
                 </label>
 
@@ -1276,32 +1276,32 @@ export default function ReportsHub({
                     className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
                   />
                   <span className="flex items-center gap-1.5 text-blue-900">
-                    ইনভয়েস বা কাস্টমারের বকেয়া থেকে সমন্বয় করুন (Deduct from Customer's Due Balance)
+                    Deduct from Customer's Outstanding Due
                   </span>
                 </label>
               </div>
 
               {/* Reason */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Return Reason (ফেরতের কারণ)</label>
+                <label className="font-bold text-slate-700">Return Reason</label>
                 <select
                   value={returnReason}
                   onChange={(e) => setReturnReason(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold text-slate-800 focus:outline-hidden"
                 >
-                  <option value="Wrong Specification / সাইজ বা স্পেক অমিল">Wrong Specification / সাইজ বা স্পেক অমিল</option>
-                  <option value="Defective Product / ত্রুটিযুক্ত পণ্য">Defective Product / ত্রুটিযুক্ত পণ্য</option>
-                  <option value="Customer Order Cancelled / কাজ বাতিল">Customer Order Cancelled / কাজ বাতিল</option>
-                  <option value="Damaged in Delivery / পরিবহনে ক্ষতিগ্রস্থ">Damaged in Delivery / পরিবহনে ক্ষতিগ্রস্থ</option>
-                  <option value="Warranty Claim / ওয়ারেন্টি দাবী">Warranty Claim / ওয়ারেন্টি দাবী</option>
-                  <option value="Excess Order / অতিরিক্ত স্টক ফেরত">Excess Order / অতিরিক্ত স্টক ফেরত</option>
-                  <option value="Other Reason / অন্যান্য">Other Reason / অন্যান্য</option>
+                  <option value="Wrong Specification / Parameter Mismatch">Wrong Specification / Parameter Mismatch</option>
+                  <option value="Defective Product / Operational Fault">Defective Product / Operational Fault</option>
+                  <option value="Customer Order Cancelled">Customer Order Cancelled</option>
+                  <option value="Damaged in Delivery / Transit">Damaged in Delivery / Transit</option>
+                  <option value="Warranty Claim / Replacement">Warranty Claim / Replacement</option>
+                  <option value="Excess Stock Return">Excess Stock Return</option>
+                  <option value="Other Reason">Other Reason</option>
                 </select>
               </div>
 
               {/* Remarks */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Notes / Remarks (মন্তব্য)</label>
+                <label className="font-bold text-slate-700">Notes / Remarks</label>
                 <textarea
                   rows={2}
                   value={returnNotes}
@@ -1326,7 +1326,7 @@ export default function ReportsHub({
                   className="px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-bold uppercase tracking-wider rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  {isSubmittingReturn ? 'Processing...' : 'Submit & Restock (জমা দিন)'}
+                  {isSubmittingReturn ? 'Processing...' : 'Submit & Restock'}
                 </button>
               </div>
             </form>

@@ -1,6 +1,6 @@
 <?php
 // =========================================================================
-// 🚀 cPanel MySQL Database Diagnostic & Troubleshooting Tool
+// cPanel MySQL Database Diagnostic & Troubleshooting Tool
 // =========================================================================
 @error_reporting(E_ALL);
 @ini_set('display_errors', '1');
@@ -8,7 +8,7 @@ header('Content-Type: text/html; charset=utf-8');
 
 ?>
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +31,7 @@ header('Content-Type: text/html; charset=utf-8');
 
 <div class="card">
     <h2>🔧 cPanel Database & Server Diagnostic Tool</h2>
-    <p>আপনার cPanel সার্ভার এবং MySQL ডাটাবেজ স্ট্যাটাস নিচে বিস্তারিত দেওয়া হলো:</p>
+    <p>Detailed status of your cPanel server and MySQL database:</p>
     <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 16px 0;">
 
     <!-- 1. PHP Version -->
@@ -51,7 +51,7 @@ header('Content-Type: text/html; charset=utf-8');
     <?php else: ?>
         <p><span class="badge-error">DISABLED / NOT INSTALLED ❌</span></p>
         <p style="color: #991b1b; font-size: 13px;">
-            সমাধান: cPanel এ যান -> <strong>Select PHP Version</strong> (বা MultiPHP Manager) -> <strong>Extensions</strong> ট্যাবে যান -> <code>pdo_mysql</code> টিক চিহ্ন দিয়ে Enable করুন।
+            Solution: Go to cPanel -> <strong>Select PHP Version</strong> (or MultiPHP Manager) -> <strong>Extensions</strong> tab -> Check and enable <code>pdo_mysql</code>.
         </p>
     <?php endif; ?>
 
@@ -64,7 +64,7 @@ header('Content-Type: text/html; charset=utf-8');
         include_once $configPath;
     } else {
         echo '<p><span class="badge-error">Missing api/config.php File ❌</span></p>';
-        echo '<p>সমাধান: cPanel File Manager এ <code>api/config.php</code> ফাইলটি তৈরি করে আপনার ডাটাবেজ ক্রেডেনশিয়াল বসিয়ে দিন।</p>';
+        echo '<p>Solution: Create <code>api/config.php</code> in cPanel File Manager and fill in your database credentials.</p>';
     }
     ?>
 
@@ -78,15 +78,15 @@ header('Content-Type: text/html; charset=utf-8');
 
     echo "<ul>";
     echo "<li><strong>DB_HOST:</strong> <code>" . htmlspecialchars($dbHost) . "</code></li>";
-    echo "<li><strong>DB_NAME:</strong> <code>" . ($dbName ? htmlspecialchars($dbName) : '<span style="color:red;">EMPTY (খালি)</span>') . "</code></li>";
-    echo "<li><strong>DB_USER:</strong> <code>" . ($dbUser ? htmlspecialchars($dbUser) : '<span style="color:red;">EMPTY (খালি)</span>') . "</code></li>";
-    echo "<li><strong>DB_PASS:</strong> <code>" . (strlen($dbPass) > 0 ? "******** (" . strlen($dbPass) . " chars)" : '<span style="color:red;">EMPTY (খালি)</span>') . "</code></li>";
+    echo "<li><strong>DB_NAME:</strong> <code>" . ($dbName ? htmlspecialchars($dbName) : '<span style="color:red;">EMPTY</span>') . "</code></li>";
+    echo "<li><strong>DB_USER:</strong> <code>" . ($dbUser ? htmlspecialchars($dbUser) : '<span style="color:red;">EMPTY</span>') . "</code></li>";
+    echo "<li><strong>DB_PASS:</strong> <code>" . (strlen($dbPass) > 0 ? "******** (" . strlen($dbPass) . " chars)" : '<span style="color:red;">EMPTY</span>') . "</code></li>";
     echo "</ul>";
 
     if (empty($dbName) || empty($dbUser)) {
         echo '<div style="background: #fef3c7; border: 1px solid #fde68a; padding: 14px; border-radius: 8px; color: #92400e;">';
-        echo '⚠️ <strong>বিজ্ঞপ্তি:</strong> <code>api/config.php</code> ফাইলে <code>DB_NAME</code> অথবা <code>DB_USER</code> খালি রাখা আছে।<br>';
-        echo 'cPanel File Manager থেকে <code>public_html/api/config.php</code> ওপেন করে আপনার ডাটাবেজের নাম, ইউজার ও পাসওয়ার্ড বসিয়ে সেভ করুন।';
+        echo '⚠️ <strong>Notice:</strong> <code>DB_NAME</code> or <code>DB_USER</code> is empty in <code>api/config.php</code>.<br>';
+        echo 'Open <code>public_html/api/config.php</code> in cPanel File Manager, enter your database name, user, and password, then save.';
         echo '</div>';
     } else {
         $pdo = null;
@@ -116,7 +116,7 @@ header('Content-Type: text/html; charset=utf-8');
 
         if ($pdo) {
             echo '<div style="background: #dcfce7; border: 1px solid #bbf7d0; padding: 16px; border-radius: 8px; color: #166534; font-size: 16px;">';
-            echo '🎉 <strong>সফল! MySQL ডাটাবেজ "' . htmlspecialchars($dbName) . '" এর সাথে সফলভাবে কানেক্ট হয়েছে!</strong>';
+            echo '🎉 <strong>Success! Connected to MySQL database "' . htmlspecialchars($dbName) . '" successfully!</strong>';
             echo '</div>';
 
             // Check Tables
@@ -126,25 +126,25 @@ header('Content-Type: text/html; charset=utf-8');
                 $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
                 if (count($tables) > 0) {
-                    echo '<p style="color: #166534;">টেবিলের সংখ্যা: <strong>' . count($tables) . '</strong> টি (' . implode(', ', $tables) . ') ✅</p>';
+                    echo '<p style="color: #166534;">Tables count: <strong>' . count($tables) . '</strong> (' . implode(', ', $tables) . ') ✅</p>';
                 } else {
                     echo '<div style="background: #fef3c7; border: 1px solid #fde68a; padding: 14px; border-radius: 8px; color: #92400e;">';
-                    echo '⚠️ <strong>ডাটাবেজে কোনো টেবিল পাওয়া যায়নি!</strong><br>';
-                    echo 'cPanel এ <strong>phpMyAdmin</strong> ওপেন করুন -> বাম দিক থেকে <code>' . htmlspecialchars($dbName) . '</code> ডাটাবেজ সিলেক্ট করুন -> <strong>Import</strong> ট্যাবে যান -> <strong>schema.sql</strong> ফাইলটি সিলেক্ট করে নিচে <strong>Go</strong> বাটনে ক্লিক করুন।';
+                    echo '⚠️ <strong>No tables found in database!</strong><br>';
+                    echo 'Open <strong>phpMyAdmin</strong> in cPanel -> Select database <code>' . htmlspecialchars($dbName) . '</code> -> Go to <strong>Import</strong> tab -> Choose <strong>schema.sql</strong> and click <strong>Go</strong>.';
                     echo '</div>';
                 }
             } catch (Exception $te) {
-                echo '<p style="color:red;">টেবিল চেক এরর: ' . htmlspecialchars($te->getMessage()) . '</p>';
+                echo '<p style="color:red;">Table check error: ' . htmlspecialchars($te->getMessage()) . '</p>';
             }
         } else {
             echo '<div style="background: #fee2e2; border: 1px solid #fecaca; padding: 16px; border-radius: 8px; color: #991b1b;">';
-            echo '❌ <strong>ডাটাবেজ কানেকশন ব্যর্থ হয়েছে:</strong> ' . htmlspecialchars($connectionError);
+            echo '❌ <strong>Database connection failed:</strong> ' . htmlspecialchars($connectionError);
             echo '</div>';
-            echo '<h4 style="margin-top: 15px;">সমাধানের সহজ উপায়:</h4>';
+            echo '<h4 style="margin-top: 15px;">Troubleshooting Steps:</h4>';
             echo '<ol>';
-            echo '<li><strong>পাসওয়ার্ড চেক করুন:</strong> cPanel MySQL Databases এ ইউজারের পাসওয়ার্ড যা দিয়েছেন, <code>api/config.php</code> তে ঠিক সেই পাসওয়ার্ড দিন।</li>';
-            echo '<li><strong>ইউজারকে ডাটাবেজে পারমিশন দিন:</strong> cPanel -> <strong>MySQL Databases</strong> -> নিচে <strong>Add User to Database</strong> সেকশনে আপনার User ও Database সিলেক্ট করে <strong>Add</strong> চাপুন -> <strong>ALL PRIVILEGES</strong> টিক দিয়ে <strong>Make Changes</strong> এ ক্লিক করুন।</li>';
-            echo '<li><strong>ডাটাবেজ ও ইউজারের পুরো নাম দিন:</strong> cPanel প্রিফিক্স সহ পুরো নাম (যেমন: <code>localmar_hitachi</code>) লিখুন।</li>';
+            echo '<li><strong>Check Password:</strong> Ensure the database user password in <code>api/config.php</code> exactly matches the one set in cPanel MySQL Databases.</li>';
+            echo '<li><strong>Grant Permissions:</strong> In cPanel -> <strong>MySQL Databases</strong> -> Under <strong>Add User to Database</strong>, select your User and Database, click <strong>Add</strong>, check <strong>ALL PRIVILEGES</strong>, and click <strong>Make Changes</strong>.</li>';
+            echo '<li><strong>Use Full Names:</strong> Include the full cPanel prefix in database and user names (e.g. <code>localmar_hitachi</code>).</li>';
             echo '</ol>';
         }
     }
@@ -152,7 +152,7 @@ header('Content-Type: text/html; charset=utf-8');
 </div>
 
 <div class="card" style="text-align: center; color: #64748b; font-size: 13px;">
-    Hitachi Solution Center &bull; Diagnostics Utility &bull; PHP <?php echo phpversion(); ?>
+    Jubayer Machineries &bull; Diagnostics Utility &bull; PHP <?php echo phpversion(); ?>
 </div>
 
 </body>

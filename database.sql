@@ -11,7 +11,7 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+06:00"; -- Bangladesh Standard Time
 
 -- ------------------------------------------------------------------------------
--- 1. Table: products (পণ্য ও ইনভেন্টরি তালিকা)
+-- 1. Table: products (Products & Inventory Table)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `products`;
 CREATE TABLE `products` (
@@ -35,7 +35,7 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 2. Table: customers (গ্রাহক ও কোম্পানি তালিকা)
+-- 2. Table: customers (Customers & Companies Table)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `customers`;
 CREATE TABLE `customers` (
@@ -55,7 +55,7 @@ CREATE TABLE `customers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 3. Table: suppliers (সাপ্লায়ার ও ভেন্ডর তালিকা)
+-- 3. Table: suppliers (Suppliers & Vendors Table)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `suppliers`;
 CREATE TABLE `suppliers` (
@@ -76,7 +76,7 @@ CREATE TABLE `suppliers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 4. Table: purchases (ক্রয় ও স্টক ইনওয়ার্ড হিসাব)
+-- 4. Table: purchases (Purchases & Stock Inward Table)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `purchases`;
 CREATE TABLE `purchases` (
@@ -112,7 +112,7 @@ CREATE TABLE `purchases` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 5. Table: documents (ইনভয়েস, কোটেশন, অফার লেটার, বিল)
+-- 5. Table: documents (Invoices, Quotations, Offer Letters, Bills)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `documents`;
 CREATE TABLE `documents` (
@@ -153,7 +153,7 @@ CREATE TABLE `documents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 6. Table: field_dispatches (ফিল্ড মুভমেন্ট ও ডেলিভারি চালান)
+-- 6. Table: field_dispatches (Field Movement & Delivery Challans)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `field_dispatches`;
 CREATE TABLE `field_dispatches` (
@@ -180,7 +180,7 @@ CREATE TABLE `field_dispatches` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 7. Table: staff_users (স্টাফ ও ইউজার ম্যানেজমেন্ট)
+-- 7. Table: staff_users (Staff & User Management)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `staff_users`;
 CREATE TABLE `staff_users` (
@@ -200,7 +200,7 @@ CREATE TABLE `staff_users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 8. Table: settings (ব্যবসা ও প্রিন্ট কনফিগারেশন)
+-- 8. Table: settings (Business Settings & Print Configuration)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `settings`;
 CREATE TABLE `settings` (
@@ -230,7 +230,7 @@ CREATE TABLE `settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 9. Table: uploaded_files (প্রতিটি আপলোডকৃত ছবি ও ফাইলের বিস্তারিত রেকর্ড)
+-- 9. Table: uploaded_files (Uploaded Files Records)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `uploaded_files`;
 CREATE TABLE `uploaded_files` (
@@ -252,7 +252,7 @@ CREATE TABLE `uploaded_files` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
--- 10. Table: activity_logs (প্রতিটি ক্লিক, এন্ট্রি, এডিট, ডিলিট ও অ্যাকশন ট্র্যাকিং)
+-- 10. Table: activity_logs (Activity & Action Logs)
 -- ------------------------------------------------------------------------------
 DROP TABLE IF EXISTS `activity_logs`;
 CREATE TABLE `activity_logs` (
@@ -276,7 +276,7 @@ CREATE TABLE `activity_logs` (
 
 
 -- ==============================================================================
--- INITIAL SEED DATA (প্রারম্ভিক তথ্য)
+-- INITIAL SEED DATA (Initial Seed Data)
 -- ==============================================================================
 
 -- Seed Settings

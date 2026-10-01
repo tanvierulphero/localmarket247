@@ -412,7 +412,7 @@ export default function CompanyProfileManager({
                   <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-1">
                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Purchase Value</span>
                     <span className="text-xl font-black font-display text-blue-950 block">
-                      ৳{stats.totalPurchasedValue.toLocaleString()}
+                      Tk. {stats.totalPurchasedValue.toLocaleString()}
                     </span>
                     <span className="text-[9px] text-slate-500 font-bold">Total Invoice Value</span>
                   </div>
@@ -422,7 +422,7 @@ export default function CompanyProfileManager({
                   }`}>
                     <span className="text-[10px] font-bold uppercase block text-rose-600">Due Balance</span>
                     <span className="text-xl font-black font-display text-rose-700 block">
-                      ৳{stats.totalDueAmount.toLocaleString()}
+                      Tk. {stats.totalDueAmount.toLocaleString()}
                     </span>
                     <span className="text-[9px] font-bold text-rose-600">
                       {dueInvoicesLog.length} Unpaid Bills
@@ -508,7 +508,7 @@ export default function CompanyProfileManager({
                               </div>
                               <h5 className="font-bold text-slate-900 text-sm">{it.productName}</h5>
                               <p className="text-[11px] text-slate-500">
-                                Brand: <b>{it.brand}</b> &bull; Quantity: <b>{it.quantity} {it.unit}</b> &bull; Total: <b>৳{it.total.toLocaleString()}</b>
+                                Brand: <b>{it.brand}</b> &bull; Quantity: <b>{it.quantity} {it.unit}</b> &bull; Total: <b>Tk. {it.total.toLocaleString()}</b>
                               </p>
                             </div>
 
@@ -565,14 +565,14 @@ export default function CompanyProfileManager({
                                 </span>
                               </div>
                               <p className="text-xs font-bold text-slate-800">
-                                Total Bill: ৳{doc.total.toLocaleString()} &bull; Paid: ৳{(doc.paidAmount || 0).toLocaleString()}
+                                Total Bill: Tk. {doc.total.toLocaleString()} &bull; Paid: Tk. {(doc.paidAmount || 0).toLocaleString()}
                               </p>
                             </div>
 
                             <div className="text-right space-y-1">
                               <span className="text-[10px] font-bold text-rose-600 uppercase block">Due Balance</span>
                               <span className="text-lg font-black font-display text-rose-700 block">
-                                ৳{(doc.dueAmount !== undefined ? doc.dueAmount : doc.total).toLocaleString()}
+                                Tk. {(doc.dueAmount !== undefined ? doc.dueAmount : doc.total).toLocaleString()}
                               </span>
                               <button
                                 onClick={() => onViewDocument(doc)}
@@ -618,11 +618,11 @@ export default function CompanyProfileManager({
                               <div>
                                 <span className="text-[10px] text-slate-400 font-bold block uppercase">Bill & Due</span>
                                 <span className="text-xs font-mono font-bold text-slate-900">
-                                  ৳{(disp.billAmount || 0).toLocaleString()}
+                                  Tk. {(disp.billAmount || 0).toLocaleString()}
                                 </span>
                                 {(disp.dueAmount || 0) > 0 && (
                                   <span className="text-[10px] font-mono font-bold text-rose-600 block">
-                                    Due: ৳{(disp.dueAmount || 0).toLocaleString()}
+                                    Due: Tk. {(disp.dueAmount || 0).toLocaleString()}
                                   </span>
                                 )}
                               </div>
@@ -663,7 +663,7 @@ export default function CompanyProfileManager({
                                 </span>
                                 <span className="text-[10px] text-slate-500">{doc.date}</span>
                               </div>
-                              <p className="text-xs font-bold text-slate-800 mt-0.5">Total Amount: ৳{doc.total.toLocaleString()}</p>
+                              <p className="text-xs font-bold text-slate-800 mt-0.5">Total Amount: Tk. {doc.total.toLocaleString()}</p>
                             </div>
 
                             <button
