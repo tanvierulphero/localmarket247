@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product, Customer, Document, DocumentItem, DocumentType, DocumentStatus, BusinessSettings } from '../types';
-import { Plus, Trash2, Save, FileText, UserPlus, Calculator } from 'lucide-react';
+import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package } from 'lucide-react';
 
 interface DocumentCreatorProps {
   products: Product[];
@@ -10,6 +10,8 @@ interface DocumentCreatorProps {
   onAddCustomer: (cust: Customer) => void;
   editingDocument?: Document | null;
   onCancel: () => void;
+  initialDocType?: DocumentType | null;
+  documents?: Document[];
 }
 
 export default function DocumentCreator({
@@ -19,11 +21,19 @@ export default function DocumentCreator({
   onSaveDocument,
   onAddCustomer,
   editingDocument,
-  onCancel
+  onCancel,
+  initialDocType,
+  documents
 }: DocumentCreatorProps) {
   
   // Document Type Selector
-  const [docType, setDocType] = useState<DocumentType>('OFFER_LETTER');
+  const [docType, setDocType] = useState<DocumentType>(() => {
+    if (editingDocument) return editingDocument.type;
+    if (initialDocType) return initialDocType;
+    return 'CHALLAN';
+  });
+
+  const [selectedChallanId, setSelectedChallanId] = useState('');
   
   // Header Meta
   const [docNumber, setDocNumber] = useState('');
@@ -85,6 +95,8 @@ export default function DocumentCreator({
       setSignatureLabel(editingDocument.signatureLabel);
     } else {
       // Create New
+      const targetType = initialDocType || 'CHALLAN';
+      setDocType(targetType);
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       setDate(dateStr);
@@ -97,9 +109,31 @@ export default function DocumentCreator({
       setDueDate(defaultDue.toISOString().split('T')[0]);
 
       // Seed placeholders based on selected type
-      updatePlaceholders(docType, dateStr);
+      updatePlaceholders(targetType, dateStr);
     }
-  }, [editingDocument]);
+  }, [editingDocument, initialDocType]);
+
+  const handleImportFromChallan = () => {
+    if (!selectedChallanId) return;
+    const ch = (documents || []).find(d => d.id === selectedChallanId);
+    if (!ch) return;
+
+    setSelectedCustomerId(ch.customerId);
+    setSubject(`Bill for Delivery Challan ${ch.docNumber}`);
+    if (ch.terms) setTerms(ch.terms);
+    
+    // Populate items with prices from catalog or existing price
+    const mappedItems: DocumentItem[] = ch.items.map(it => {
+      const prod = products.find(p => p.id === it.productId);
+      const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
+      return {
+        ...it,
+        price: unitPrice,
+        total: unitPrice * it.quantity
+      };
+    });
+    setItems(mappedItems);
+  };
 
   // Adjust prefixes when document type is changed (only if not editing)
   useEffect(() => {
@@ -391,6 +425,60 @@ export default function DocumentCreator({
                 </select>
               </div>
             </div>
+
+            {/* Challan Workflow Guidance Notice */}
+            {docType === 'CHALLAN' && (
+              <div className="bg-blue-50/80 border border-blue-200 text-blue-900 rounded-xl p-3.5 flex items-start gap-3 animate-fade-in">
+                <Truck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1">
+                  <span className="font-bold block">পণ্য বিক্রয়ের ডেলিভারি চালান (Delivery Challan):</span>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    পণ্য বিক্রয়ের সময় আগে ডেলিভারি চালান তৈরি করুন। <strong>চালান তৈরির সময় স্টক থেকে পণ্য কমবে না।</strong> পরবর্তীতে এই চালানের ওপর ভিত্তি করে যখন চূড়ান্ত বিক্রয় বিল (Bill) বা ইনভয়েস তৈরি করবেন, <strong>ঠিক তখনই স্টক থেকে পণ্য স্বয়ংক্রিয়ভাবে মাইনাস হবে।</strong>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Import from Existing Challan for Bill/Invoice */}
+            {(docType === 'BILL' || docType === 'INVOICE') && documents && documents.some(d => d.type === 'CHALLAN') && (
+              <div className="bg-emerald-50/80 border border-emerald-200 text-emerald-950 rounded-xl p-3.5 space-y-2.5 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-emerald-700" />
+                    <span className="font-bold text-xs">পূর্ববর্তী ডেলিভারি চালান থেকে ডাটা লোড করুন:</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                    চালান অনুযায়ী বিল প্রস্তুত
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 items-center">
+                  <select
+                    value={selectedChallanId}
+                    onChange={(e) => setSelectedChallanId(e.target.value)}
+                    className="w-full bg-white border border-emerald-300 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:outline-hidden"
+                  >
+                    <option value="">&mdash; একটি ডেলিভারি চালান সিলেক্ট করুন &mdash;</option>
+                    {documents.filter(d => d.type === 'CHALLAN').map(ch => (
+                      <option key={ch.id} value={ch.id}>
+                        [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; তারিখ: {ch.date} &bull; ({ch.items.length} টি পণ্য)
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleImportFromChallan}
+                    disabled={!selectedChallanId}
+                    className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs whitespace-nowrap cursor-pointer disabled:opacity-50 transition-colors shadow-2xs flex items-center justify-center gap-1.5"
+                  >
+                    <Package className="w-3.5 h-3.5" />
+                    চালানের তথ্য আনুন
+                  </button>
+                </div>
+                <p className="text-[10px] text-emerald-800 font-medium">
+                  💡 চালান সিলেক্ট করলে গ্রাহকের নাম ও চালানের সমস্ত পণ্য অটোমেটিক বসে যাবে। এই বিল সেভ করার সাথে সাথেই ইনভেন্টরি স্টক থেকে পণ্য কমে যাবে।
+                </p>
+              </div>
+            )}
 
             {/* Row 2: Customer selection, Unique ID Search & creation */}
             <div className="space-y-3 border-b border-slate-100 pb-4">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Document, BusinessSettings } from '../types';
-import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2, Receipt } from 'lucide-react';
 import Logo from './Logo';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -9,6 +9,7 @@ interface PrintDocumentProps {
   document: Document;
   settings: BusinessSettings;
   onBack?: () => void;
+  onCreateBill?: (challan: Document) => void;
 }
 
 // Convert numbers to Bangladeshi/Indian format words (Taka Only)
@@ -79,7 +80,7 @@ function numberToWords(num: number): string {
   return words.trim() + ' Taka Only';
 }
 
-export default function PrintDocument({ document, settings, onBack }: PrintDocumentProps) {
+export default function PrintDocument({ document, settings, onBack, onCreateBill }: PrintDocumentProps) {
   const [isGeneratingWord, setIsGeneratingWord] = useState(false);
   const [wordSuccessNotice, setWordSuccessNotice] = useState(false);
 
@@ -588,6 +589,18 @@ ${rawBase64Logo}
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Create Bill from Challan shortcut */}
+          {document.type === 'CHALLAN' && onCreateBill && (
+            <button
+              onClick={() => onCreateBill(document)}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
+              title="এই চালান থেকে সরাসরি বিক্রয় বিল তৈরি করুন"
+            >
+              <Receipt className="w-4 h-4 text-emerald-100" />
+              চালান থেকে বিল তৈরি করুন
+            </button>
+          )}
+
           {/* Print Button */}
           <button
             onClick={handlePrint}

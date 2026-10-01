@@ -497,57 +497,6 @@ export default function App() {
       list = [doc, ...documents];
     }
 
-    // Auto-generate or update corresponding Delivery Challan whenever a Bill or Invoice is created/saved
-    if (doc.type === 'INVOICE' || doc.type === 'BILL') {
-      const challanPrefix = 'JM/CH/2026/';
-      const docNumParts = doc.docNumber.split('/');
-      const numSuffix = docNumParts[docNumParts.length - 1] || Math.floor(1000 + Math.random() * 9000).toString();
-      const challanDocNumber = `${challanPrefix}${numSuffix}`;
-
-      const challanId = `doc-ch-${doc.id}`;
-      const existingChallanIndex = list.findIndex(d => d.id === challanId || d.docNumber === challanDocNumber);
-
-      const challanDoc: Document = {
-        id: existingChallanIndex >= 0 ? list[existingChallanIndex].id : challanId,
-        type: 'CHALLAN',
-        docNumber: existingChallanIndex >= 0 ? list[existingChallanIndex].docNumber : challanDocNumber,
-        date: doc.date,
-        dueDate: undefined,
-        customerId: doc.customerId,
-        customerName: doc.customerName,
-        customerCompany: doc.customerCompany,
-        customerPhone: doc.customerPhone,
-        customerEmail: doc.customerEmail,
-        customerAddress: doc.customerAddress,
-        subject: `Delivery Challan for ${doc.type === 'INVOICE' ? 'Invoice' : 'Bill'} ${doc.docNumber}`,
-        salutation: doc.salutation || 'Dear Sir,',
-        openingParagraph: 'Please receive the following genuine spare parts and equipment in good condition as per order/bill.',
-        closingParagraph: 'Received the above goods in sound and complete condition.',
-        items: doc.items.map(it => ({
-          ...it,
-          price: 0,
-          total: 0
-        })),
-        subtotal: 0,
-        taxRate: 0,
-        taxAmount: 0,
-        discount: 0,
-        total: 0,
-        status: 'Active',
-        terms: '1. Please check the goods at the time of delivery.\n2. Claims regarding damages must be reported within 24 hours.',
-        signatureName: doc.signatureName,
-        signatureLabel: doc.signatureLabel,
-        vatEnabled: false
-      };
-
-      if (existingChallanIndex >= 0) {
-        list = list.map((d, i) => i === existingChallanIndex ? challanDoc : d);
-      } else {
-        list = [challanDoc, ...list];
-      }
-      apiSaveDocument(challanDoc).catch(() => {});
-    }
-
     setDocuments(list);
     localStorage.setItem('hsc_documents', JSON.stringify(list));
 
@@ -557,8 +506,10 @@ export default function App() {
       console.warn('Backend sync warning:', e);
     }
     
-    // Decrement stock levels if a paid sales invoice is created
-    if (doc.type === 'INVOICE' && doc.status === 'Paid' && !exists) {
+    // Inventory Stock Management for Goods Sales:
+    // চালান তৈরি করলে স্টক থেকে কমবে না।
+    // যখন বিল (BILL) বা ইনভয়েস (INVOICE) তৈরি হবে, তখনই পণ্য স্টক থেকে কমবে।
+    if ((doc.type === 'BILL' || doc.type === 'INVOICE') && !exists) {
       const updatedProducts = products.map(prod => {
         const itemInDoc = doc.items.find(it => it.productId === prod.id);
         if (itemInDoc) {
@@ -572,12 +523,68 @@ export default function App() {
         return prod;
       });
       setProducts(updatedProducts);
+      localStorage.setItem('hsc_products', JSON.stringify(updatedProducts));
     }
 
     setEditingDocument(null);
     setIsCreatingDoc(null);
     setActiveTab('docs');
     setViewingDocument(doc); // View the printable layout immediately!
+  };
+
+  // Convert an existing Delivery Challan into a Bill / Sales Invoice
+  const handleCreateBillFromChallan = (challan: Document) => {
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const mappedItems = challan.items.map(it => {
+      const prod = products.find(p => p.id === it.productId);
+      const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
+      return {
+        ...it,
+        price: unitPrice,
+        total: unitPrice * it.quantity
+      };
+    });
+
+    const subtotal = mappedItems.reduce((acc, it) => acc + it.total, 0);
+    const taxRate = settings.taxRate || 0;
+    const taxAmount = Math.round((subtotal * taxRate) / 100);
+    const total = subtotal + taxAmount;
+
+    const newBill: Document = {
+      id: `doc-${Date.now()}`,
+      type: 'BILL',
+      docNumber: `${settings.billPrefix || 'JM/BILL/2026/'}${randomId}`,
+      date: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      customerId: challan.customerId,
+      customerName: challan.customerName,
+      customerCompany: challan.customerCompany,
+      customerPhone: challan.customerPhone,
+      customerEmail: challan.customerEmail,
+      customerAddress: challan.customerAddress,
+      subject: `Bill against Delivery Challan: ${challan.docNumber}`,
+      salutation: challan.salutation || 'Dear Sir,',
+      openingParagraph: 'Please find our formal bill for the goods delivered under the referenced delivery challan.',
+      closingParagraph: 'Thank you for your business.',
+      items: mappedItems,
+      subtotal,
+      taxRate,
+      taxAmount,
+      discount: 0,
+      total,
+      paidAmount: 0,
+      dueAmount: total,
+      status: 'Unpaid',
+      terms: challan.terms || settings.terms,
+      notes: `Generated against Delivery Challan: ${challan.docNumber}`,
+      signatureName: settings.signatureName,
+      signatureLabel: settings.signatureLabel,
+      vatEnabled: true
+    };
+
+    setEditingDocument(newBill);
+    setIsCreatingDoc('BILL');
+    setActiveTab('docs');
   };
 
   const handleDeleteDocument = async (id: string) => {
@@ -909,6 +916,10 @@ export default function App() {
         document={viewingDocument}
         settings={settings}
         onBack={() => setViewingDocument(null)}
+        onCreateBill={(challan) => {
+          setViewingDocument(null);
+          handleCreateBillFromChallan(challan);
+        }}
       />
     );
   }
@@ -1249,6 +1260,8 @@ export default function App() {
                   onSaveDocument={handleSaveDocument}
                   onAddCustomer={handleAddCustomer}
                   editingDocument={editingDocument}
+                  initialDocType={isCreatingDoc}
+                  documents={documents}
                   onCancel={() => { setEditingDocument(null); setIsCreatingDoc(null); }}
                 />
               ) : (
@@ -1304,6 +1317,7 @@ export default function App() {
                       onEditDocument={(doc) => setEditingDocument(doc)}
                       onDeleteDocument={handleDeleteDocument}
                       onViewDocument={(doc) => setViewingDocument(doc)}
+                      onCreateBillFromChallan={handleCreateBillFromChallan}
                     />
                   )}
 
