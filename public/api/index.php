@@ -223,6 +223,14 @@ if (empty($endpoint)) {
     }
 }
 
+// Image Upload Router Endpoint
+if ($endpoint === 'upload') {
+    if (file_exists(__DIR__ . '/upload.php')) {
+        require_once __DIR__ . '/upload.php';
+        exit;
+    }
+}
+
 // Health check endpoint
 if ($endpoint === 'health' || $endpoint === 'ping') {
     http_response_code(200);

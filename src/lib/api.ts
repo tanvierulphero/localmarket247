@@ -43,21 +43,13 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     const errorData = await response.json().catch(() => ({ error: '' }));
     
     if (response.status === 404) {
-      throw new Error(`HTTP 404 Not Found: 'api' folder or '.htaccess' is missing in cPanel public_html.`);
+      throw new Error(`Endpoint not found (${url})`);
     }
 
-    if (response.status === 503) {
-      throw new Error(`cPanel MySQL Server Unreachable (HTTP 503). Please create database 'localmar_247' in cPanel MySQL Databases.`);
-    }
-
-    throw new Error(errorData.error || `Server Response Error (HTTP ${response.status})`);
+    throw new Error(errorData.error || `Server error (HTTP ${response.status})`);
   }
 
   const data = await response.json();
-  if (data && data.db_error) {
-    throw new Error(data.error || 'MySQL Database Connection Error');
-  }
-
   return data;
 }
 
@@ -168,13 +160,12 @@ export const apiDeleteExpense = (id: string): Promise<{ success: boolean }> =>
 
 // Helper to read and compress file as compact base64 data URL (max 800px, 70% JPEG quality)
 // Prevents cPanel LiteSpeed HTTP 503 errors caused by oversized POST payloads
-function readFileAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: File, maxDim: number = 800): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 1200;
         let width = img.width;
         let height = img.height;
 
@@ -238,31 +229,40 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
     // Continue to next fallback
   }
 
-  // 2. Try cPanel PHP upload endpoint if running under PHP
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch('/api/upload.php', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+  // 2. Try cPanel PHP upload endpoint (relative & absolute for subfolder compatibility)
+  const cpanelEndpoints = [
+    'api/upload_product_image.php',
+    '/api/upload_product_image.php',
+    'api/upload.php',
+    '/api/upload.php',
+    'api/index.php?endpoint=upload'
+  ];
+  for (const ep of cpanelEndpoints) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch(ep, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data && data.url) {
-        return data;
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.url) {
+          return data;
+        }
       }
+    } catch {
+      // Continue to next endpoint
     }
-  } catch {
-    // Continue to client-side fallback
   }
 
   // 3. Fallback: Instant Client-Side Image Compression & Data URL
   // Guaranteed to work 100% of the time on all devices without requiring server upload permissions
   try {
-    const dataUrl = await readFileAsDataUrl(file);
+    const dataUrl = await readFileAsDataUrl(file, 600);
     return { url: dataUrl };
   } catch (err: any) {
     throw new Error('Could not process image file: ' + (err.message || 'File read error'));

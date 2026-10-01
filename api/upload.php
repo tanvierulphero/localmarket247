@@ -115,13 +115,34 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
 
     if (move_uploaded_file($fileTmpPath, $destPath)) {
         @chmod($destPath, 0644);
-        $fileUrl = '/uploads/' . $newFileName;
+        $fileUrl = 'uploads/' . $newFileName;
         logUploadToDatabase($fileId, $newFileName, $fileName, $fileUrl, $fileSize, $fileType);
-        echo json_encode(['url' => $fileUrl, 'success' => true, 'id' => $fileId]);
+        echo json_encode([
+            'url' => $fileUrl,
+            'success' => true,
+            'id' => $fileId,
+            'storage' => 'cpanel_disk'
+        ]);
         exit;
     } else {
+        // Fail-safe Fallback: If cPanel folder permission prevents writing to disk,
+        // convert temp file to Base64 Data URL so the product image STILL works 100%!
+        $fileData = file_get_contents($fileTmpPath);
+        if ($fileData !== false) {
+            $base64 = 'data:' . $fileType . ';base64,' . base64_encode($fileData);
+            logUploadToDatabase($fileId, 'base64_' . $fileName, $fileName, $base64, $fileSize, $fileType);
+            echo json_encode([
+                'url' => $base64,
+                'success' => true,
+                'id' => $fileId,
+                'storage' => 'database_base64',
+                'notice' => 'cPanel uploads folder is not writable. Image saved directly into database/storage as Base64.'
+            ]);
+            exit;
+        }
+
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to move uploaded file to target folder. Please check /uploads directory permissions on cPanel.']);
+        echo json_encode(['error' => 'Failed to process file on cPanel. Please check /uploads directory permissions or use URL link option.']);
         exit;
     }
 }

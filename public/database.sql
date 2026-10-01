@@ -26,7 +26,7 @@ CREATE TABLE `products` (
   `unit` VARCHAR(50) NOT NULL DEFAULT 'Pcs',
   `description` TEXT,
   `specs` LONGTEXT,
-  `image_url` TEXT,
+  `image_url` LONGTEXT,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -235,9 +235,9 @@ CREATE TABLE `settings` (
   `terms` TEXT,
   `signature_name` VARCHAR(255) DEFAULT '',
   `signature_label` VARCHAR(255) DEFAULT '',
-  `logo_url` TEXT,
-  `watermark_url` TEXT,
-  `favicon_url` TEXT,
+  `logo_url` LONGTEXT,
+  `watermark_url` LONGTEXT,
+  `favicon_url` LONGTEXT,
   `watermark_opacity` DOUBLE DEFAULT 0.04,
   `show_watermark` INT DEFAULT 1,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -252,7 +252,7 @@ CREATE TABLE `uploaded_files` (
   `id` VARCHAR(128) NOT NULL,
   `file_name` VARCHAR(255) NOT NULL,
   `original_name` VARCHAR(255) DEFAULT '',
-  `file_url` TEXT NOT NULL,
+  `file_url` LONGTEXT NOT NULL,
   `file_size` BIGINT DEFAULT 0,
   `mime_type` VARCHAR(100) DEFAULT '',
   `entity_type` VARCHAR(100) DEFAULT 'product', -- product, document, signature, logo, avatar
@@ -353,10 +353,7 @@ CREATE TABLE `activity_logs` (
 -- ==============================================================================
 
 -- Seed Settings
-INSERT INTO `settings` (`id`, `name`, `slogan`, `address`, `phone1`, `phone2`, `email`, `website`, `invoice_prefix`, `quote_prefix`, `offer_prefix`, `bill_prefix`, `tax_rate`, `terms`, `signature_name`, `signature_label`) VALUES
-('global_settings', 'Hitachi Air Solution Center', 'Industrial Air Compressors, Parts & Service Specialists', 'Plot # 12, Road # 04, Sector # 07, Uttara, Dhaka-1230, Bangladesh.', '+880 1711-000000', '+880 1819-000000', 'info@hitachisolutioncenter.com', 'https://localmarket247.top', 'INV', 'QUO', 'OFF', 'BIL', 7.5, '1. Warranty: Standard 12 Months manufacturer warranty on major components.\n2. Delivery: Ex-stock ready delivery or 2-4 weeks upon confirmation.\n3. Payment Terms: 50% advance with work order, remaining 50% upon delivery/commissioning.\n4. Validity: This quote/offer is valid for 30 calendar days from the date of issuance.', 'MD MAHI UDDIN', 'Managing Director')
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
-
+INSERT INTO `settings` (`id`, `name`, `slogan`, `address`, `phone1`, `phone2`, `email`, `website`, `invoice_prefix`, `quote_prefix`, `offer_prefix`, `bill_prefix`, `tax_rate`, `terms`, `signature_name`, `signature_label`, `logo_url`, `watermark_url`, `favicon_url`, `watermark_opacity`, `show_watermark`) VALUES ('global_settings', 'Jubayer Machineries', 'Your Problem Solution is Sustainable Partner', 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.', '01715-994956', '01799-498199', 'jubayermachineries@gmail.com', 'www.hitachiairsolutioncenter.com', 'HSC/INV/2026/', 'HSC/QT/2026/', 'HSC/OF/2026/', 'HSC/BILL/2026/', 5, '1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50\% advance with work order & 50\% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.', 'MD MAHI UDDIN', 'Managing Director', '', '', '', 0.04, 1) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `slogan` = VALUES(`slogan`), `address` = VALUES(`address`), `phone1` = VALUES(`phone1`), `phone2` = VALUES(`phone2`), `email` = VALUES(`email`), `website` = VALUES(`website`), `tax_rate` = VALUES(`tax_rate`), `terms` = VALUES(`terms`), `signature_name` = VALUES(`signature_name`), `signature_label` = VALUES(`signature_label`), `logo_url` = VALUES(`logo_url`), `watermark_url` = VALUES(`watermark_url`);
 -- Seed Staff Users
 INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES
 ('staff-1', 'MD MAHI UDDIN', 'mahi@hitachisolutioncenter.com', '01711-000001', '123456', 'Super Admin', 'Managing Director', 'Active', '["all"]', '2026-01-01'),
@@ -405,5 +402,13 @@ INSERT INTO `activity_logs` (`id`, `staff_id`, `staff_name`, `action`, `module`,
 -- ------------------------------------------------------------------------------
 
 
+
+INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-admin-1', 'MD MAHI UDDIN', 'mahi@hitachisolutioncenter.com', '01715-994956', 'admin123', 'ADMIN', 'Managing Director & Owner', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"delete_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\",\"manage_settings\",\"view_staff_management\"]', '2026-01-01') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
+
+INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-mgr-1', 'Kamrul Hasan', 'kamrul@hitachisolutioncenter.com', '01799-498199', 'mgr123', 'MANAGER', 'Operations Manager', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\"]', '2026-01-15') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
+
+INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-sales-1', 'Engr. Rafiqul Islam', 'rafiq@hitachisolutioncenter.com', '01812-334455', 'sales123', 'SALESMAN', 'Senior Sales Executive', 'Active', '[\"view_overview\",\"view_inventory\",\"view_documents\",\"create_documents\",\"view_due_ledger\"]', '2026-02-01') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
+
+INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-store-1', 'Tarikul Tanvir', 'store@hitachisolutioncenter.com', '01911-223344', 'staff123', 'STAFF', 'Store & Inventory Keeper', 'Active', '[\"view_inventory\",\"manage_inventory\",\"view_documents\"]', '2026-02-10') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
 
 SET FOREIGN_KEY_CHECKS = 1;

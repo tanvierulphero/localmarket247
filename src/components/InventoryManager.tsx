@@ -26,6 +26,7 @@ import {
   CheckCircle2, 
   FileText, 
   ShoppingBag, 
+  Package,
   Layers,
   ArrowUpRight,
   ArrowDownRight
@@ -81,6 +82,8 @@ export default function InventoryManager({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [uploadError, setUploadError] = useState<string>('');
   const [isDragOver, setIsDragOver] = useState(false);
 
   // Lifetime History Modal State
@@ -88,18 +91,32 @@ export default function InventoryManager({
 
   const processAndUploadFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file (PNG, JPG, JPEG, WEBP).');
+      setUploadStatus('error');
+      setUploadError('Please select a valid image file (PNG, JPG, JPEG, WEBP).');
+      return;
+    }
+
+    // Check size client-side (Max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadStatus('error');
+      setUploadError('File exceeds maximum 5MB limit.');
       return;
     }
 
     setIsUploading(true);
+    setUploadStatus('uploading');
+    setUploadError('');
     try {
       const res = await apiUploadImage(file);
       if (res && res.url) {
         setFormData(prev => ({ ...prev, imageUrl: res.url }));
+        setUploadStatus('success');
+      } else {
+        throw new Error('No URL returned from server.');
       }
     } catch (err: any) {
-      alert('Image upload notice: ' + (err.message || 'Could not process image'));
+      setUploadStatus('error');
+      setUploadError(err.message || 'Could not process image');
     } finally {
       setIsUploading(false);
     }
@@ -441,11 +458,27 @@ export default function InventoryManager({
 
                   return (
                     <tr key={product.id || Math.random()} className="hover:bg-slate-50/50 transition-colors">
-                      {/* Name & SKU */}
+                      {/* Name, Image & SKU */}
                       <td className="py-3.5 px-4 max-w-sm">
-                        <div className="space-y-0.5">
-                          <span className="font-bold text-slate-900 block leading-tight">{product.name || 'Unnamed Product'}</span>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase font-mono">{product.sku || 'N/A'}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg border border-slate-200 bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                            {product.imageUrl ? (
+                              <img 
+                                src={product.imageUrl} 
+                                alt={product.name} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=100&auto=format&fit=crop&q=60';
+                                }}
+                              />
+                            ) : (
+                              <Package className="w-5 h-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-bold text-slate-900 block leading-tight truncate">{product.name || 'Unnamed Product'}</span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase font-mono">{product.sku || 'N/A'}</span>
+                          </div>
                         </div>
                       </td>
 
@@ -797,20 +830,36 @@ export default function InventoryManager({
                         <span className="text-[10px] text-slate-400">Processing image, please wait...</span>
                       </div>
                     ) : (
-                      <label 
-                        htmlFor="product-image-file-input"
-                        className="w-full flex flex-col items-center cursor-pointer py-1"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mb-2 shadow-2xs">
-                          <UploadCloud className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs font-bold text-slate-800 block">
-                          Click to browse device or Drag & Drop photo here
-                        </span>
-                        <span className="text-[11px] text-slate-500 mt-0.5 block">
-                          Choose image from device (PNG, JPG, WEBP)
-                        </span>
-                      </label>
+                      <div className="w-full flex flex-col items-center">
+                        <label 
+                          htmlFor="product-image-file-input"
+                          className="w-full flex flex-col items-center cursor-pointer py-1"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mb-2 shadow-2xs">
+                            <UploadCloud className="w-5 h-5" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-800 block">
+                            Click to browse device or Drag & Drop photo here
+                          </span>
+                          <span className="text-[11px] text-slate-500 mt-0.5 block">
+                            Choose image from device (PNG, JPG, WEBP, Max 5MB)
+                          </span>
+                        </label>
+
+                        {uploadStatus === 'success' && (
+                          <div className="mt-2 bg-emerald-50 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            Uploaded to cPanel server successfully!
+                          </div>
+                        )}
+
+                        {uploadStatus === 'error' && (
+                          <div className="mt-2 bg-rose-50 text-rose-800 text-[11px] font-bold px-3 py-1 rounded-lg border border-rose-200 flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                            {uploadError}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
 

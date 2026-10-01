@@ -223,6 +223,14 @@ if (empty($endpoint)) {
     }
 }
 
+// Image Upload Router Endpoint
+if ($endpoint === 'upload') {
+    if (file_exists(__DIR__ . '/upload.php')) {
+        require_once __DIR__ . '/upload.php';
+        exit;
+    }
+}
+
 // Health check endpoint
 if ($endpoint === 'health' || $endpoint === 'ping') {
     http_response_code(200);
@@ -284,6 +292,18 @@ function processJsonRequest($endpoint, $method, $id, $inputData) {
         $found = false;
         foreach ($items as &$item) {
             if (isset($item['id']) && $item['id'] === $idVal) {
+                // If it is a product being updated, delete the old image if it has changed
+                if ($fileKey === 'products') {
+                    $oldImg = isset($item['imageUrl']) ? $item['imageUrl'] : (isset($item['image_url']) ? $item['image_url'] : '');
+                    $newImg = isset($inputData['imageUrl']) ? $inputData['imageUrl'] : (isset($inputData['image_url']) ? $inputData['image_url'] : '');
+                    if (!empty($oldImg) && $oldImg !== $newImg && str_starts_with($oldImg, 'uploads/products/')) {
+                        $oldPath = realpath(__DIR__ . '/../' . $oldImg);
+                        $productsDir = realpath(__DIR__ . '/../uploads/products');
+                        if ($oldPath && $productsDir && str_starts_with($oldPath, $productsDir) && file_exists($oldPath)) {
+                            @unlink($oldPath);
+                        }
+                    }
+                }
                 $item = array_merge($item, $inputData);
                 $found = true;
                 break;
@@ -303,6 +323,23 @@ function processJsonRequest($endpoint, $method, $id, $inputData) {
             http_response_code(400);
             echo json_encode(['error' => 'Missing ID parameter']);
             return;
+        }
+
+        // If deleting a product, delete its image too
+        if ($fileKey === 'products') {
+            foreach ($items as $item) {
+                if (isset($item['id']) && $item['id'] === $id) {
+                    $img = isset($item['imageUrl']) ? $item['imageUrl'] : (isset($item['image_url']) ? $item['image_url'] : '');
+                    if (!empty($img) && str_starts_with($img, 'uploads/products/')) {
+                        $imgPath = realpath(__DIR__ . '/../' . $img);
+                        $productsDir = realpath(__DIR__ . '/../uploads/products');
+                        if ($imgPath && $productsDir && str_starts_with($imgPath, $productsDir) && file_exists($imgPath)) {
+                            @unlink($imgPath);
+                        }
+                    }
+                    break;
+                }
+            }
         }
 
         $filtered = array_filter($items, function($item) use ($id) {
