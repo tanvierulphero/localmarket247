@@ -71,10 +71,7 @@ if (empty($endpoint)) {
 
 // Router: Image Upload Endpoints
 if ($endpoint === 'upload') {
-    if (file_exists(__DIR__ . '/upload_product_image.php')) {
-        require_once __DIR__ . '/upload_product_image.php';
-        exit;
-    } elseif (file_exists(__DIR__ . '/upload.php')) {
+    if (file_exists(__DIR__ . '/upload.php')) {
         require_once __DIR__ . '/upload.php';
         exit;
     }

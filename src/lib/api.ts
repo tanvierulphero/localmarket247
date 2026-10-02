@@ -251,11 +251,10 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
 
   // 2. Try cPanel PHP upload endpoint (relative & absolute for subfolder compatibility)
   const cpanelEndpoints = [
-    'api/upload_product_image.php',
-    '/api/upload_product_image.php',
     'api/upload.php',
     '/api/upload.php',
-    'api/index.php?endpoint=upload'
+    'api/index.php?endpoint=upload',
+    '/api/index.php?endpoint=upload'
   ];
   for (const ep of cpanelEndpoints) {
     try {
