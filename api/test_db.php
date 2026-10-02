@@ -105,7 +105,7 @@ header('Content-Type: text/html; charset=utf-8');
     echo "<li><strong>DB_HOST:</strong> <code>" . htmlspecialchars($dbHost) . "</code></li>";
     echo "<li><strong>DB_NAME:</strong> <code>" . ($dbName ? htmlspecialchars($dbName) : '<span style="color:red;">EMPTY</span>') . "</code></li>";
     echo "<li><strong>DB_USER:</strong> <code>" . ($dbUser ? htmlspecialchars($dbUser) : '<span style="color:red;">EMPTY</span>') . "</code></li>";
-    echo "<li><strong>DB_PASS:</strong> <code>" . (strlen($dbPass) > 0 ? "******** (" . strlen($dbPass) . " chars)" : '<span style="color:red;">EMPTY</span>') . "</code></li>";
+    echo "<li><strong>DB_PASS:</strong> <code>" . (strlen($dbPass ?? '') > 0 ? "******** (" . strlen($dbPass ?? '') . " chars)" : '<span style="color:red;">EMPTY</span>') . "</code></li>";
     echo "</ul>";
 
     if (empty($dbName) || empty($dbUser)) {

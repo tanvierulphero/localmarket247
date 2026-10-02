@@ -8,6 +8,13 @@ ob_start();
 @ini_set('display_errors', '0');
 error_reporting(0);
 
+// Polyfill for str_starts_with compatibility with PHP versions below 8.0
+if (!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        return (string)$needle !== '' && strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
@@ -243,9 +250,244 @@ if ($endpoint === 'database/seed-demo' || $endpoint === 'database_seed_demo') {
 $method = $_SERVER['REQUEST_METHOD'];
 $inputData = json_decode(file_get_contents('php://input'), true) ?? [];
 
-// Helper for JSON Storage Processing
+// Helper functions for automatic CamelCase <-> snake_case translation
+function camelToSnake($key) {
+    return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $key));
+}
+
+function snakeToCamel($key) {
+    return lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $key))));
+}
+
+function mapJsToDb($jsItem, $fieldsList) {
+    $dbItem = [];
+    foreach ($jsItem as $k => $v) {
+        $dbKey = camelToSnake($k);
+        if (in_array($dbKey, $fieldsList)) {
+            if (($dbKey === 'specs' || $dbKey === 'items' || $dbKey === 'permissions') && is_array($v)) {
+                $dbItem[$dbKey] = json_encode($v, JSON_UNESCAPED_UNICODE);
+            } else {
+                if (is_bool($v)) {
+                    $dbItem[$dbKey] = $v ? 1 : 0;
+                } else {
+                    $dbItem[$dbKey] = $v;
+                }
+            }
+        }
+    }
+    return $dbItem;
+}
+
+function mapDbToJs($dbRow) {
+    $jsItem = [];
+    if (!$dbRow) return null;
+    foreach ($dbRow as $k => $v) {
+        $jsKey = snakeToCamel($k);
+        if ($k === 'specs' || $k === 'items' || $k === 'permissions') {
+            $jsItem[$jsKey] = json_decode($v ?? '[]', true) ?? [];
+        } else {
+            if (is_numeric($v) && strlen($v ?? '') < 15) {
+                if (strpos($v, '.') !== false) {
+                    $jsItem[$jsKey] = (double)$v;
+                } else {
+                    $jsItem[$jsKey] = (int)$v;
+                }
+            } else {
+                $jsItem[$jsKey] = $v;
+            }
+        }
+    }
+    return $jsItem;
+}
+
+// Helper for Database & JSON Storage Processing
 function processJsonRequest($endpoint, $method, $id, $inputData) {
+    global $pdo;
+
+    // Table schema column definitions map
+    $tablesMap = [
+        'products' => [
+            'table' => 'products',
+            'fields' => ['id', 'name', 'sku', 'category', 'brand', 'price', 'cost_price', 'stock', 'unit', 'description', 'specs', 'image_url']
+        ],
+        'customers' => [
+            'table' => 'customers',
+            'fields' => ['id', 'company_id', 'name', 'company', 'phone', 'email', 'address', 'notes']
+        ],
+        'suppliers' => [
+            'table' => 'suppliers',
+            'fields' => ['id', 'supplier_id', 'name', 'company', 'phone', 'email', 'address', 'contact_person', 'notes', 'created_at']
+        ],
+        'purchases' => [
+            'table' => 'purchases',
+            'fields' => ['id', 'purchase_number', 'supplier_invoice_no', 'supplier_id', 'supplier_name', 'supplier_company', 'supplier_phone', 'supplier_email', 'supplier_address', 'purchase_date', 'items', 'subtotal', 'tax_rate', 'tax_amount', 'discount', 'shipping_cost', 'grand_total', 'paid_amount', 'due_amount', 'payment_status', 'payment_method', 'status', 'notes', 'created_at']
+        ],
+        'documents' => [
+            'table' => 'documents',
+            'fields' => ['id', 'type', 'doc_number', 'date', 'due_date', 'customer_id', 'customer_name', 'customer_company', 'customer_phone', 'customer_email', 'customer_address', 'subject', 'salutation', 'opening_paragraph', 'closing_paragraph', 'items', 'subtotal', 'tax_rate', 'tax_amount', 'discount', 'total', 'paid_amount', 'due_amount', 'status', 'terms', 'notes', 'signature_label', 'signature_name', 'vat_enabled']
+        ],
+        'staff' => [
+            'table' => 'staff_users',
+            'fields' => ['id', 'name', 'email', 'phone', 'passcode', 'role', 'designation', 'status', 'permissions', 'created_at']
+        ],
+        'settings' => [
+            'table' => 'settings',
+            'fields' => ['id', 'name', 'slogan', 'address', 'phone1', 'phone2', 'email', 'website', 'invoice_prefix', 'quote_prefix', 'offer_prefix', 'bill_prefix', 'tax_rate', 'terms', 'signature_name', 'signature_label', 'logo_url', 'watermark_url', 'favicon_url', 'watermark_opacity', 'show_watermark']
+        ],
+        'dispatches' => [
+            'table' => 'field_dispatches',
+            'fields' => ['id', 'dispatch_number', 'date', 'staff_id', 'staff_name', 'customer_id', 'customer_name', 'customer_company', 'company_name', 'address', 'customer_phone', 'phone', 'purpose', 'description', 'dispatch_date', 'return_date', 'bill_no', 'bill_amount', 'paid_amount', 'due_amount', 'expense_amount', 'expense_details', 'payment_status', 'payment_method', 'status', 'notes', 'items']
+        ],
+        'returns' => [
+            'table' => 'sales_returns',
+            'fields' => ['id', 'return_number', 'return_date', 'original_doc_id', 'original_doc_number', 'customer_id', 'customer_name', 'customer_company', 'customer_phone', 'product_id', 'product_name', 'sku', 'parts_number', 'quantity', 'unit', 'unit_price', 'refund_amount', 'deduct_from_due', 'restocked', 'reason', 'notes', 'created_at']
+        ],
+        'expenses' => [
+            'table' => 'expenses',
+            'fields' => ['id', 'expense_number', 'date', 'category', 'title', 'amount', 'payment_method', 'paid_by', 'staff_id', 'reference_no', 'notes', 'receipt_url', 'created_at']
+        ]
+    ];
+
     $fileKey = str_replace('-', '_', $endpoint);
+    $useDb = ($pdo !== null && isset($tablesMap[$endpoint]));
+
+    if ($useDb) {
+        $meta = $tablesMap[$endpoint];
+        $tableName = $meta['table'];
+        $fieldsList = $meta['fields'];
+
+        if ($method === 'GET') {
+            if ($id) {
+                $stmt = $pdo->prepare("SELECT * FROM `$tableName` WHERE `id` = :id");
+                $stmt->execute([':id' => $id]);
+                $row = $stmt->fetch();
+                if ($row) {
+                    echo json_encode(mapDbToJs($row));
+                } else {
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Item not found in database']);
+                }
+                return;
+            }
+
+            if ($endpoint === 'settings') {
+                $stmt = $pdo->prepare("SELECT * FROM `$tableName` WHERE `id` = 'global_settings' LIMIT 1");
+                $stmt->execute();
+                $row = $stmt->fetch();
+                if ($row) {
+                    echo json_encode(mapDbToJs($row));
+                } else {
+                    echo json_encode(null);
+                }
+                return;
+            }
+
+            $stmt = $pdo->prepare("SELECT * FROM `$tableName` ORDER BY `id` DESC");
+            $stmt->execute();
+            $rows = $stmt->fetchAll();
+            $jsRows = array_map('mapDbToJs', $rows);
+            echo json_encode($jsRows);
+            return;
+        }
+
+        if ($method === 'POST') {
+            if ($endpoint === 'settings') {
+                $inputData['id'] = 'global_settings';
+            }
+
+            $idVal = $inputData['id'] ?? null;
+            if (!$idVal) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Missing item ID']);
+                return;
+            }
+
+            $dbItem = mapJsToDb($inputData, $fieldsList);
+
+            // Secure Image Replacement: Check if new image replaces an old local cPanel image in MySQL
+            if ($tableName === 'products') {
+                try {
+                    $oldStmt = $pdo->prepare("SELECT `image_url` FROM `products` WHERE `id` = :id");
+                    $oldStmt->execute([':id' => $idVal]);
+                    $oldRow = $oldStmt->fetch();
+                    if ($oldRow) {
+                        $oldImg = $oldRow['image_url'] ?? '';
+                        $newImg = $dbItem['image_url'] ?? '';
+                        if (!empty($oldImg) && $oldImg !== $newImg && str_starts_with($oldImg, 'uploads/products/')) {
+                            $oldPath = realpath(__DIR__ . '/../' . $oldImg);
+                            $productsDir = realpath(__DIR__ . '/../uploads/products');
+                            if ($oldPath && $productsDir && str_starts_with($oldPath, $productsDir) && file_exists($oldPath)) {
+                                @unlink($oldPath);
+                            }
+                        }
+                    }
+                } catch (Exception $imgEx) {
+                    // Non-fatal
+                }
+            }
+
+            $columns = array_keys($dbItem);
+            $placeholders = array_map(function($c) { return ":$c"; }, $columns);
+            
+            $updates = [];
+            foreach ($columns as $col) {
+                if ($col !== 'id') {
+                    $updates[] = "`$col` = VALUES(`$col`)";
+                }
+            }
+
+            $sql = "INSERT INTO `$tableName` (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $placeholders) . ")";
+            if (!empty($updates)) {
+                $sql .= " ON DUPLICATE KEY UPDATE " . implode(", ", $updates);
+            }
+
+            $stmt = $pdo->prepare($sql);
+            $params = [];
+            foreach ($dbItem as $k => $v) {
+                $params[":$k"] = $v;
+            }
+            $stmt->execute($params);
+
+            echo json_encode($inputData);
+            return;
+        }
+
+        if ($method === 'DELETE') {
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Missing ID parameter']);
+                return;
+            }
+
+            // Image Deletion for Products in MySQL
+            if ($tableName === 'products') {
+                try {
+                    $oldStmt = $pdo->prepare("SELECT `image_url` FROM `products` WHERE `id` = :id");
+                    $oldStmt->execute([':id' => $id]);
+                    $oldRow = $oldStmt->fetch();
+                    if ($oldRow) {
+                        $img = $oldRow['image_url'] ?? '';
+                        if (!empty($img) && str_starts_with($img, 'uploads/products/')) {
+                            $imgPath = realpath(__DIR__ . '/../' . $img);
+                            $productsDir = realpath(__DIR__ . '/../uploads/products');
+                            if ($imgPath && $productsDir && str_starts_with($imgPath, $productsDir) && file_exists($imgPath)) {
+                                @unlink($imgPath);
+                            }
+                        }
+                    }
+                } catch (Exception $imgEx) {
+                    // Non-fatal
+                }
+            }
+
+            $stmt = $pdo->prepare("DELETE FROM `$tableName` WHERE `id` = :id");
+            $stmt->execute([':id' => $id]);
+            echo json_encode(['success' => true]);
+            return;
+        }
+    }
+
+    // JSON Flat-File Fallback (Zero Config Option)
     $items = getJsonStorage($fileKey);
 
     if ($method === 'GET') {
@@ -257,7 +499,7 @@ function processJsonRequest($endpoint, $method, $id, $inputData) {
                 }
             }
             http_response_code(404);
-            echo json_encode(['error' => 'Item not found']);
+            echo json_encode(['error' => 'Item not found in Flat-File']);
             return;
         }
 

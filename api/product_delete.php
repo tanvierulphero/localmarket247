@@ -5,6 +5,13 @@
 // Deletes a product and safely unlinks its associated image
 // ========================================================
 
+// Polyfill for str_starts_with compatibility with PHP versions below 8.0
+if (!function_exists('str_starts_with')) {
+    function str_starts_with($haystack, $needle) {
+        return (string)$needle !== '' && strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
