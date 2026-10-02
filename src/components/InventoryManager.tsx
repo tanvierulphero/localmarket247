@@ -33,29 +33,6 @@ import {
 } from 'lucide-react';
 import { apiUploadImage } from '../lib/api';
 
-const PRODUCT_IMAGE_PRESETS = [
-  {
-    name: 'Screw Compressor',
-    url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Refrigerated Dryer',
-    url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Oil / Air Filter',
-    url: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Synthetic Lube Oil',
-    url: 'https://images.unsplash.com/photo-1635350736475-c8cdf4b21906?w=600&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Spare Parts & Valves',
-    url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&auto=format&fit=crop&q=80',
-  },
-];
-
 interface InventoryManagerProps {
   products: Product[];
   documents?: Document[];

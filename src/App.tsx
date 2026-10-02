@@ -3,15 +3,7 @@ import { io } from 'socket.io-client';
 import { Product, Customer, Document, BusinessSettings, DocumentType, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from './types';
 import { 
   DEFAULT_SETTINGS, 
-  INITIAL_PRODUCTS, 
-  INITIAL_CUSTOMERS, 
-  INITIAL_DOCUMENTS, 
-  INITIAL_STAFF_USERS, 
-  INITIAL_FIELD_DISPATCHES, 
-  INITIAL_SUPPLIERS, 
-  INITIAL_PURCHASES,
-  INITIAL_SALES_RETURNS,
-  INITIAL_EXPENSES
+  INITIAL_STAFF_USERS
 } from './initialData';
 
 // Component imports
