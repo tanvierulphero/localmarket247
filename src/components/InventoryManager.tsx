@@ -152,7 +152,7 @@ export default function InventoryManager({
     unit: 'Pcs',
     description: '',
     specs: [{ label: '', value: '' }],
-    imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=60'
+    imageUrl: ''
   });
 
   // LIFETIME ANALYTICS & BUYER LOG CALCULATIONS
@@ -322,7 +322,7 @@ export default function InventoryManager({
       unit: 'Pcs',
       description: '',
       specs: [{ label: 'Motor Power', value: '' }, { label: 'Working Pressure', value: '' }],
-      imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=60'
+      imageUrl: ''
     });
     setIsFormOpen(true);
   };
@@ -341,7 +341,7 @@ export default function InventoryManager({
       unit: product.unit,
       description: product.description,
       specs: product.specs && product.specs.length > 0 ? [...product.specs] : [{ label: '', value: '' }],
-      imageUrl: product.imageUrl || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=60'
+      imageUrl: product.imageUrl || ''
     });
     setIsFormOpen(true);
   };

@@ -354,61 +354,18 @@ CREATE TABLE `activity_logs` (
 
 -- Seed Settings
 INSERT INTO `settings` (`id`, `name`, `slogan`, `address`, `phone1`, `phone2`, `email`, `website`, `invoice_prefix`, `quote_prefix`, `offer_prefix`, `bill_prefix`, `tax_rate`, `terms`, `signature_name`, `signature_label`, `logo_url`, `watermark_url`, `favicon_url`, `watermark_opacity`, `show_watermark`) VALUES ('global_settings', 'Jubayer Machineries', 'Your Problem Solution is Sustainable Partner', 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.', '01715-994956', '01799-498199', 'jubayermachineries@gmail.com', 'www.hitachiairsolutioncenter.com', 'HSC/INV/2026/', 'HSC/QT/2026/', 'HSC/OF/2026/', 'HSC/BILL/2026/', 5, '1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50\% advance with work order & 50\% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.', 'MD MAHI UDDIN', 'Managing Director', '', '', '', 0.04, 1) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `slogan` = VALUES(`slogan`), `address` = VALUES(`address`), `phone1` = VALUES(`phone1`), `phone2` = VALUES(`phone2`), `email` = VALUES(`email`), `website` = VALUES(`website`), `tax_rate` = VALUES(`tax_rate`), `terms` = VALUES(`terms`), `signature_name` = VALUES(`signature_name`), `signature_label` = VALUES(`signature_label`), `logo_url` = VALUES(`logo_url`), `watermark_url` = VALUES(`watermark_url`);
--- Seed Staff Users
-INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES
-('staff-1', 'MD MAHI UDDIN', 'mahi@hitachisolutioncenter.com', '01711-000001', '123456', 'Super Admin', 'Managing Director', 'Active', '["all"]', '2026-01-01'),
-('staff-2', 'Engr. Tanvir Ahmed', 'tanvir@hitachisolutioncenter.com', '01711-000002', '123456', 'Admin', 'Chief Technical Officer', 'Active', '["all"]', '2026-01-01'),
-('staff-3', 'Md. Rakib Hasan', 'rakib@hitachisolutioncenter.com', '01711-000003', '123456', 'Sales Manager', 'Senior Sales Executive', 'Active', '["dashboard","inventory","challan","invoice","quotation","customers","suppliers","purchases"]', '2026-01-01'),
-('staff-4', 'Kamal Hossain', 'kamal@hitachisolutioncenter.com', '01711-000004', '123456', 'Field Officer', 'Field Service Engineer', 'Active', '["dashboard","challan","inventory"]', '2026-01-01')
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
--- Seed Products
-INSERT INTO `products` (`id`, `name`, `sku`, `category`, `brand`, `price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES
-('prod-1', 'Hitachi Hiscrew 37 S-Type Screw Compressor', 'HIT-HS-37S', 'Screw Air Compressor', 'Hitachi', 650000, 3, 'Set', 'High-performance S-Type oil-flooded rotary screw air compressor with advanced microprocessor control, superior energy efficiency, and low noise levels.', '[{"label":"Motor Power","value":"37 kW (50 HP)"},{"label":"Free Air Delivery","value":"6.2 m³/min"},{"label":"Working Pressure","value":"8.5 Bar"}]', 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=60'),
-('prod-2', 'Atlas Copco GA37 VSD+ Variable Speed Compressor', 'AC-GA37-VSD', 'Screw Air Compressor', 'Atlas Copco', 890000, 2, 'Set', 'Premium variable speed drive (VSD+) rotary screw compressor. Saves up to 50% energy compared to fixed-speed models.', '[{"label":"Motor Power","value":"37 kW (50 HP)"},{"label":"Working Pressure","value":"4 - 13 Bar"}]', 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=400&auto=format&fit=crop&q=60'),
-('prod-3', 'Hitachi Synthetic Screw Oil (Food Grade) 20L', 'HIT-OIL-20L', 'Lubricant Oil', 'Hitachi', 18500, 25, 'Can', 'Genuine 100% synthetic compressor oil for Hitachi rotary screw compressors. 8,000 hours operating lifetime.', '[]', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=60'),
-('prod-4', 'Hitachi Air Filter Element (37kW)', 'HIT-AF-37K', 'Spare Parts', 'Hitachi', 12500, 15, 'Pcs', 'High-efficiency inlet air filter element for 37kW Hitachi screw compressors.', '[]', 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=400&auto=format&fit=crop&q=60')
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
-
--- Seed Customers
-INSERT INTO `customers` (`id`, `company_id`, `name`, `company`, `phone`, `email`, `address`, `notes`) VALUES
-('cust-1', 'COMP-001', 'Anwar Hossain', 'Ha-Meem Textile Mills Ltd.', '01711-223344', 'anwar@hameemgroup.com', 'Nishat Nagar, Tongi, Gazipur.', 'VIP Client - Textile Division'),
-('cust-2', 'COMP-002', 'Engr. Shahadat Hossain', 'Square Pharmaceuticals PLC', '01819-887766', 'shahadat@squaregroup.com', 'Kaliyakir Industrial Zone, Gazipur.', 'Pharma Clean Air Requirement')
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
-
--- Seed Suppliers
-INSERT INTO `suppliers` (`id`, `supplier_id`, `name`, `company`, `phone`, `email`, `address`, `contact_person`, `notes`, `created_at`) VALUES
-('sup-1', 'SUP-101', 'Tanaka Imports Ltd.', 'Hitachi Industrial Equipment Japan', '+81 3-5555-0199', 'orders@tanaka-machinery.jp', 'Chiyoda-ku, Tokyo, Japan', 'Kenji Tanaka', 'Official Hitachi Japan Exporter', '2026-01-01'),
-('sup-2', 'SUP-102', 'Bengal Engineering Spares', 'Bengal Spares & Lubricants Ltd.', '01712-998877', 'sales@bengalspares.com', 'DIT Road, Malibagh, Dhaka', 'Md. Jahangir Alam', 'Local Genuine Filter & Lubricant Distributor', '2026-01-01')
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
-
--- Seed Purchases
-INSERT INTO `purchases` (`id`, `purchase_number`, `supplier_invoice_no`, `supplier_id`, `supplier_name`, `supplier_company`, `supplier_phone`, `supplier_email`, `supplier_address`, `purchase_date`, `items`, `subtotal`, `tax_rate`, `tax_amount`, `discount`, `shipping_cost`, `grand_total`, `paid_amount`, `due_amount`, `payment_status`, `payment_method`, `status`, `notes`, `created_at`) VALUES
-('pur-1', 'PUR-2026-001', 'INV-JPN-8849', 'sup-1', 'Tanaka Imports Ltd.', 'Hitachi Industrial Equipment Japan', '+81 3-5555-0199', 'orders@tanaka-machinery.jp', 'Tokyo, Japan', '2026-03-01', '[{"id":"p-item-1","productId":"prod-1","productName":"Hitachi Hiscrew 37 S-Type Screw Compressor","brand":"Hitachi","unit":"Set","quantity":2,"unitCost":520000,"totalCost":1040000}]', 1040000, 0, 0, 20000, 15000, 1035000, 1035000, 0, 'Paid', 'Bank Transfer', 'Received', 'Imported via Chittagong Port under LC', '2026-03-01')
-ON DUPLICATE KEY UPDATE `purchase_number` = VALUES(`purchase_number`);
-
--- Seed Documents
-INSERT INTO `documents` (`id`, `type`, `doc_number`, `date`, `due_date`, `customer_id`, `customer_name`, `customer_company`, `customer_phone`, `customer_email`, `customer_address`, `subject`, `salutation`, `opening_paragraph`, `closing_paragraph`, `items`, `subtotal`, `tax_rate`, `tax_amount`, `discount`, `total`, `paid_amount`, `due_amount`, `status`, `terms`, `notes`, `signature_label`, `signature_name`) VALUES
-('doc-1', 'INVOICE', 'INV-2026-001', '2026-03-01', '2026-03-15', 'cust-1', 'Anwar Hossain', 'Ha-Meem Textile Mills Ltd.', '01711-223344', 'anwar@hameemgroup.com', 'Nishat Nagar, Tongi, Gazipur.', 'Supply & Commissioning of Hitachi 37kW Screw Compressor', 'Dear Sir,', 'We are pleased to submit our commercial invoice for the high-efficiency screw air compressor supplied as per your work order.', 'Thank you for choosing Hitachi Solution Center.', '[{"id":"item-1","productId":"prod-1","name":"Hitachi Hiscrew 37 S-Type Screw Compressor","brand":"Hitachi","quantity":1,"price":650000,"total":650000,"unit":"Set"}]', 650000, 5, 32500, 10000, 672500, 400000, 272500, 'PARTIAL', '1. Warranty: 1 Year.\n2. Payment: 50% Advance.', 'Delivered to Tongi Plant', 'Managing Director', 'MD MAHI UDDIN')
-ON DUPLICATE KEY UPDATE `doc_number` = VALUES(`doc_number`);
+-- Seed Staff Users with authorized accounts (No demo data)
+INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES 
+('staff-admin-1', 'MD MAHI UDDIN', 'mahi@hitachisolutioncenter.com', '01715-994956', 'admin123', 'ADMIN', 'Managing Director & Owner', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"delete_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\",\"manage_settings\",\"view_staff_management\"]', '2026-01-01'),
+('staff-mgr-1', 'Kamrul Hasan', 'kamrul@hitachisolutioncenter.com', '01799-498199', 'mgr123', 'MANAGER', 'Operations Manager', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\"]', '2026-01-15'),
+('staff-sales-1', 'Engr. Rafiqul Islam', 'rafiq@hitachisolutioncenter.com', '01812-334455', 'sales123', 'SALESMAN', 'Senior Sales Executive', 'Active', '[\"view_overview\",\"view_inventory\",\"view_documents\",\"create_documents\",\"view_due_ledger\"]', '2026-02-01'),
+('staff-store-1', 'Tarikul Tanvir', 'store@hitachisolutioncenter.com', '01911-223344', 'staff123', 'STAFF', 'Store & Inventory Keeper', 'Active', '[\"view_inventory\",\"manage_inventory\",\"view_documents\"]', '2026-02-10')
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
 
 -- Seed Initial Activity Log
 INSERT INTO `activity_logs` (`id`, `staff_id`, `staff_name`, `action`, `module`, `description`, `entity_id`, `ip_address`, `user_agent`) VALUES
-('log-1', 'staff-1', 'MD MAHI UDDIN', 'LOGIN', 'AUTHENTICATION', 'System database initialized with full tracking capabilities', 'global_settings', '127.0.0.1', 'Hitachi Cloud Management System');
-
-
--- ------------------------------------------------------------------------------
--- REAL-TIME ADMIN PANEL LIVE ENTRIES
--- ------------------------------------------------------------------------------
-
-
-
-INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-admin-1', 'MD MAHI UDDIN', 'mahi@hitachisolutioncenter.com', '01715-994956', 'admin123', 'ADMIN', 'Managing Director & Owner', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"delete_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\",\"manage_settings\",\"view_staff_management\"]', '2026-01-01') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
-
-INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-mgr-1', 'Kamrul Hasan', 'kamrul@hitachisolutioncenter.com', '01799-498199', 'mgr123', 'MANAGER', 'Operations Manager', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\"]', '2026-01-15') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
-
-INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-sales-1', 'Engr. Rafiqul Islam', 'rafiq@hitachisolutioncenter.com', '01812-334455', 'sales123', 'SALESMAN', 'Senior Sales Executive', 'Active', '[\"view_overview\",\"view_inventory\",\"view_documents\",\"create_documents\",\"view_due_ledger\"]', '2026-02-01') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
-
-INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES ('staff-store-1', 'Tarikul Tanvir', 'store@hitachisolutioncenter.com', '01911-223344', 'staff123', 'STAFF', 'Store & Inventory Keeper', 'Active', '[\"view_inventory\",\"manage_inventory\",\"view_documents\"]', '2026-02-10') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
+('log-1', 'staff-admin-1', 'MD MAHI UDDIN', 'LOGIN', 'AUTHENTICATION', 'System database initialized with clean production schema and zero demo records.', 'global_settings', '127.0.0.1', 'Hitachi Cloud Management System')
+ON DUPLICATE KEY UPDATE `action` = VALUES(`action`);
 
 SET FOREIGN_KEY_CHECKS = 1;

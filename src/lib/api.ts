@@ -270,8 +270,9 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
 
       if (response.ok) {
         const data = await response.json();
-        if (data && data.url) {
-          return data;
+        const url = data.url || data.image_url || data.image;
+        if (url) {
+          return { url };
         }
       }
     } catch {

@@ -144,10 +144,30 @@ if (empty($endpoint)) {
     $pathSegments = array_values(array_filter(explode('/', $uriPath)));
     $apiIndex = array_search('api', $pathSegments);
     if ($apiIndex !== false) {
-        $seg1 = isset($pathSegments[$apiIndex + 1]) ? $pathSegments[$apiIndex + 1] : '';
-        if ($seg1 !== 'index.php') {
-            $endpoint = $seg1;
-            $id = isset($pathSegments[$apiIndex + 2]) ? $pathSegments[$apiIndex + 2] : null;
+        $afterApi = array_slice($pathSegments, $apiIndex + 1);
+        if (!empty($afterApi)) {
+            if ($afterApi[0] === 'index.php') {
+                $afterApi = array_slice($afterApi, 1);
+            }
+        }
+        
+        if (!empty($afterApi)) {
+            $joined = implode('/', $afterApi);
+            if ($joined === 'database/clear' || $joined === 'database_clear') {
+                $endpoint = 'database/clear';
+                $id = null;
+            } elseif ($joined === 'database/seed-demo' || $joined === 'database_seed_demo') {
+                $endpoint = 'database/seed-demo';
+                $id = null;
+            } else {
+                if (count($afterApi) > 1) {
+                    $id = array_pop($afterApi);
+                    $endpoint = implode('/', $afterApi);
+                } else {
+                    $endpoint = $afterApi[0];
+                    $id = null;
+                }
+            }
         }
     }
 }
