@@ -96,7 +96,7 @@ header('Content-Type: text/html; charset=utf-8');
     <!-- 4. MySQL Connection Test -->
     <h3>4. MySQL Connection Test:</h3>
     <?php
-    $dbHost = defined('DB_HOST') ? DB_HOST : 'localhost';
+    $dbHost = defined('DB_HOST') ? DB_HOST : '127.0.0.1';
     $dbName = defined('DB_NAME') ? DB_NAME : '';
     $dbUser = defined('DB_USER') ? DB_USER : '';
     $dbPass = defined('DB_PASS') ? DB_PASS : '';

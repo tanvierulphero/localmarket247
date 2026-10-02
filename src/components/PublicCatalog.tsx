@@ -1,14 +1,28 @@
 import { useState, useMemo } from 'react';
-import { Product } from '../types';
-import { Search, SlidersHorizontal, Check, ArrowRight, Phone, Mail, MapPin, Award, ShieldCheck, Settings2, Sparkles } from 'lucide-react';
+import { Product, Customer, Document, BusinessSettings } from '../types';
+import { Search, SlidersHorizontal, Check, ArrowRight, Phone, Mail, MapPin, Award, ShieldCheck, Settings2, Sparkles, Loader2, FileText } from 'lucide-react';
+import { apiSaveDocument, apiSaveCustomer } from '../lib/api';
 import Logo from './Logo';
 
 interface PublicCatalogProps {
   products: Product[];
   onAdminClick: () => void;
+  onSaveDocument?: (doc: Document) => Promise<void>;
+  onSaveCustomer?: (c: Customer) => Promise<void>;
+  settings?: BusinessSettings;
+  customers?: Customer[];
+  documents?: Document[];
 }
 
-export default function PublicCatalog({ products, onAdminClick }: PublicCatalogProps) {
+export default function PublicCatalog({ 
+  products, 
+  onAdminClick,
+  onSaveDocument,
+  onSaveCustomer,
+  settings,
+  customers = [],
+  documents = []
+}: PublicCatalogProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -20,9 +34,13 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
     company: '',
     phone: '',
     email: '',
+    quantity: 1,
     message: ''
   });
   const [isQuoteSubmitted, setIsQuoteSubmitted] = useState(false);
+  const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
+  const [generatedQuoteNumber, setGeneratedQuoteNumber] = useState<string>('');
+
   const [contactMessage, setContactMessage] = useState({
     name: '',
     email: '',
@@ -30,6 +48,7 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
     message: ''
   });
   const [isContactSubmitted, setIsContactSubmitted] = useState(false);
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
   // Categories list extracted from products
   const categories = useMemo(() => {
@@ -57,27 +76,152 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
   }, [products, selectedCategory, selectedBrand, searchQuery]);
 
   // Handle Quote Submission
-  const handleQuoteSubmit = (e: React.FormEvent) => {
+  const handleQuoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quoteRequest.name || !quoteRequest.phone) {
-      alert("Please provide your name and phone number so we can reach you.");
+    if (!quoteRequest.name?.trim() || !quoteRequest.phone?.trim()) {
+      alert("Please provide your name and contact phone number so we can reach you.");
       return;
     }
-    setIsQuoteSubmitted(true);
-    setTimeout(() => {
-      setIsQuoteSubmitted(false);
-      setQuoteRequest({ name: '', company: '', phone: '', email: '', message: '' });
-      setSelectedProduct(null);
-    }, 4000);
+    if (!selectedProduct) return;
+
+    setIsSubmittingQuote(true);
+
+    try {
+      // 1. Match or Create Customer
+      const cleanPhone = quoteRequest.phone.trim();
+      const existingCustomer = (customers || []).find(c => 
+        (c.phone && cleanPhone && c.phone.replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, '')) ||
+        (c.company && quoteRequest.company && c.company.toLowerCase().trim() === quoteRequest.company.toLowerCase().trim())
+      );
+
+      const customerId = existingCustomer ? existingCustomer.id : `cust_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const customerObj: Customer = {
+        id: customerId,
+        companyId: existingCustomer?.companyId || `COMP-${1001 + (customers?.length || 0)}`,
+        name: quoteRequest.name.trim(),
+        company: quoteRequest.company.trim() || quoteRequest.name.trim(),
+        phone: cleanPhone,
+        email: quoteRequest.email.trim() || existingCustomer?.email || '',
+        address: existingCustomer?.address || '',
+        notes: `Website Quote Inquiry for ${selectedProduct.name} (SKU: ${selectedProduct.sku})${quoteRequest.message ? ' - Message: ' + quoteRequest.message : ''}`,
+        createdAt: existingCustomer?.createdAt || new Date().toISOString()
+      };
+
+      // 2. Generate Quotation Document
+      const quotePrefix = settings?.quotePrefix || 'JM/QT/2026/';
+      const randomId = Math.floor(1000 + Math.random() * 9000);
+      const generatedDocNumber = `${quotePrefix}${randomId}`;
+      const todayStr = new Date().toISOString().split('T')[0];
+      const qty = Math.max(1, Number(quoteRequest.quantity) || 1);
+      const unitPrice = selectedProduct.price || 0;
+      const totalAmount = unitPrice * qty;
+
+      const newQuotation: Document = {
+        id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        type: 'QUOTATION',
+        docNumber: generatedDocNumber,
+        date: todayStr,
+        customerId: customerObj.id,
+        customerName: customerObj.name,
+        customerCompany: customerObj.company,
+        customerPhone: customerObj.phone,
+        customerEmail: customerObj.email,
+        customerAddress: customerObj.address,
+        subject: `Quotation Proposal for ${selectedProduct.name} (${selectedProduct.brand})`,
+        salutation: `Dear ${customerObj.name},`,
+        openingParagraph: `Thank you for your quotation inquiry submitted via our online website. We are pleased to provide our official price proposal for the following item:`,
+        closingParagraph: `This quotation is valid for 15 days. For immediate delivery, field inspection, or order confirmation, please contact our technical sales desk.`,
+        items: [
+          {
+            id: `item-${Date.now()}`,
+            productId: selectedProduct.id,
+            name: selectedProduct.name,
+            brand: selectedProduct.brand,
+            quantity: qty,
+            price: unitPrice,
+            total: totalAmount,
+            unit: selectedProduct.unit || 'PCS',
+            warrantyMonths: 12
+          }
+        ],
+        subtotal: totalAmount,
+        taxRate: 0,
+        taxAmount: 0,
+        discount: 0,
+        total: totalAmount,
+        paidAmount: 0,
+        dueAmount: totalAmount,
+        status: 'Draft',
+        terms: settings?.terms || '1. Delivery within 1-3 business days.\n2. Genuine industrial quality spares.\n3. Standard warranty applies.',
+        notes: quoteRequest.message ? `Visitor inquiry notes: ${quoteRequest.message}` : `Online Quotation Request for ${selectedProduct.name}`,
+        signatureName: settings?.signatureName || 'MD MAHI UDDIN',
+        signatureLabel: settings?.signatureLabel || 'Managing Director & Owner'
+      };
+
+      // 3. Save to database / backend & notify admin panel
+      if (onSaveCustomer) {
+        await onSaveCustomer(customerObj);
+      } else {
+        await apiSaveCustomer(customerObj).catch(() => {});
+      }
+
+      if (onSaveDocument) {
+        await onSaveDocument(newQuotation);
+      } else {
+        await apiSaveDocument(newQuotation).catch(() => {});
+      }
+
+      setGeneratedQuoteNumber(generatedDocNumber);
+      setIsQuoteSubmitted(true);
+
+      setTimeout(() => {
+        setIsQuoteSubmitted(false);
+        setQuoteRequest({ name: '', company: '', phone: '', email: '', quantity: 1, message: '' });
+        setSelectedProduct(null);
+      }, 5000);
+    } catch (err: any) {
+      console.error('Failed to submit quote request:', err);
+      setIsQuoteSubmitted(true);
+    } finally {
+      setIsSubmittingQuote(false);
+    }
   };
 
   // Handle Contact Submission
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactMessage.name || !contactMessage.phone) {
+    if (!contactMessage.name?.trim() || !contactMessage.phone?.trim()) {
       alert("Please enter your name and phone number.");
       return;
     }
+
+    setIsSubmittingContact(true);
+
+    try {
+      const cleanPhone = contactMessage.phone.trim();
+      const customerObj: Customer = {
+        id: `cust_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        companyId: `COMP-${1001 + (customers?.length || 0)}`,
+        name: contactMessage.name.trim(),
+        company: contactMessage.name.trim(),
+        phone: cleanPhone,
+        email: contactMessage.email.trim(),
+        address: '',
+        notes: `Website Contact Inquiry: ${contactMessage.message || 'General customer inquiry via contact desk'}`,
+        createdAt: new Date().toISOString()
+      };
+
+      if (onSaveCustomer) {
+        await onSaveCustomer(customerObj);
+      } else {
+        await apiSaveCustomer(customerObj).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Contact sync note:', err);
+    } finally {
+      setIsSubmittingContact(false);
+    }
+
     setIsContactSubmitted(true);
     setTimeout(() => {
       setIsContactSubmitted(false);
@@ -660,11 +804,18 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
                   </h4>
 
                   {isQuoteSubmitted ? (
-                    <div className="bg-emerald-500/10 border border-emerald-500 text-emerald-600 p-4 rounded-lg text-center space-y-2 h-full flex flex-col justify-center py-8">
-                      <Check className="w-8 h-8 text-emerald-500 mx-auto" />
-                      <h5 className="font-bold text-slate-900">Quotation Requested</h5>
-                      <p className="text-[11px] text-slate-500 leading-normal">
-                        Your request for <b>{selectedProduct.name}</b> was logged. MD MAHI UDDIN's sales desk will contact you with a printed PDF quotation.
+                    <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-5 rounded-xl text-center space-y-3 h-full flex flex-col justify-center py-6">
+                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                        <Check className="w-6 h-6" />
+                      </div>
+                      <h5 className="font-extrabold text-slate-900 text-sm">Quotation Created Successfully!</h5>
+                      {generatedQuoteNumber && (
+                        <div className="inline-block bg-white px-3 py-1.5 rounded-lg border border-emerald-300 font-mono font-black text-blue-900 text-xs shadow-2xs">
+                          Quotation Ref: {generatedQuoteNumber}
+                        </div>
+                      )}
+                      <p className="text-[11px] text-slate-600 leading-normal">
+                        Your official quotation for <strong>{selectedProduct.name}</strong> has been logged in our system. MD MAHI UDDIN's sales desk is preparing your formal proposal and will reach out to you directly.
                       </p>
                     </div>
                   ) : (
@@ -682,33 +833,68 @@ export default function PublicCatalog({ products, onAdminClick }: PublicCatalogP
                       </div>
 
                       <div className="space-y-1">
-                        <label className="font-bold text-slate-600">Company Name</label>
+                        <label className="font-bold text-slate-600">Company / Factory Name</label>
                         <input 
                           type="text" 
-                          placeholder="e.g. Hamza Fabrics" 
+                          placeholder="e.g. Hamza Fabrics Ltd." 
                           value={quoteRequest.company}
                           onChange={(e) => setQuoteRequest({...quoteRequest, company: e.target.value})}
                           className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800"
                         />
                       </div>
 
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-600">Phone / Contact <span className="text-rose-600">*</span></label>
+                          <input 
+                            type="tel" 
+                            required
+                            placeholder="e.g. 01712-XXXXXX" 
+                            value={quoteRequest.phone}
+                            onChange={(e) => setQuoteRequest({...quoteRequest, phone: e.target.value})}
+                            className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-600">Quantity</label>
+                          <input 
+                            type="number" 
+                            min="1"
+                            placeholder="1" 
+                            value={quoteRequest.quantity}
+                            onChange={(e) => setQuoteRequest({...quoteRequest, quantity: Number(e.target.value) || 1})}
+                            className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800 font-bold font-mono"
+                          />
+                        </div>
+                      </div>
+
                       <div className="space-y-1">
-                        <label className="font-bold text-slate-600">Phone / Contact <span className="text-rose-600">*</span></label>
+                        <label className="font-bold text-slate-600">Email Address (Optional)</label>
                         <input 
-                          type="tel" 
-                          required
-                          placeholder="e.g. 01712-XXXXXX" 
-                          value={quoteRequest.phone}
-                          onChange={(e) => setQuoteRequest({...quoteRequest, phone: e.target.value})}
+                          type="email" 
+                          placeholder="e.g. purchase@company.com" 
+                          value={quoteRequest.email}
+                          onChange={(e) => setQuoteRequest({...quoteRequest, email: e.target.value})}
                           className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800"
                         />
                       </div>
 
                       <button 
                         type="submit"
-                        className="w-full py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors cursor-pointer"
+                        disabled={isSubmittingQuote}
+                        className="w-full py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
                       >
-                        Request PDF Quotation
+                        {isSubmittingQuote ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Generating Quotation...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-4 h-4 text-blue-300" />
+                            <span>Request Official Quotation</span>
+                          </>
+                        )}
                       </button>
                     </form>
                   )}

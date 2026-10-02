@@ -956,6 +956,11 @@ export default function App() {
       {currentView === 'catalog' && (
         <PublicCatalog 
           products={products}
+          customers={customers}
+          documents={documents}
+          settings={settings}
+          onSaveDocument={handleSaveDocument}
+          onSaveCustomer={handleSaveCustomer}
           onAdminClick={() => {
             setCurrentView('login');
           }}
