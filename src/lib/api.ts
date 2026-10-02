@@ -290,10 +290,7 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
 }
 
 export function isCpanelDeployment(): boolean {
-  if (typeof window !== 'undefined') {
-    return window.location.hostname !== 'localhost' && !window.location.hostname.includes('run.app');
-  }
-  return false;
+  return true;
 }
 
 export interface DbHealthResult {
