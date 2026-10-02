@@ -119,7 +119,7 @@ header('Content-Type: text/html; charset=utf-8');
 
         if (function_exists('getDbConnection')) {
             try {
-                $db = getDbConnection();
+                $db = getDbConnection(true);
             } catch (Throwable $e) {
                 $connectionError = $e->getMessage();
             }
