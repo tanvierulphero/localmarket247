@@ -1,8 +1,8 @@
 <?php
 // ========================================================
-// cPanel Product Update API Handler with Image Cleanup
+// cPanel Product Update API Handler with Image Cleanup (MySQL PDO)
 // Path: api/product_update.php
-// Updates an existing product and removes old image if replaced
+// Updates an existing product directly in MySQL database table
 // ========================================================
 
 // Polyfill for str_starts_with compatibility with PHP versions below 8.0
@@ -31,7 +31,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Parse and validate JSON input
+require_once __DIR__ . '/config.php';
+$pdo = getDbConnection();
+
+if (!$pdo) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database connection failed. Please check api/config.php.'
+    ]);
+    exit;
+}
+
 $inputData = json_decode(file_get_contents('php://input'), true);
 if (!$inputData || empty($inputData['id'])) {
     http_response_code(400);
@@ -55,67 +66,85 @@ if (empty($name)) {
     exit;
 }
 
-// Read products list from JSON
-$dataDir = __DIR__ . '/data';
-$filePath = $dataDir . '/products.json';
+try {
+    // 1. Fetch current product to check image cleanup
+    $stmtOld = $pdo->prepare("SELECT * FROM `products` WHERE `id` = :id LIMIT 1");
+    $stmtOld->execute([':id' => $productId]);
+    $oldProduct = $stmtOld->fetch();
 
-if (!file_exists($filePath)) {
-    http_response_code(404);
-    echo json_encode([
-        'success' => false,
-        'message' => 'No products database found on server.'
-    ]);
-    exit;
-}
-
-$products = json_decode(file_get_contents($filePath), true) ?? [];
-
-$foundIndex = -1;
-$oldProduct = null;
-
-for ($i = 0; $i < count($products); $i++) {
-    if (isset($products[$i]['id']) && $products[$i]['id'] === $productId) {
-        $foundIndex = $i;
-        $oldProduct = $products[$i];
-        break;
+    if (!$oldProduct) {
+        http_response_code(404);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Product with ID ' . htmlspecialchars($productId) . ' not found in database.'
+        ]);
+        exit;
     }
-}
 
-if ($foundIndex === -1) {
-    http_response_code(404);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Product with ID ' . htmlspecialchars($productId) . ' not found.'
-    ]);
-    exit;
-}
+    $oldImageUrl = $oldProduct['image_url'] ?? '';
+    $newImageUrl = $inputData['imageUrl'] ?? ($inputData['image_url'] ?? $oldImageUrl);
 
-// Secure Image Replacement: Check if new image replaces an old local cPanel image
-$oldImageUrl = isset($oldProduct['imageUrl']) ? $oldProduct['imageUrl'] : (isset($oldProduct['image_url']) ? $oldProduct['image_url'] : '');
-$newImageUrl = isset($inputData['imageUrl']) ? $inputData['imageUrl'] : (isset($inputData['image_url']) ? $inputData['image_url'] : '');
-
-if (!empty($oldImageUrl) && $oldImageUrl !== $newImageUrl) {
-    // Only delete if it was a local uploads file to prevent deleting external preset links
-    if (str_starts_with($oldImageUrl, 'uploads/products/')) {
+    if (!empty($oldImageUrl) && $oldImageUrl !== $newImageUrl && str_starts_with($oldImageUrl, 'uploads/products/')) {
         $oldFilePath = realpath(__DIR__ . '/../' . $oldImageUrl);
         $productsFolderReal = realpath(__DIR__ . '/../uploads/products');
         
-        // Prevent path traversal: make sure the deleted file is strictly inside the uploads/products/ folder
         if ($oldFilePath && $productsFolderReal && str_starts_with($oldFilePath, $productsFolderReal) && file_exists($oldFilePath)) {
             @unlink($oldFilePath);
         }
     }
+
+    // 2. Update in MySQL
+    $category = $inputData['category'] ?? $oldProduct['category'];
+    $brand = $inputData['brand'] ?? $oldProduct['brand'];
+    $price = isset($inputData['price']) ? floatval($inputData['price']) : floatval($oldProduct['price']);
+    $costPrice = isset($inputData['costPrice']) ? floatval($inputData['costPrice']) : (isset($inputData['cost_price']) ? floatval($inputData['cost_price']) : floatval($oldProduct['cost_price']));
+    $stock = isset($inputData['stock']) ? intval($inputData['stock']) : intval($oldProduct['stock']);
+    $unit = $inputData['unit'] ?? $oldProduct['unit'];
+    $description = $inputData['description'] ?? $oldProduct['description'];
+    $specs = isset($inputData['specs']) && is_array($inputData['specs']) ? json_encode($inputData['specs'], JSON_UNESCAPED_UNICODE) : $oldProduct['specs'];
+
+    $updateStmt = $pdo->prepare("
+        UPDATE `products` SET
+            `name` = :name,
+            `sku` = :sku,
+            `category` = :category,
+            `brand` = :brand,
+            `price` = :price,
+            `cost_price` = :cost_price,
+            `stock` = :stock,
+            `unit` = :unit,
+            `description` = :description,
+            `specs` = :specs,
+            `image_url` = :image_url
+        WHERE `id` = :id
+    ");
+
+    $updateStmt->execute([
+        ':id' => $productId,
+        ':name' => $name,
+        ':sku' => $sku,
+        ':category' => $category,
+        ':brand' => $brand,
+        ':price' => $price,
+        ':cost_price' => $costPrice,
+        ':stock' => $stock,
+        ':unit' => $unit,
+        ':description' => $description,
+        ':specs' => $specs,
+        ':image_url' => $newImageUrl,
+    ]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Product updated in MySQL database successfully',
+        'product' => array_merge($inputData, ['imageUrl' => $newImageUrl])
+    ]);
+    exit;
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database Error: ' . $e->getMessage()
+    ]);
+    exit;
 }
-
-// Update the product record in our list
-$products[$foundIndex] = array_merge($products[$foundIndex], $inputData);
-
-// Save back to JSON file
-@file_put_contents($filePath, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-echo json_encode([
-    'success' => true,
-    'message' => 'Product updated successfully',
-    'product' => $products[$foundIndex]
-]);
-exit;

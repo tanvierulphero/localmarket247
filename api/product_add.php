@@ -1,8 +1,8 @@
 <?php
 // ========================================================
-// cPanel Product Add API Handler
+// cPanel Product Add API Handler (MySQL PDO)
 // Path: api/product_add.php
-// Saves a new product to Flat-File storage / database
+// Saves a new product directly to MySQL database table
 // ========================================================
 
 header('Access-Control-Allow-Origin: *');
@@ -24,7 +24,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// 1. Parse and validate JSON input
+require_once __DIR__ . '/config.php';
+$pdo = getDbConnection();
+
+if (!$pdo) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database connection failed. Please check api/config.php.'
+    ]);
+    exit;
+}
+
 $inputData = json_decode(file_get_contents('php://input'), true);
 if (!$inputData) {
     http_response_code(400);
@@ -35,7 +46,6 @@ if (!$inputData) {
     exit;
 }
 
-// Validation
 $name = isset($inputData['name']) ? trim($inputData['name']) : '';
 $sku = isset($inputData['sku']) ? trim($inputData['sku']) : '';
 
@@ -56,45 +66,61 @@ if (empty($sku)) {
     exit;
 }
 
-// Create unique product ID if not supplied
-if (empty($inputData['id'])) {
-    $inputData['id'] = 'prod_' . time() . '_' . substr(md5(uniqid()), 0, 6);
+$id = !empty($inputData['id']) ? $inputData['id'] : ('prod_' . time() . '_' . substr(md5(uniqid()), 0, 6));
+$category = $inputData['category'] ?? 'General';
+$brand = $inputData['brand'] ?? 'Hitachi';
+$price = floatval($inputData['price'] ?? 0);
+$costPrice = floatval($inputData['costPrice'] ?? ($inputData['cost_price'] ?? ($price * 0.75)));
+$stock = intval($inputData['stock'] ?? 0);
+$unit = $inputData['unit'] ?? 'Pcs';
+$description = $inputData['description'] ?? '';
+$specs = isset($inputData['specs']) && is_array($inputData['specs']) ? json_encode($inputData['specs'], JSON_UNESCAPED_UNICODE) : '[]';
+$imageUrl = $inputData['imageUrl'] ?? ($inputData['image_url'] ?? '');
+
+try {
+    $stmt = $pdo->prepare("
+        INSERT INTO `products` (`id`, `name`, `sku`, `category`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`)
+        VALUES (:id, :name, :sku, :category, :brand, :price, :cost_price, :stock, :unit, :description, :specs, :image_url)
+        ON DUPLICATE KEY UPDATE
+        `name` = VALUES(`name`),
+        `sku` = VALUES(`sku`),
+        `category` = VALUES(`category`),
+        `brand` = VALUES(`brand`),
+        `price` = VALUES(`price`),
+        `cost_price` = VALUES(`cost_price`),
+        `stock` = VALUES(`stock`),
+        `unit` = VALUES(`unit`),
+        `description` = VALUES(`description`),
+        `specs` = VALUES(`specs`),
+        `image_url` = VALUES(`image_url`)
+    ");
+    $stmt->execute([
+        ':id' => $id,
+        ':name' => $name,
+        ':sku' => $sku,
+        ':category' => $category,
+        ':brand' => $brand,
+        ':price' => $price,
+        ':cost_price' => $costPrice,
+        ':stock' => $stock,
+        ':unit' => $unit,
+        ':description' => $description,
+        ':specs' => $specs,
+        ':image_url' => $imageUrl,
+    ]);
+
+    $inputData['id'] = $id;
+    echo json_encode([
+        'success' => true,
+        'message' => 'Product saved to MySQL database successfully',
+        'product' => $inputData
+    ]);
+    exit;
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database Error: ' . $e->getMessage()
+    ]);
+    exit;
 }
-
-// 2. Read products list from JSON
-$dataDir = __DIR__ . '/data';
-$filePath = $dataDir . '/products.json';
-
-if (!file_exists($dataDir)) {
-    @mkdir($dataDir, 0755, true);
-}
-
-$products = [];
-if (file_exists($filePath)) {
-    $products = json_decode(file_get_contents($filePath), true) ?? [];
-}
-
-// Prevent Duplicate SKU
-foreach ($products as $p) {
-    if (isset($p['sku']) && strtolower($p['sku']) === strtolower($sku)) {
-        http_response_code(400);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Product with this SKU already exists.'
-        ]);
-        exit;
-    }
-}
-
-// Push to the beginning of the list (newest first)
-array_unshift($products, $inputData);
-
-// Save back to JSON file
-@file_put_contents($filePath, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-echo json_encode([
-    'success' => true,
-    'message' => 'Product added successfully',
-    'product' => $inputData
-]);
-exit;

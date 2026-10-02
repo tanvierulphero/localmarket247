@@ -42,8 +42,7 @@ $htaccessContent = "# Prevent execution of any scripts in this directory\n" .
                    "<FilesMatch \"\\.(php|php5|php7|php8|phtml|pl|py|jsp|asp|sh|cgi)$\">\n" .
                    "    ForceType text/plain\n" .
                    "    Deny from all\n" .
-                   "</FilesMatch>\n" .
-                   "Options -ExecCGI -Indexes\n";
+                   "</FilesMatch>\n";
 
 @file_put_contents($uploadRoot . '/.htaccess', $htaccessContent);
 @file_put_contents($productsDir . '/.htaccess', $htaccessContent);

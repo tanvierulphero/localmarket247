@@ -142,7 +142,7 @@ header('Content-Type: text/html; charset=utf-8');
                 }
 
                 if (count($tables) > 0) {
-                    echo '<p style="color: #166534;">Found <strong>' . count($tables) . '</strong> table(s): <code className="code-box">' . implode(', ', $tables) . '</code> ✅</p>';
+                    echo '<p style="color: #166534;">Found <strong>' . count($tables) . '</strong> table(s): <code class="code-box">' . implode(', ', $tables) . '</code> ✅</p>';
                 } else {
                     echo '<div style="background: #fef3c7; border: 1px solid #fde68a; padding: 14px; border-radius: 8px; color: #92400e;">';
                     echo '⚠️ <strong>No tables found in database!</strong><br>';

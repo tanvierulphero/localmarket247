@@ -1,8 +1,8 @@
 <?php
 // ========================================================
-// cPanel Product Delete API Handler with Image Cleanup
+// cPanel Product Delete API Handler with Image Cleanup (MySQL PDO)
 // Path: api/product_delete.php
-// Deletes a product and safely unlinks its associated image
+// Deletes a product directly from MySQL database and removes image
 // ========================================================
 
 // Polyfill for str_starts_with compatibility with PHP versions below 8.0
@@ -19,6 +19,18 @@ header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    exit;
+}
+
+require_once __DIR__ . '/config.php';
+$pdo = getDbConnection();
+
+if (!$pdo) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database connection failed. Please check api/config.php.'
+    ]);
     exit;
 }
 
@@ -41,62 +53,38 @@ if (!$productId) {
     exit;
 }
 
-// Read products list from JSON
-$dataDir = __DIR__ . '/data';
-$filePath = $dataDir . '/products.json';
+try {
+    // 1. Fetch product to remove its image
+    $stmt = $pdo->prepare("SELECT `image_url` FROM `products` WHERE `id` = :id LIMIT 1");
+    $stmt->execute([':id' => $productId]);
+    $product = $stmt->fetch();
 
-if (!file_exists($filePath)) {
-    http_response_code(404);
+    if ($product) {
+        $imageUrl = $product['image_url'] ?? '';
+        if (!empty($imageUrl) && str_starts_with($imageUrl, 'uploads/products/')) {
+            $filePathOnDisk = realpath(__DIR__ . '/../' . $imageUrl);
+            $productsFolderReal = realpath(__DIR__ . '/../uploads/products');
+
+            if ($filePathOnDisk && $productsFolderReal && str_starts_with($filePathOnDisk, $productsFolderReal) && file_exists($filePathOnDisk)) {
+                @unlink($filePathOnDisk);
+            }
+        }
+    }
+
+    // 2. Delete from MySQL
+    $delStmt = $pdo->prepare("DELETE FROM `products` WHERE `id` = :id");
+    $delStmt->execute([':id' => $productId]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Product and associated image deleted from MySQL database successfully'
+    ]);
+    exit;
+} catch (Exception $e) {
+    http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'No products database found on server.'
+        'message' => 'Database Error: ' . $e->getMessage()
     ]);
     exit;
 }
-
-$products = json_decode(file_get_contents($filePath), true) ?? [];
-
-$foundIndex = -1;
-$productToDelete = null;
-
-for ($i = 0; $i < count($products); $i++) {
-    if (isset($products[$i]['id']) && $products[$i]['id'] === $productId) {
-        $foundIndex = $i;
-        $productToDelete = $products[$i];
-        break;
-    }
-}
-
-if ($foundIndex === -1) {
-    http_response_code(404);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Product not found.'
-    ]);
-    exit;
-}
-
-// Safe path-traversal resistant deletion of associated product image
-$imageUrl = isset($productToDelete['imageUrl']) ? $productToDelete['imageUrl'] : (isset($productToDelete['image_url']) ? $productToDelete['image_url'] : '');
-
-if (!empty($imageUrl) && str_starts_with($imageUrl, 'uploads/products/')) {
-    $filePathOnDisk = realpath(__DIR__ . '/../' . $imageUrl);
-    $productsFolderReal = realpath(__DIR__ . '/../uploads/products');
-
-    // Double check that the path is strictly inside uploads/products
-    if ($filePathOnDisk && $productsFolderReal && str_starts_with($filePathOnDisk, $productsFolderReal) && file_exists($filePathOnDisk)) {
-        @unlink($filePathOnDisk);
-    }
-}
-
-// Remove from the list
-array_splice($products, $foundIndex, 1);
-
-// Save back to JSON file
-@file_put_contents($filePath, json_encode($products, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-echo json_encode([
-    'success' => true,
-    'message' => 'Product and associated image deleted successfully'
-]);
-exit;
