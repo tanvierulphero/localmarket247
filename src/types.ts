@@ -95,6 +95,8 @@ export type PermissionKey =
   | 'manage_inventory'
   | 'view_purchases'
   | 'manage_purchases'
+  | 'view_customers'
+  | 'manage_customers'
   | 'view_documents'
   | 'create_documents'
   | 'edit_documents'

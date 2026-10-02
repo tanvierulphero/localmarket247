@@ -22,6 +22,7 @@ import OwnerDrawManager from './components/OwnerDrawManager';
 import StaffManagement from './components/StaffManagement';
 import FieldDispatchManager from './components/FieldDispatchManager';
 import CompanyProfileManager from './components/CompanyProfileManager';
+import CustomerList from './components/CustomerList';
 import SqlExportModal from './components/SqlExportModal';
 
 import { 
@@ -41,6 +42,7 @@ import {
   Zap, 
   Truck, 
   Building2,
+  Users,
   LogOut,
   Activity,
   CheckCircle2,
@@ -476,6 +478,34 @@ export default function App() {
     localStorage.setItem('hsc_customers', JSON.stringify(list));
     try {
       await apiSaveCustomer(c);
+    } catch (e: any) {
+      console.warn('Backend sync warning:', e);
+    }
+  };
+
+  const handleSaveCustomer = async (c: Customer) => {
+    const exists = customers.some(cust => cust.id === c.id);
+    let list: Customer[];
+    if (exists) {
+      list = customers.map(cust => cust.id === c.id ? c : cust);
+    } else {
+      list = [c, ...customers];
+    }
+    setCustomers(list);
+    localStorage.setItem('hsc_customers', JSON.stringify(list));
+    try {
+      await apiSaveCustomer(c);
+    } catch (e: any) {
+      console.warn('Backend sync warning:', e);
+    }
+  };
+
+  const handleDeleteCustomer = async (id: string) => {
+    const list = customers.filter(c => c.id !== id);
+    setCustomers(list);
+    localStorage.setItem('hsc_customers', JSON.stringify(list));
+    try {
+      await apiDeleteCustomer(id);
     } catch (e: any) {
       console.warn('Backend sync warning:', e);
     }
@@ -1004,6 +1034,30 @@ export default function App() {
                   </button>
                 )}
 
+                {/* Tab: Customer List */}
+                {(currentUser?.role === 'ADMIN' || hasPermission('view_customers') || hasPermission('view_company_profiles')) && (
+                  <button
+                    onClick={() => { setActiveTab('customers'); setEditingDocument(null); setIsCreatingDoc(null); }}
+                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-lg transition-all text-left cursor-pointer ${
+                      activeTab === 'customers' && !editingDocument && !isCreatingDoc
+                        ? 'bg-blue-600 text-white font-extrabold shadow-sm'
+                        : 'hover:bg-slate-800 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Users className="w-4 h-4 text-cyan-400" />
+                      Customer List
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeTab === 'customers' && !editingDocument && !isCreatingDoc
+                        ? 'bg-blue-800 text-blue-100'
+                        : 'bg-slate-800 text-slate-300'
+                    }`}>
+                      {customers.length}
+                    </span>
+                  </button>
+                )}
+
                 {/* Tab: Purchases / Stock Inward */}
                 {hasPermission('view_purchases') && (
                   <button
@@ -1295,6 +1349,23 @@ export default function App() {
                       onUpdateProduct={handleUpdateProduct}
                       onDeleteProduct={handleDeleteProduct}
                       onViewDocument={(doc) => setViewingDocument(doc)}
+                    />
+                  )}
+
+                  {/* TAB PANEL: Customer List */}
+                  {activeTab === 'customers' && (currentUser?.role === 'ADMIN' || hasPermission('view_customers') || hasPermission('view_company_profiles')) && (
+                    <CustomerList 
+                      customers={customers}
+                      documents={documents}
+                      dispatches={dispatches}
+                      settings={settings}
+                      onSaveCustomer={handleSaveCustomer}
+                      onDeleteCustomer={handleDeleteCustomer}
+                      onViewDocument={(doc) => setViewingDocument(doc)}
+                      onCreateDocumentForCustomer={(customer, type) => {
+                        setIsCreatingDoc(type);
+                        setEditingDocument(null);
+                      }}
                     />
                   )}
 

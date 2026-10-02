@@ -382,8 +382,11 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Metric 4 */}
-        <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center justify-between shadow-2xs">
+        {/* Metric 4: Registered Clients */}
+        <button
+          onClick={() => onNavigateToTab('customers')}
+          className="bg-white hover:bg-blue-50/40 border border-slate-200 hover:border-blue-300 p-5 rounded-2xl flex items-center justify-between shadow-2xs transition-all text-left group cursor-pointer"
+        >
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               Registered Clients
@@ -391,14 +394,14 @@ export default function DashboardOverview({
             <span className="text-xl font-extrabold font-display text-blue-950 block">
               {metrics.totalCustomers}
             </span>
-            <span className="text-[9px] font-bold text-slate-500 block">
-              Factory purchasing desk
+            <span className="text-[9px] font-bold text-blue-600 flex items-center gap-1 group-hover:underline">
+              View Customer List <ChevronRight className="w-3 h-3" />
             </span>
           </div>
-          <div className="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-indigo-50 text-indigo-700 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
             <Users className="w-5 h-5" />
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Analytics Charts & Spares Breakdown */}

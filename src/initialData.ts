@@ -6,6 +6,8 @@ export const ALL_PERMISSIONS: { key: PermissionKey; label: string; description: 
   { key: 'manage_inventory', label: 'Manage Stock Inventory', description: 'Add, update pricing, or remove catalog stock items', category: 'Inventory' },
   { key: 'view_purchases', label: 'View Purchase Entries', description: 'Browse stock inward and supplier purchases list', category: 'Purchases' },
   { key: 'manage_purchases', label: 'Manage Purchase Entries', description: 'Create purchase invoices, inward stock and supplier payments', category: 'Purchases' },
+  { key: 'view_customers', label: 'View Customer Directory', description: 'Browse customer list, contact details, and balance status', category: 'Customers' },
+  { key: 'manage_customers', label: 'Manage Customers', description: 'Add new clients, edit contact profiles, or remove customer records', category: 'Customers' },
   { key: 'view_documents', label: 'View Documents Hub', description: 'Access offer letters, quotations, bills, and invoices list', category: 'Documents' },
   { key: 'create_documents', label: 'Create New Documents', description: 'Generate offer letters, quotes, bills, and invoices', category: 'Documents' },
   { key: 'edit_documents', label: 'Edit Existing Documents', description: 'Modify created quotations, bills, and invoices', category: 'Documents' },
@@ -50,6 +52,8 @@ export const INITIAL_STAFF_USERS: StaffUser[] = [
       'view_overview',
       'view_inventory',
       'manage_inventory',
+      'view_customers',
+      'manage_customers',
       'view_documents',
       'create_documents',
       'edit_documents',
@@ -71,6 +75,8 @@ export const INITIAL_STAFF_USERS: StaffUser[] = [
     permissions: [
       'view_overview',
       'view_inventory',
+      'view_customers',
+      'manage_customers',
       'view_documents',
       'create_documents',
       'view_due_ledger'
