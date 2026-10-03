@@ -247,7 +247,7 @@ export default function ExpenseManager({
     csvContent += "Voucher No,Date,Category,Expense Description,Amount (BDT),Payment Method,Paid By,Reference / Memo No,Notes\n";
 
     filteredExpenses.forEach(exp => {
-      csvContent += `"${exp.expenseNumber}","${exp.date}","${exp.category}","${exp.title.replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${(exp.notes || '').replace(/"/g, '""')}"\n`;
+      csvContent += `"${exp.expenseNumber}","${exp.date}","${exp.category}","${String(exp.title || '').replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${String(exp.notes || '').replace(/"/g, '""')}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);

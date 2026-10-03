@@ -205,7 +205,7 @@ function downloadCustomerStatementCSV(
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Statement-${(customer.company || customer.name).replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute("download", `Statement-${String(customer.company || customer.name || 'Customer').replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

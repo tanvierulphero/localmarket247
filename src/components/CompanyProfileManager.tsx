@@ -284,11 +284,11 @@ export default function CompanyProfileManager({
               />
             </div>
 
-            {/* List of Companies */}
+              {/* List of Companies */}
             <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
               {filteredCompanies.length > 0 ? (
                 filteredCompanies.map(c => {
-                  const formattedCompanyId = c.companyId || `COMP-${c.id.replace('cust-', '100')}`;
+                  const formattedCompanyId = c.companyId || `COMP-${String(c.id || '').replace('cust-', '100')}`;
                   const isSelected = activeCustomer?.id === c.id;
 
                   return (
@@ -358,11 +358,11 @@ export default function CompanyProfileManager({
                       <div>
                         <span className="text-[9px] font-bold text-slate-400 uppercase block leading-none">Unique Company ID</span>
                         <span className="text-sm font-mono font-black text-blue-900 tracking-wider">
-                          {activeCustomer.companyId || `COMP-${activeCustomer.id.replace('cust-', '100')}`}
+                          {activeCustomer.companyId || `COMP-${String(activeCustomer.id || '').replace('cust-', '100')}`}
                         </span>
                       </div>
                       <button
-                        onClick={() => handleCopyCompanyId(activeCustomer.companyId || `COMP-${activeCustomer.id.replace('cust-', '100')}`)}
+                        onClick={() => handleCopyCompanyId(activeCustomer.companyId || `COMP-${String(activeCustomer.id || '').replace('cust-', '100')}`)}
                         className="p-1.5 bg-white text-blue-900 hover:bg-blue-100 rounded-lg transition-colors cursor-pointer border border-blue-200"
                         title="Copy Company ID"
                       >

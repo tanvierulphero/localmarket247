@@ -202,7 +202,7 @@ export default function PrintDocument({ document, settings, onBack, onCreateBill
       const logoPngBase64 = await getLogoBase64Png().catch(() => '');
       const rawBase64Logo = logoPngBase64 ? logoPngBase64.replace(/^data:image\/png;base64,/, '') : '';
 
-      const cleanCustomerName = document.customerName ? document.customerName.replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
+      const cleanCustomerName = document.customerName ? String(document.customerName).replace(/[^a-zA-Z0-9]/g, '_') : 'Customer';
       const filename = `${document.docNumber}_${cleanCustomerName}.doc`;
 
       // Build MHTML (MIME HTML) format so Microsoft Word embeds jubayer_logo.png natively
@@ -408,7 +408,7 @@ Content-Location: document.html
       </td>
       <td class="metadata-cell" width="45%" style="text-align: right;">
         <p style="margin: 0 0 4px 0; font-size: 9.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase;">Address:</p>
-        <p style="margin: 0; line-height: 1.4; color: #334155; font-weight: bold;">${document.customerAddress.replace(/\n/g, '<br/>')}</p>
+        <p style="margin: 0; line-height: 1.4; color: #334155; font-weight: bold;">${String(document.customerAddress || '').replace(/\n/g, '<br/>')}</p>
       </td>
     </tr>
   </table>
@@ -418,7 +418,7 @@ Content-Location: document.html
     <div style="margin-bottom: 20px; font-size: 11pt; color: #1e293b;">
       ${document.subject ? `<p style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px;"><span style="color: #1e3a8a;">Subject:</span> ${document.subject}</p>` : ''}
       ${document.salutation ? `<p style="font-weight: bold; margin-bottom: 10px;">${document.salutation}</p>` : ''}
-      ${document.openingParagraph ? `<p style="line-height: 1.5; color: #334155; margin-bottom: 15px;">${document.openingParagraph.replace(/\n/g, '<br/>')}</p>` : ''}
+      ${document.openingParagraph ? `<p style="line-height: 1.5; color: #334155; margin-bottom: 15px;">${String(document.openingParagraph || '').replace(/\n/g, '<br/>')}</p>` : ''}
     </div>
   ` : ''}
 
@@ -495,7 +495,7 @@ Content-Location: document.html
         ${document.terms ? `
           <div class="terms-box">
             <h4 style="font-weight: bold; color: #1e293b; margin: 0 0 5px 0; text-transform: uppercase; font-size: 9pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">Terms & Notes:</h4>
-            <p style="margin: 0; line-height: 1.4; color: #475569; font-size: 9pt;">${document.terms.replace(/\n/g, '<br/>')}</p>
+            <p style="margin: 0; line-height: 1.4; color: #475569; font-size: 9pt;">${String(document.terms || '').replace(/\n/g, '<br/>')}</p>
           </div>
         ` : ''}
         ${isChallan ? `
@@ -508,7 +508,7 @@ Content-Location: document.html
       </td>
       <td width="50%" class="signature-box" style="vertical-align: bottom; text-align: right;">
         ${(isOffer || isQuotation) && document.closingParagraph ? `
-          <p style="font-style: italic; color: #64748b; margin-bottom: 20px; font-size: 9.5pt; text-align: right; line-height: 1.4;">${document.closingParagraph.replace(/\n/g, '<br/>')}</p>
+          <p style="font-style: italic; color: #64748b; margin-bottom: 20px; font-size: 9.5pt; text-align: right; line-height: 1.4;">${String(document.closingParagraph || '').replace(/\n/g, '<br/>')}</p>
         ` : ''}
         <div style="border-top: 1px solid #475569; width: 180px; margin-left: auto; margin-bottom: 5px;"></div>
         <strong style="color: #0f172a; font-size: 11pt;">${document.signatureName}</strong><br/>

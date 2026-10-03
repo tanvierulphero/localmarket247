@@ -579,7 +579,7 @@ export default function DashboardOverview({
                     <td className="py-3.5 pr-3 font-bold text-blue-900">{doc.docNumber}</td>
                     <td className="py-3.5 px-3">
                       <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600">
-                        {doc.type.replace('_', ' ')}
+                        {String(doc.type || '').replace('_', ' ')}
                       </span>
                     </td>
                     <td className="py-3.5 px-3 text-slate-500 font-medium">{doc.date}</td>

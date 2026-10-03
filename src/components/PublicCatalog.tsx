@@ -88,10 +88,10 @@ export default function PublicCatalog({
 
     try {
       // 1. Match or Create Customer
-      const cleanPhone = quoteRequest.phone.trim();
+      const cleanPhone = String(quoteRequest.phone || '').trim();
       const existingCustomer = (customers || []).find(c => 
-        (c.phone && cleanPhone && c.phone.replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, '')) ||
-        (c.company && quoteRequest.company && c.company.toLowerCase().trim() === quoteRequest.company.toLowerCase().trim())
+        (c.phone && cleanPhone && String(c.phone).replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, '')) ||
+        (c.company && quoteRequest.company && String(c.company).toLowerCase().trim() === String(quoteRequest.company).toLowerCase().trim())
       );
 
       const customerId = existingCustomer ? existingCustomer.id : `cust_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;

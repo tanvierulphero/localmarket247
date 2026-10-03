@@ -305,7 +305,7 @@ export default function DocumentList({
                     {/* Type Badge */}
                     <td className="py-3.5 px-3">
                       <span className={`inline-block border text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${getTypeBadge(doc.type)}`}>
-                        {doc.type.replace('_', ' ')}
+                        {String(doc.type || '').replace('_', ' ')}
                       </span>
                     </td>
 

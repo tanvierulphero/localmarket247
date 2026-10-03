@@ -249,11 +249,14 @@ export default function DocumentCreator({
 
     const term = input.trim().toLowerCase();
     const matched = customers.find(c => {
-      const compId = (c.companyId || `COMP-${c.id.replace('cust-', '100')}`).toLowerCase();
+      if (!c) return false;
+      const compId = String(c.companyId || `COMP-${String(c.id || '').replace('cust-', '100')}`).toLowerCase();
+      const cComp = String(c.company || '').toLowerCase();
+      const cName = String(c.name || '').toLowerCase();
       return compId === term || 
              compId.includes(term) || 
-             c.company.toLowerCase().includes(term) ||
-             c.name.toLowerCase().includes(term);
+             cComp.includes(term) ||
+             cName.includes(term);
     });
 
     if (matched) {
@@ -505,7 +508,8 @@ export default function DocumentCreator({
                   >
                     <option value="">&mdash; Walk-in Client / General Customer &mdash;</option>
                     {customers.map(c => {
-                      const compId = c.companyId || `COMP-${c.id.replace('cust-', '100')}`;
+                      if (!c) return null;
+                      const compId = c.companyId || `COMP-${String(c.id || '').replace('cust-', '100')}`;
                       return (
                         <option key={c.id} value={c.id}>
                           [{compId}] {c.company || c.name} ({c.name})

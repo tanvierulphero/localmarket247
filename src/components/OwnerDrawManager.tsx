@@ -263,7 +263,7 @@ export default function OwnerDrawManager({
     csvContent += "Voucher No,Date,Withdrawal Purpose / Title,Amount (BDT),Payment Method,Drawn By,Reference,Notes\n";
 
     filteredDrawings.forEach(exp => {
-      csvContent += `"${exp.expenseNumber}","${exp.date}","${exp.title.replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${(exp.notes || '').replace(/"/g, '""')}"\n`;
+      csvContent += `"${exp.expenseNumber}","${exp.date}","${String(exp.title || '').replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${String(exp.notes || '').replace(/"/g, '""')}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);

@@ -354,16 +354,16 @@ export default function CustomerList({
     const rows = customers.map(c => {
       const fin = customerFinancials.get(c.id);
       return [
-        `"${c.companyId || `COMP-${c.id}`}"`,
-        `"${(c.name || '').replace(/"/g, '""')}"`,
-        `"${(c.company || '').replace(/"/g, '""')}"`,
-        `"${(c.phone || '').replace(/"/g, '""')}"`,
-        `"${(c.email || '').replace(/"/g, '""')}"`,
-        `"${(c.address || '').replace(/"/g, '""')}"`,
+        `"${String(c.companyId || `COMP-${c.id}`)}"`,
+        `"${String(c.name || '').replace(/"/g, '""')}"`,
+        `"${String(c.company || '').replace(/"/g, '""')}"`,
+        `"${String(c.phone || '').replace(/"/g, '""')}"`,
+        `"${String(c.email || '').replace(/"/g, '""')}"`,
+        `"${String(c.address || '').replace(/"/g, '""')}"`,
         fin?.totalInvoiced || 0,
         fin?.totalPaid || 0,
         fin?.totalDue || 0,
-        `"${(c.notes || '').replace(/"/g, '""')}"`
+        `"${String(c.notes || '').replace(/"/g, '""')}"`
       ];
     });
 
@@ -709,7 +709,7 @@ export default function CustomerList({
                   const totalDue = fin?.totalDue || 0;
                   const totalInvoiced = fin?.totalInvoiced || 0;
                   const totalPaid = fin?.totalPaid || 0;
-                  const cleanPhone = (customer.phone || '').replace(/[^0-9]/g, '');
+                  const cleanPhone = String(customer.phone || '').replace(/[^0-9]/g, '');
 
                   return (
                     <tr key={customer.id} className="hover:bg-blue-50/40 transition-colors group">
@@ -717,7 +717,7 @@ export default function CustomerList({
                       <td className="py-3.5 px-4">
                         <div className="flex items-start gap-3">
                           <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 font-bold flex items-center justify-center flex-shrink-0 text-xs shadow-2xs">
-                            {(customer.company || customer.name || 'C').charAt(0).toUpperCase()}
+                            {String(customer.company || customer.name || 'C').charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="font-extrabold text-slate-900 text-sm group-hover:text-blue-700 transition-colors">
@@ -730,7 +730,7 @@ export default function CustomerList({
                             )}
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[9px] font-bold">
-                                {customer.companyId || `COMP-${customer.id.substring(0, 6)}`}
+                                {customer.companyId || `COMP-${String(customer.id || '').substring(0, 6)}`}
                               </span>
                               {customer.notes && (
                                 <span className="text-[10px] text-slate-400 italic max-w-[150px] truncate" title={customer.notes}>
@@ -880,7 +880,7 @@ export default function CustomerList({
             const totalDue = fin?.totalDue || 0;
             const totalInvoiced = fin?.totalInvoiced || 0;
             const totalPaid = fin?.totalPaid || 0;
-            const cleanPhone = (customer.phone || '').replace(/[^0-9]/g, '');
+            const cleanPhone = String(customer.phone || '').replace(/[^0-9]/g, '');
 
             return (
               <div
@@ -891,7 +891,7 @@ export default function CustomerList({
                   {/* Top Badge & Code */}
                   <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
                     <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[10px] font-extrabold border border-blue-100">
-                      {customer.companyId || `COMP-${customer.id.substring(0, 6)}`}
+                      {customer.companyId || `COMP-${String(customer.id || '').substring(0, 6)}`}
                     </span>
                     {totalDue > 0 ? (
                       <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-black text-[10px]">
@@ -908,7 +908,7 @@ export default function CustomerList({
                   <div className="pt-3 space-y-2">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-extrabold flex items-center justify-center flex-shrink-0 text-sm shadow-sm">
-                        {(customer.company || customer.name || 'C').charAt(0).toUpperCase()}
+                        {String(customer.company || customer.name || 'C').charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <h4 className="text-sm font-extrabold text-slate-900 line-clamp-1">
