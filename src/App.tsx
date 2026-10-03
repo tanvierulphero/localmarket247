@@ -1220,7 +1220,7 @@ export default function App() {
                 <FolderLock className="w-5 h-5 text-blue-900" />
                 <div className="text-xs">
                   <span className="font-bold text-slate-900 font-display block">
-                    hitachisolutioncenter Workspace
+                    Jubayer Machineries Workspace
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono block">
                     Session: {currentUser ? `${currentUser.name} (${currentUser.role})` : 'Active Session'}
@@ -2044,7 +2044,7 @@ export default function App() {
 
             {/* Admin page copyright */}
             <footer className="bg-white border-t border-slate-200 py-4 px-8 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono no-print">
-              <span>hitachisolutioncenter Dashboard &bull; Cloud SQL Relational Database Active</span>
+              <span>Jubayer Machineries Dashboard &bull; Cloud SQL Relational Database Active</span>
               <span>"Your Problem Solution is Sustainable Partner"</span>
             </footer>
           </main>
@@ -2061,7 +2061,7 @@ export default function App() {
                 <Database className="w-5 h-5 text-emerald-400" />
                 <div>
                   <h3 className="text-sm font-bold font-display">Database & Server Health Check</h3>
-                  <span className="text-[10px] text-slate-400 font-mono">hitachisolutioncenter Diagnostics</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Jubayer Machineries Diagnostics</span>
                 </div>
               </div>
               <button

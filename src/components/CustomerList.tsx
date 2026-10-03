@@ -1398,7 +1398,7 @@ export default function CustomerList({
             {/* Modal Footer */}
             <div className="border-t border-slate-200 pt-4 flex items-center justify-between no-print">
               <div className="text-[11px] text-slate-500 italic">
-                Statement generated from hitachisolutioncenter database
+                Statement generated from Jubayer Machineries database
               </div>
               <button
                 onClick={() => setSelectedCustomerForLedger(null)}

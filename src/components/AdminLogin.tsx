@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { StaffUser } from '../types';
-import { Lock, ArrowLeft, Eye, EyeOff, ShieldAlert, UserCheck, ShieldCheck, Key } from 'lucide-react';
+import { 
+  Lock, ArrowLeft, Eye, EyeOff, ShieldAlert, UserCheck, ShieldCheck, Key,
+  Phone, MessageCircle, Code2, Sparkles, Copy, Check, ExternalLink, Globe
+} from 'lucide-react';
 import Logo from './Logo';
 
 interface AdminLoginProps {
@@ -14,6 +17,18 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [error, setError] = useState('');
+  const [copiedPhone, setCopiedPhone] = useState(false);
+
+  const handleCopyPhone = () => {
+    try {
+      navigator.clipboard.writeText('01840684615');
+      setCopiedPhone(true);
+      setTimeout(() => setCopiedPhone(false), 2000);
+    } catch {
+      setCopiedPhone(true);
+      setTimeout(() => setCopiedPhone(false), 2000);
+    }
+  };
 
   // Handle direct passcode or account selection submit
   const handleSubmit = (e: React.FormEvent) => {
@@ -100,11 +115,14 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
 
         {/* Brand identity header */}
         <div className="text-center space-y-1">
-          <div className="h-14 w-auto flex justify-center mb-3">
+          <div className="h-14 w-auto flex justify-center mb-2">
             <Logo className="h-full w-auto text-blue-900" />
           </div>
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-blue-900 block font-display">
+            Jubayer Machineries
+          </span>
           <h2 className="text-xl font-black font-display text-slate-900 leading-tight">
-            Private Workspace Login
+            Workspace Login
           </h2>
         </div>
 
@@ -199,17 +217,96 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
           </button>
         </form>
 
-        {/* Developer Info Card Section */}
-        <div className="pt-4 border-t border-slate-100 text-center text-xs space-y-1 bg-slate-50/80 -mx-8 -mb-8 p-4 rounded-b-2xl border-slate-200/80">
-          <p className="font-extrabold text-blue-950 text-[11px] tracking-wide uppercase">
-            Create BY: Tech Item
-          </p>
-          <p className="font-medium text-slate-700 text-xs">
-            Developer: <span className="font-bold text-slate-900">Md. Tanvirul Islam</span>
-          </p>
-          <p className="font-bold text-blue-900 text-xs font-mono">
-            Mob: 01840684615
-          </p>
+        {/* DEVELOPER PROFILE SHOWCASE CARD - Tech Item & Md. Tanvirul Islam */}
+        <div className="border-t border-slate-200/90 -mx-8 -mb-8 mt-6 bg-gradient-to-b from-slate-900 via-blue-950 to-slate-950 rounded-b-2xl p-5 text-white shadow-inner">
+          <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-400 p-0.5 shadow-md flex items-center justify-center font-black text-white text-xs tracking-wider font-display">
+                  TI
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full" title="Available for projects"></span>
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-extrabold text-blue-300 uppercase tracking-widest">
+                    Crafted by Tech Item
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">
+                    Available
+                  </span>
+                </div>
+                <h4 className="text-sm font-extrabold text-white leading-tight flex items-center gap-1">
+                  Md. Tanvirul Islam
+                </h4>
+                <p className="text-[10px] text-slate-300 font-medium">
+                  Full-Stack ERP & Web Application Engineer
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Client Attraction Pitch & Value Proposition */}
+          <div className="pt-3 pb-2 text-left space-y-1.5">
+            <p className="text-[11px] text-slate-200 leading-relaxed font-medium">
+              Need a custom <span className="text-blue-300 font-bold">Business ERP, Inventory & Due Ledger, Billing Software or Website</span> like this for your company?
+            </p>
+            <div className="flex flex-wrap gap-1.5 text-[9px] font-semibold text-slate-300">
+              <span className="bg-white/10 px-2 py-0.5 rounded-md border border-white/10">⚡ Custom Business ERP</span>
+              <span className="bg-white/10 px-2 py-0.5 rounded-md border border-white/10">📊 Invoicing & Ledger</span>
+              <span className="bg-white/10 px-2 py-0.5 rounded-md border border-white/10">📱 Cloud & Mobile Ready</span>
+            </div>
+          </div>
+
+          {/* Direct Contact CTAs for Clients */}
+          <div className="grid grid-cols-2 gap-2 pt-2">
+            {/* Direct Phone Call Button */}
+            <a
+              href="tel:01840684615"
+              className="flex items-center justify-center gap-1.5 py-2 px-2.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all shadow-xs group cursor-pointer"
+              title="Call Md. Tanvirul Islam directly"
+            >
+              <Phone className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
+              <span>01840684615</span>
+            </a>
+
+            {/* Direct WhatsApp Contact Button */}
+            <a
+              href="https://wa.me/8801840684615?text=Hello%20Md.%20Tanvirul%20Islam%20(Tech%20Item),%20I%20saw%20the%20Jubayer%20Machineries%20system%20and%20would%20like%20to%20develop%20a%20similar%20custom%20software%20/%20website%20for%20my%20business."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 py-2 px-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+              title="Chat on WhatsApp"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span>WhatsApp</span>
+            </a>
+          </div>
+
+          {/* Quick copy phone option */}
+          <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              Hire Developer for Your Business
+            </span>
+            <button
+              type="button"
+              onClick={handleCopyPhone}
+              className="inline-flex items-center gap-1 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              {copiedPhone ? (
+                <>
+                  <Check className="w-3 h-3 text-emerald-400" />
+                  <span className="text-emerald-300 font-bold">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3" />
+                  <span>Copy Number</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

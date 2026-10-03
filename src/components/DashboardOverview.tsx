@@ -411,7 +411,7 @@ export default function DashboardOverview({
         <div className="bg-white border border-slate-200 rounded-2xl p-6 lg:col-span-8 shadow-2xs flex flex-col justify-between">
           <div>
             <h3 className="text-sm font-bold text-slate-900 font-display">Document Creation Analytics</h3>
-            <p className="text-slate-400 text-[11px] mb-6">Distribution and volume mix of documents in hitachisolutioncenter.</p>
+            <p className="text-slate-400 text-[11px] mb-6">Distribution and volume mix of documents in Jubayer Machineries.</p>
           </div>
 
           {/* Simple custom visual bar-graph using pure CSS */}

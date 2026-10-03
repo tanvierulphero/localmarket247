@@ -376,7 +376,7 @@ export default function DocumentCreator({
           <h2 className="text-base font-black font-display text-slate-900 leading-tight">
             {editingDocument ? 'Modify Existing Document' : 'Generate New Business Document'}
           </h2>
-          <p className="text-slate-400 text-[11px]">Draft professional, print-ready PDFs under hitachisolutioncenter brand.</p>
+          <p className="text-slate-400 text-[11px]">Draft professional, print-ready PDFs under Jubayer Machineries.</p>
         </div>
         <button
           onClick={onCancel}
