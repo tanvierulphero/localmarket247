@@ -1340,17 +1340,17 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 
                 {/* Letterhead */}
                 <div className="text-center space-y-1 pb-4 border-b-2 border-slate-900">
-                  <div className="text-2xl font-black tracking-tight text-slate-900 font-display">
-                    HITACHI AIR SOLUTION CENTER
+                  <div className="text-2xl font-black tracking-tight text-slate-900 font-display uppercase">
+                    {settings?.name || 'Jubayer Machineries'}
                   </div>
                   <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
-                    "Your Problem Solution is Sustainable Partner"
+                    "{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}"
                   </div>
                   <div className="text-[9px] text-slate-600 font-semibold">
-                    Sales, Service & Repair of All Types of Air Conditioning Systems
+                    {settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}
                   </div>
                   <div className="text-[9px] text-slate-500 font-medium">
-                    Corporate Office • Contact: +880 1711-000000 • Email: support@hitachisolution.com
+                    Corporate Office • Contact: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'} • Email: {settings?.email || 'support@jubayermachineries.com'}
                   </div>
                 </div>
 
