@@ -136,9 +136,9 @@ export default function InventoryManager({
   const productAnalytics = useMemo(() => {
     if (!historyProduct) return null;
 
-    const hpId = historyProduct.id || '';
-    const hpSku = (historyProduct.sku || '').toLowerCase();
-    const hpName = (historyProduct.name || '').toLowerCase();
+    const hpId = String(historyProduct.id || '');
+    const hpSku = String(historyProduct.sku || '').toLowerCase();
+    const hpName = String(historyProduct.name || '').toLowerCase();
 
     // 1. Find all Sales Invoices / Documents containing this product
     const salesRecords: {
@@ -175,8 +175,8 @@ export default function InventoryManager({
 
       doc.items.forEach(it => {
         if (!it) return;
-        const itProdId = it.productId || '';
-        const itName = (it.name || '').toLowerCase();
+        const itProdId = String(it.productId || '');
+        const itName = String(it.name || '').toLowerCase();
 
         // Match by productId or SKU/name
         const isMatch = (itProdId && itProdId === hpId) ||
@@ -186,27 +186,27 @@ export default function InventoryManager({
         if (isMatch) {
           if (doc.type === 'INVOICE' || doc.type === 'QUOTATION' || doc.type === 'OFFER_LETTER') {
             salesRecords.push({
-              docId: doc.id || '',
-              docNumber: doc.docNumber || 'DOC-000',
-              docType: doc.type || 'INVOICE',
-              date: doc.date || '',
-              customerId: doc.customerId || '',
-              customerName: doc.customerName || 'Customer',
-              customerCompany: doc.customerCompany || doc.customerName || 'Client Company',
-              customerPhone: doc.customerPhone || '',
+              docId: String(doc.id || ''),
+              docNumber: String(doc.docNumber || 'DOC-000'),
+              docType: String(doc.type || 'INVOICE'),
+              date: String(doc.date || ''),
+              customerId: String(doc.customerId || ''),
+              customerName: String(doc.customerName || 'Customer'),
+              customerCompany: String(doc.customerCompany || doc.customerName || 'Client Company'),
+              customerPhone: String(doc.customerPhone || ''),
               quantity: Number(it.quantity) || 1,
               unitPrice: Number(it.price) || 0,
               lineTotal: Number(it.total) || 0,
-              unit: it.unit || historyProduct.unit || 'Pcs',
-              status: doc.status || 'Active',
+              unit: String(it.unit || historyProduct.unit || 'Pcs'),
+              status: String(doc.status || 'Active'),
               doc
             });
           } else if (doc.type === 'BILL') {
             purchaseRecords.push({
-              docId: doc.id || '',
-              docNumber: doc.docNumber || 'BILL-000',
-              date: doc.date || '',
-              supplierName: doc.customerCompany || doc.customerName || 'Vendor Supplier',
+              docId: String(doc.id || ''),
+              docNumber: String(doc.docNumber || 'BILL-000'),
+              date: String(doc.date || ''),
+              supplierName: String(doc.customerCompany || doc.customerName || 'Vendor Supplier'),
               quantity: Number(it.quantity) || 1,
               buyPrice: Number(it.price) || 0,
               lineTotal: Number(it.total) || 0,
@@ -221,8 +221,8 @@ export default function InventoryManager({
     const dispatchRecords = (dispatches || []).filter(d => 
       d && Array.isArray(d.items) && d.items.some(it => {
         if (!it) return false;
-        const itProdId = it.productId || '';
-        const itProdName = (it.productName || '').toLowerCase();
+        const itProdId = String(it.productId || '');
+        const itProdName = String((it as any).productName || (it as any).name || '').toLowerCase();
         return (itProdId && itProdId === hpId) || (itProdName && hpName && itProdName.includes(hpName));
       })
     );
@@ -268,12 +268,12 @@ export default function InventoryManager({
     if (!Array.isArray(products)) return [];
     return products.filter(p => {
       if (!p) return false;
-      const pName = (p.name || '').toLowerCase();
-      const pSku = (p.sku || '').toLowerCase();
-      const pBrand = (p.brand || '').toLowerCase();
-      const query = (searchQuery || '').toLowerCase();
+      const pName = String(p.name || '').toLowerCase();
+      const pSku = String(p.sku || '').toLowerCase();
+      const pBrand = String(p.brand || '').toLowerCase();
+      const query = String(searchQuery || '').toLowerCase().trim();
 
-      const matchSearch = pName.includes(query) || pSku.includes(query) || pBrand.includes(query);
+      const matchSearch = !query || pName.includes(query) || pSku.includes(query) || pBrand.includes(query);
       const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
       return matchSearch && matchCat;
     });
@@ -281,7 +281,7 @@ export default function InventoryManager({
 
   // Handle + / - Quick Stock Adjustments
   const handleQuickStock = (product: Product, delta: number) => {
-    const updated = { ...product, stock: Math.max(0, product.stock + delta) };
+    const updated = { ...product, stock: Math.max(0, (Number(product.stock) || 0) + delta) };
     onUpdateProduct(updated);
   };
 
@@ -307,17 +307,35 @@ export default function InventoryManager({
   // Open Edit modal
   const handleOpenEdit = (product: Product) => {
     setEditingId(product.id);
+    let parsedSpecs: ProductSpec[] = [{ label: '', value: '' }];
+    if (Array.isArray(product.specs) && product.specs.length > 0) {
+      parsedSpecs = product.specs.map(s => ({
+        label: String(s?.label || ''),
+        value: String(s?.value || '')
+      }));
+    } else if (typeof product.specs === 'string' && (product.specs as string).trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(product.specs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          parsedSpecs = parsed.map(s => ({
+            label: String(s?.label || ''),
+            value: String(s?.value || '')
+          }));
+        }
+      } catch {}
+    }
+
     setFormData({
-      name: product.name,
-      sku: product.sku,
-      category: product.category,
-      brand: product.brand,
-      price: product.price,
-      costPrice: product.costPrice ?? Math.round(product.price * 0.75),
-      stock: product.stock,
-      unit: product.unit,
-      description: product.description,
-      specs: product.specs && product.specs.length > 0 ? [...product.specs] : [{ label: '', value: '' }],
+      name: String(product.name || ''),
+      sku: String(product.sku || ''),
+      category: product.category || 'Spare Parts',
+      brand: product.brand || 'Hitachi',
+      price: Number(product.price) || 0,
+      costPrice: Number(product.costPrice) || Math.round(Number(product.price || 0) * 0.75),
+      stock: Number(product.stock) || 0,
+      unit: product.unit || 'Pcs',
+      description: String(product.description || ''),
+      specs: parsedSpecs,
       imageUrl: product.imageUrl || ''
     });
     setIsFormOpen(true);
@@ -330,8 +348,10 @@ export default function InventoryManager({
 
   const handleSpecChange = (index: number, field: 'label' | 'value', val: string) => {
     const nextSpecs = [...formData.specs];
-    nextSpecs[index][field] = val;
-    setFormData({ ...formData, specs: nextSpecs });
+    if (nextSpecs[index]) {
+      nextSpecs[index][field] = val;
+      setFormData({ ...formData, specs: nextSpecs });
+    }
   };
 
   const handleRemoveSpecField = (index: number) => {
@@ -348,7 +368,7 @@ export default function InventoryManager({
     }
 
     // Clean empty specs
-    const cleanSpecs = formData.specs.filter(s => s.label.trim() !== '' && s.value.trim() !== '');
+    const cleanSpecs = (formData.specs || []).filter(s => String(s?.label || '').trim() !== '' && String(s?.value || '').trim() !== '');
 
     if (editingId) {
       // Update

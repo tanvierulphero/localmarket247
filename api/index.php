@@ -173,10 +173,18 @@ function mapJsToDb($jsItem, $fieldsList) {
 function mapDbToJs($dbRow) {
     $jsItem = [];
     if (!$dbRow) return null;
+    $stringFields = ['sku', 'doc_number', 'phone', 'customer_phone', 'supplier_phone', 'company_id', 'supplier_id', 'passcode', 'purchase_number', 'supplier_invoice_no', 'reference_no', 'expense_number', 'return_number', 'dispatch_number', 'slip_number', 'brand', 'name', 'unit', 'category', 'description', 'notes', 'terms', 'address', 'customer_address', 'customer_name', 'customer_company', 'customer_email', 'email', 'image_url', 'logo_url', 'watermark_url'];
+
     foreach ($dbRow as $k => $v) {
         $jsKey = snakeToCamel($k);
         if ($k === 'specs' || $k === 'items' || $k === 'permissions') {
-            $jsItem[$jsKey] = json_decode($v ?? '[]', true) ?? [];
+            if (is_array($v)) {
+                $jsItem[$jsKey] = $v;
+            } else {
+                $jsItem[$jsKey] = json_decode($v ?? '[]', true) ?? [];
+            }
+        } else if (in_array($k, $stringFields)) {
+            $jsItem[$jsKey] = (string)($v ?? '');
         } else {
             if (is_numeric($v) && strlen($v ?? '') < 15) {
                 if (strpos($v, '.') !== false) {

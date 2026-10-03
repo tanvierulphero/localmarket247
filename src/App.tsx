@@ -1274,15 +1274,17 @@ export default function App() {
 
                   {/* TAB PANEL 2: Inventory Stock */}
                   {activeTab === 'inventory' && hasPermission('view_inventory') && (
-                    <InventoryManager 
-                      products={products}
-                      documents={documents}
-                      dispatches={dispatches}
-                      onAddProduct={handleAddProduct}
-                      onUpdateProduct={handleUpdateProduct}
-                      onDeleteProduct={handleDeleteProduct}
-                      onViewDocument={(doc) => setViewingDocument(doc)}
-                    />
+                    <ErrorBoundary fallbackTitle="Stock Inventory">
+                      <InventoryManager 
+                        products={products}
+                        documents={documents}
+                        dispatches={dispatches}
+                        onAddProduct={handleAddProduct}
+                        onUpdateProduct={handleUpdateProduct}
+                        onDeleteProduct={handleDeleteProduct}
+                        onViewDocument={(doc) => setViewingDocument(doc)}
+                      />
+                    </ErrorBoundary>
                   )}
 
                   {/* TAB PANEL: Customer List */}
