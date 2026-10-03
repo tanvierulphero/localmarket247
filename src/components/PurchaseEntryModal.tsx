@@ -646,8 +646,9 @@ export default function PurchaseEntryModal({
                           <input
                             type="number"
                             min="1"
-                            value={item.quantity}
+                            value={!item.quantity ? '' : item.quantity}
                             onChange={(e) => handleItemFieldChange(index, 'quantity', e.target.value)}
+                            placeholder="1"
                             className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-center font-bold text-emerald-600 dark:text-emerald-400"
                           />
                         </td>
@@ -656,8 +657,9 @@ export default function PurchaseEntryModal({
                             type="number"
                             min="0"
                             step="any"
-                            value={item.unitCost}
+                            value={!item.unitCost ? '' : item.unitCost}
                             onChange={(e) => handleItemFieldChange(index, 'unitCost', e.target.value)}
+                            placeholder="0.00"
                             className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-right font-mono"
                           />
                         </td>

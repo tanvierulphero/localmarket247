@@ -671,10 +671,10 @@ export default function InventoryManager({
                   <input
                     type="number"
                     min={0}
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                    value={formData.price === 0 ? '' : formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? 0 : Number(e.target.value) })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden font-bold text-blue-900"
-                    placeholder="0"
+                    placeholder="Enter selling price"
                   />
                 </div>
 
@@ -686,10 +686,10 @@ export default function InventoryManager({
                   <input
                     type="number"
                     min={0}
-                    value={formData.costPrice}
-                    onChange={(e) => setFormData({ ...formData, costPrice: Number(e.target.value) })}
+                    value={formData.costPrice === 0 ? '' : formData.costPrice}
+                    onChange={(e) => setFormData({ ...formData, costPrice: e.target.value === '' ? 0 : Number(e.target.value) })}
                     className="w-full bg-slate-50 border border-emerald-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden font-bold text-emerald-700"
-                    placeholder="0"
+                    placeholder="Enter purchase cost"
                   />
                 </div>
 
@@ -707,8 +707,9 @@ export default function InventoryManager({
                     type="number"
                     min={0}
                     disabled={!!editingId}
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
+                    value={formData.stock === 0 ? '' : formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value === '' ? 0 : Number(e.target.value) })}
+                    placeholder="0"
                     className={`w-full border rounded-lg p-2.5 font-bold ${
                       editingId ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed' : 'bg-slate-50 border-slate-200 focus:bg-white focus:outline-hidden'
                     }`}

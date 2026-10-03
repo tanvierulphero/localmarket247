@@ -1811,8 +1811,11 @@ export default function App() {
                             <label className="font-bold text-slate-700">Standard VAT Rate (%)</label>
                             <input
                               type="number"
-                              value={settingsForm.taxRate}
-                              onChange={(e) => setSettingsForm({ ...settingsForm, taxRate: Number(e.target.value) })}
+                              min={0}
+                              max={100}
+                              value={settingsForm.taxRate === 0 ? '' : settingsForm.taxRate}
+                              onChange={(e) => setSettingsForm({ ...settingsForm, taxRate: e.target.value === '' ? 0 : Number(e.target.value) })}
+                              placeholder="0"
                               className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:bg-white focus:outline-hidden font-semibold"
                             />
                           </div>

@@ -1394,7 +1394,7 @@ export default function FieldDispatchManager({
                       min="0"
                       step="any"
                       placeholder="0.00"
-                      value={formData.billAmount}
+                      value={formData.billAmount === 0 || formData.billAmount === '0' ? '' : formData.billAmount}
                       onChange={e => handleFinancialChange('billAmount', e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-blue-500"
                     />
@@ -1409,7 +1409,7 @@ export default function FieldDispatchManager({
                       min="0"
                       step="any"
                       placeholder="0.00"
-                      value={formData.paidAmount}
+                      value={formData.paidAmount === 0 || formData.paidAmount === '0' ? '' : formData.paidAmount}
                       onChange={e => handleFinancialChange('paidAmount', e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-mono font-bold text-emerald-800 focus:outline-none focus:border-emerald-500"
                     />
@@ -1422,7 +1422,8 @@ export default function FieldDispatchManager({
                     <input
                       type="number"
                       readOnly
-                      value={formData.dueAmount}
+                      placeholder="0.00"
+                      value={formData.dueAmount === 0 || formData.dueAmount === '0' ? '' : formData.dueAmount}
                       className="w-full px-3 py-2 bg-rose-50 border border-rose-200 rounded-xl text-xs font-mono font-bold text-rose-800 outline-none"
                     />
                   </div>
@@ -1478,7 +1479,7 @@ export default function FieldDispatchManager({
                       min="0"
                       step="any"
                       placeholder="0.00"
-                      value={formData.expenseAmount}
+                      value={formData.expenseAmount === 0 || formData.expenseAmount === '0' ? '' : formData.expenseAmount}
                       onChange={e => handleFinancialChange('expenseAmount', e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-mono font-bold text-amber-800 focus:outline-none focus:border-amber-500"
                     />

@@ -1013,8 +1013,9 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     required
                     min={1}
                     max={collectingDoc.dueAmount !== undefined ? collectingDoc.dueAmount : collectingDoc.total}
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                    value={paymentAmount === 0 ? '' : paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value === '' ? 0 : Number(e.target.value))}
+                    placeholder="Enter collected amount"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 pl-7 focus:bg-white focus:outline-hidden font-bold text-slate-900 text-sm"
                   />
                 </div>

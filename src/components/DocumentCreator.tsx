@@ -779,8 +779,9 @@ export default function DocumentCreator({
                               <input
                                 type="number"
                                 min={1}
-                                value={item.quantity}
-                                onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
+                                value={item.quantity === 0 ? '' : item.quantity}
+                                onChange={(e) => handleItemChange(index, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))}
+                                placeholder="1"
                                 className="w-full bg-white border border-slate-200 rounded p-1.5 text-xs font-semibold text-center"
                                 required
                               />
@@ -802,8 +803,9 @@ export default function DocumentCreator({
                               <input
                                 type="number"
                                 min={0}
-                                value={item.price}
-                                onChange={(e) => handleItemChange(index, 'price', Number(e.target.value))}
+                                value={item.price === 0 ? '' : item.price}
+                                onChange={(e) => handleItemChange(index, 'price', e.target.value === '' ? 0 : Number(e.target.value))}
+                                placeholder="0.00"
                                 className="w-full bg-white border border-slate-200 rounded p-1.5 text-xs font-bold text-right"
                                 required
                               />
@@ -896,8 +898,9 @@ export default function DocumentCreator({
                         type="number"
                         min={0}
                         max={100}
-                        value={taxRate}
-                        onChange={(e) => setTaxRate(Number(e.target.value))}
+                        value={taxRate === 0 ? '' : taxRate}
+                        onChange={(e) => setTaxRate(e.target.value === '' ? 0 : Number(e.target.value))}
+                        placeholder="0"
                         className="w-16 text-right bg-white border border-slate-200 rounded p-1 font-bold text-slate-900 focus:border-blue-900 focus:outline-hidden"
                       />
                     </div>

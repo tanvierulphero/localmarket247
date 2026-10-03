@@ -1216,12 +1216,13 @@ export default function ReportsHub({
                     type="number"
                     min={1}
                     required
-                    value={returnQuantity}
+                    value={returnQuantity === 0 ? '' : returnQuantity}
                     onChange={(e) => {
-                      const qty = Number(e.target.value) || 1;
+                      const qty = e.target.value === '' ? 0 : Number(e.target.value);
                       setReturnQuantity(qty);
                       setReturnRefundAmount(qty * returnUnitPrice);
                     }}
+                    placeholder="1"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-center text-rose-700"
                   />
                 </div>
@@ -1231,12 +1232,13 @@ export default function ReportsHub({
                   <input
                     type="number"
                     min={0}
-                    value={returnUnitPrice}
+                    value={returnUnitPrice === 0 ? '' : returnUnitPrice}
                     onChange={(e) => {
-                      const rate = Number(e.target.value) || 0;
+                      const rate = e.target.value === '' ? 0 : Number(e.target.value);
                       setReturnUnitPrice(rate);
                       setReturnRefundAmount(returnQuantity * rate);
                     }}
+                    placeholder="0.00"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-right"
                   />
                 </div>
@@ -1246,8 +1248,9 @@ export default function ReportsHub({
                   <input
                     type="number"
                     min={0}
-                    value={returnRefundAmount}
-                    onChange={(e) => setReturnRefundAmount(Number(e.target.value) || 0)}
+                    value={returnRefundAmount === 0 ? '' : returnRefundAmount}
+                    onChange={(e) => setReturnRefundAmount(e.target.value === '' ? 0 : Number(e.target.value))}
+                    placeholder="0.00"
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-black text-right text-slate-900"
                   />
                 </div>

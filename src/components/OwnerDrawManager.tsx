@@ -668,8 +668,8 @@ export default function OwnerDrawManager({
                     type="number"
                     min={1}
                     required
-                    placeholder="0"
-                    value={amount}
+                    placeholder="Enter withdrawal amount (Tk.)"
+                    value={amount === 0 ? '' : amount}
                     onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-black text-rose-700 text-base focus:bg-white focus:outline-hidden"
                   />
