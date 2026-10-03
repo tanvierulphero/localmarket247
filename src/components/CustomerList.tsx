@@ -98,12 +98,25 @@ export default function CustomerList({
       lastTransactionDate: string | null;
     }>();
 
-    customers.forEach(c => {
-      const custDocs = documents.filter(d => 
-        d.customerId === c.id ||
-        (d.customerPhone && c.phone && d.customerPhone.trim() === c.phone.trim()) ||
-        (d.customerCompany && c.company && d.customerCompany.toLowerCase().trim() === c.company.toLowerCase().trim())
-      );
+    const safeCustomers = Array.isArray(customers) ? customers : [];
+    const safeDocuments = Array.isArray(documents) ? documents : [];
+
+    safeCustomers.forEach(c => {
+      if (!c || !c.id) return;
+      const cPhone = String(c.phone || '').trim();
+      const cCompany = String(c.company || '').toLowerCase().trim();
+
+      const custDocs = safeDocuments.filter(d => {
+        if (!d) return false;
+        const dPhone = String(d.customerPhone || '').trim();
+        const dCompany = String(d.customerCompany || '').toLowerCase().trim();
+
+        return (
+          d.customerId === c.id ||
+          (dPhone && cPhone && dPhone === cPhone) ||
+          (dCompany && cCompany && dCompany === cCompany)
+        );
+      });
 
       let totalInvoiced = 0;
       let totalPaid = 0;
@@ -114,24 +127,27 @@ export default function CustomerList({
       let lastDate: string | null = null;
 
       custDocs.forEach(d => {
-        if (!lastDate || new Date(d.date) > new Date(lastDate)) {
+        if (!d) return;
+        if (d.date && (!lastDate || new Date(d.date) > new Date(lastDate))) {
           lastDate = d.date;
         }
 
+        const docTotal = Number(d.total || 0);
+
         if (d.type === 'INVOICE' || d.type === 'BILL') {
           invoicesCount++;
-          totalInvoiced += (d.total || 0);
+          totalInvoiced += docTotal;
           
-          if (d.paidAmount !== undefined) {
-            totalPaid += d.paidAmount;
+          if (d.paidAmount !== undefined && d.paidAmount !== null) {
+            totalPaid += Number(d.paidAmount || 0);
           } else if (d.status === 'Paid') {
-            totalPaid += d.total;
+            totalPaid += docTotal;
           }
 
-          if (d.dueAmount !== undefined) {
-            totalDue += d.dueAmount;
+          if (d.dueAmount !== undefined && d.dueAmount !== null) {
+            totalDue += Number(d.dueAmount || 0);
           } else if (d.status !== 'Paid') {
-            totalDue += (d.total - (d.paidAmount || 0));
+            totalDue += (docTotal - Number(d.paidAmount || 0));
           }
         } else if (d.type === 'QUOTATION' || d.type === 'OFFER_LETTER') {
           quotesCount++;
@@ -163,7 +179,10 @@ export default function CustomerList({
     let dueCustomersCount = 0;
     let activeCustomersCount = 0;
 
-    customers.forEach(c => {
+    const safeCustomers = Array.isArray(customers) ? customers : [];
+
+    safeCustomers.forEach(c => {
+      if (!c || !c.id) return;
       const fin = customerFinancials.get(c.id);
       if (fin) {
         totalDue += fin.totalDue;
@@ -175,7 +194,7 @@ export default function CustomerList({
     });
 
     return {
-      totalCustomers: customers.length,
+      totalCustomers: safeCustomers.length,
       activeCustomersCount,
       dueCustomersCount,
       totalDue,
@@ -186,17 +205,25 @@ export default function CustomerList({
 
   // Filter and Sort Customers
   const filteredCustomers = useMemo(() => {
-    return customers
+    const safeCustomers = Array.isArray(customers) ? customers : [];
+    return safeCustomers
       .filter(c => {
-        const q = searchQuery.toLowerCase().trim();
-        const compId = (c.companyId || `COMP-${c.id}`).toLowerCase();
+        if (!c) return false;
+        const q = (searchQuery || '').toLowerCase().trim();
+        const compId = String(c.companyId || `COMP-${c.id || ''}`).toLowerCase();
+        const cName = String(c.name || '').toLowerCase();
+        const cComp = String(c.company || '').toLowerCase();
+        const cPhone = String(c.phone || '');
+        const cEmail = String(c.email || '').toLowerCase();
+        const cAddr = String(c.address || '').toLowerCase();
+
         const matchesSearch = !q || 
           compId.includes(q) ||
-          c.name.toLowerCase().includes(q) ||
-          (c.company && c.company.toLowerCase().includes(q)) ||
-          (c.phone && c.phone.includes(q)) ||
-          (c.email && c.email.toLowerCase().includes(q)) ||
-          (c.address && c.address.toLowerCase().includes(q));
+          cName.includes(q) ||
+          cComp.includes(q) ||
+          cPhone.includes(q) ||
+          cEmail.includes(q) ||
+          cAddr.includes(q);
 
         if (!matchesSearch) return false;
 
@@ -219,14 +246,16 @@ export default function CustomerList({
         const finB = customerFinancials.get(b.id);
 
         if (sortBy === 'name') {
-          return (a.company || a.name).localeCompare(b.company || b.name);
+          const nameA = String(a.company || a.name || '');
+          const nameB = String(b.company || b.name || '');
+          return nameA.localeCompare(nameB);
         } else if (sortBy === 'due') {
           return (finB?.totalDue || 0) - (finA?.totalDue || 0);
         } else if (sortBy === 'totalPurchases') {
           return (finB?.totalInvoiced || 0) - (finA?.totalInvoiced || 0);
         } else {
           // recent
-          return (b.createdAt || '').localeCompare(a.createdAt || '');
+          return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
         }
       });
   }, [customers, searchQuery, filterDueStatus, sortBy, customerFinancials]);
@@ -356,25 +385,44 @@ export default function CustomerList({
   // Get Customer's related documents for Ledger
   const selectedCustomerDocs = useMemo(() => {
     if (!selectedCustomerForLedger) return [];
-    return documents
-      .filter(d => 
-        d.customerId === selectedCustomerForLedger.id ||
-        (d.customerPhone && selectedCustomerForLedger.phone && d.customerPhone.trim() === selectedCustomerForLedger.phone.trim()) ||
-        (d.customerCompany && selectedCustomerForLedger.company && d.customerCompany.toLowerCase().trim() === selectedCustomerForLedger.company.toLowerCase().trim())
-      )
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const safeDocs = Array.isArray(documents) ? documents : [];
+    const targetPhone = String(selectedCustomerForLedger.phone || '').trim();
+    const targetCompany = String(selectedCustomerForLedger.company || '').toLowerCase().trim();
+
+    return safeDocs
+      .filter(d => {
+        if (!d) return false;
+        const dPhone = String(d.customerPhone || '').trim();
+        const dCompany = String(d.customerCompany || '').toLowerCase().trim();
+
+        return (
+          d.customerId === selectedCustomerForLedger.id ||
+          (dPhone && targetPhone && dPhone === targetPhone) ||
+          (dCompany && targetCompany && dCompany === targetCompany)
+        );
+      })
+      .sort((a, b) => new Date(b?.date || '').getTime() - new Date(a?.date || '').getTime());
   }, [documents, selectedCustomerForLedger]);
 
   // Get Customer's related dispatches/services
   const selectedCustomerDispatches = useMemo(() => {
     if (!selectedCustomerForLedger) return [];
-    return dispatches
-      .filter(d => 
-        d.customerId === selectedCustomerForLedger.id ||
-        (d.companyName && selectedCustomerForLedger.company && d.companyName.toLowerCase() === selectedCustomerForLedger.company.toLowerCase()) ||
-        (d.customerCompany && selectedCustomerForLedger.company && d.customerCompany.toLowerCase() === selectedCustomerForLedger.company.toLowerCase())
-      )
-      .sort((a, b) => new Date(b.dispatchDate || '').getTime() - new Date(a.dispatchDate || '').getTime());
+    const safeDispatches = Array.isArray(dispatches) ? dispatches : [];
+    const targetCompany = String(selectedCustomerForLedger.company || '').toLowerCase().trim();
+
+    return safeDispatches
+      .filter(d => {
+        if (!d) return false;
+        const dCompany1 = String(d.companyName || '').toLowerCase().trim();
+        const dCompany2 = String(d.customerCompany || '').toLowerCase().trim();
+
+        return (
+          d.customerId === selectedCustomerForLedger.id ||
+          (dCompany1 && targetCompany && dCompany1 === targetCompany) ||
+          (dCompany2 && targetCompany && dCompany2 === targetCompany)
+        );
+      })
+      .sort((a, b) => new Date(b?.dispatchDate || '').getTime() - new Date(a?.dispatchDate || '').getTime());
   }, [dispatches, selectedCustomerForLedger]);
 
   return (

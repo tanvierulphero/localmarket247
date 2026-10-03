@@ -24,6 +24,7 @@ import FieldDispatchManager from './components/FieldDispatchManager';
 import CompanyProfileManager from './components/CompanyProfileManager';
 import CustomerList from './components/CustomerList';
 import SqlExportModal from './components/SqlExportModal';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import { 
   BarChart3, 
@@ -104,14 +105,7 @@ export default function App() {
 
   // Staff Sub-Accounts & Current Active User
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>(INITIAL_STAFF_USERS);
-  const [currentUser, setCurrentUser] = useState<StaffUser | null>(() => {
-    try {
-      const saved = localStorage.getItem('jm_current_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [currentUser, setCurrentUser] = useState<StaffUser | null>(null);
 
   // Core Database lists
   const [products, setProducts] = useState<Product[]>([]);
@@ -198,107 +192,50 @@ export default function App() {
     return currentUser.permissions.includes(perm);
   };
 
-  // Fetch all data from Cloud SQL Database on load with localStorage fallback
+  // Fetch all data from Cloud SQL Database on load
   const loadCloudSqlData = async () => {
-    // 1. Initial hydrate from localStorage cache for instant zero-latency load
-    const cachedProds = localStorage.getItem('hsc_products');
-    const cachedCusts = localStorage.getItem('hsc_customers');
-    const cachedDocs = localStorage.getItem('hsc_documents');
-    const cachedDispatches = localStorage.getItem('hsc_dispatches');
-    const cachedSuppliers = localStorage.getItem('hsc_suppliers');
-    const cachedPurchases = localStorage.getItem('hsc_purchases');
-    const cachedReturns = localStorage.getItem('hsc_returns');
-    const cachedExpenses = localStorage.getItem('hsc_expenses');
-
-    if (cachedProds) {
-      try { setProducts(JSON.parse(cachedProds)); } catch {}
-    }
-    if (cachedCusts) {
-      try { setCustomers(JSON.parse(cachedCusts)); } catch {}
-    }
-    if (cachedDocs) {
-      try { setDocuments(JSON.parse(cachedDocs)); } catch {}
-    }
-    if (cachedDispatches) {
-      try { setDispatches(JSON.parse(cachedDispatches)); } catch {}
-    }
-    if (cachedSuppliers) {
-      try { setSuppliers(JSON.parse(cachedSuppliers)); } catch {}
-    }
-    if (cachedPurchases) {
-      try { setPurchases(JSON.parse(cachedPurchases)); } catch {}
-    }
-    if (cachedReturns) {
-      try { setSalesReturns(JSON.parse(cachedReturns)); } catch {}
-    }
-    if (cachedExpenses) {
-      try { setExpenses(JSON.parse(cachedExpenses)); } catch {}
-    }
-
     try {
       const [prods, custs, docs, staff, setts, disps, sups, purs, rets, exps] = await Promise.all([
-        apiGetProducts().catch(() => cachedProds ? JSON.parse(cachedProds) : []),
-        apiGetCustomers().catch(() => cachedCusts ? JSON.parse(cachedCusts) : []),
-        apiGetDocuments().catch(() => cachedDocs ? JSON.parse(cachedDocs) : []),
+        apiGetProducts().catch(() => []),
+        apiGetCustomers().catch(() => []),
+        apiGetDocuments().catch(() => []),
         apiGetStaff().catch(() => INITIAL_STAFF_USERS),
         apiGetSettings().catch(() => DEFAULT_SETTINGS),
-        apiGetFieldDispatches().catch(() => cachedDispatches ? JSON.parse(cachedDispatches) : []),
-        apiGetSuppliers().catch(() => cachedSuppliers ? JSON.parse(cachedSuppliers) : []),
-        apiGetPurchases().catch(() => cachedPurchases ? JSON.parse(cachedPurchases) : []),
-        apiGetReturns().catch(() => cachedReturns ? JSON.parse(cachedReturns) : []),
-        apiGetExpenses().catch(() => cachedExpenses ? JSON.parse(cachedExpenses) : []),
+        apiGetFieldDispatches().catch(() => []),
+        apiGetSuppliers().catch(() => []),
+        apiGetPurchases().catch(() => []),
+        apiGetReturns().catch(() => []),
+        apiGetExpenses().catch(() => []),
       ]);
 
       const safeProds = Array.isArray(prods) ? prods : [];
       setProducts(safeProds);
-      localStorage.setItem('hsc_products', JSON.stringify(safeProds));
 
       const safeCusts = Array.isArray(custs) ? custs : [];
       setCustomers(safeCusts);
-      localStorage.setItem('hsc_customers', JSON.stringify(safeCusts));
 
       const safeDocs = Array.isArray(docs) ? docs : [];
       setDocuments(safeDocs);
-      localStorage.setItem('hsc_documents', JSON.stringify(safeDocs));
 
       const safeDisps = Array.isArray(disps) ? disps : [];
       setDispatches(safeDisps);
-      localStorage.setItem('hsc_dispatches', JSON.stringify(safeDisps));
 
       const safeSups = Array.isArray(sups) ? sups : [];
       setSuppliers(safeSups);
-      localStorage.setItem('hsc_suppliers', JSON.stringify(safeSups));
 
       const safePurs = Array.isArray(purs) ? purs : [];
       setPurchases(safePurs);
-      localStorage.setItem('hsc_purchases', JSON.stringify(safePurs));
 
       const safeRets = Array.isArray(rets) ? rets : [];
       setSalesReturns(safeRets);
-      localStorage.setItem('hsc_returns', JSON.stringify(safeRets));
 
       const safeExps = Array.isArray(exps) ? exps : [];
       setExpenses(safeExps);
-      localStorage.setItem('hsc_expenses', JSON.stringify(safeExps));
 
       setStaffUsers(staff && staff.length > 0 ? staff : INITIAL_STAFF_USERS);
       if (setts) {
         setSettings(setts);
         setSettingsForm(setts);
-      }
-
-      // Current active user restoration (only restore if previously logged in)
-      const savedCurrentUser = localStorage.getItem('jm_current_user');
-      if (savedCurrentUser) {
-        try {
-          const parsed = JSON.parse(savedCurrentUser);
-          const matched = staff?.find(s => s.id === parsed.id) || parsed;
-          setCurrentUser(matched);
-        } catch {
-          setCurrentUser(null);
-        }
-      } else {
-        setCurrentUser(null);
       }
     } catch (e) {
       console.error('Initial fetch warning:', e);
@@ -347,14 +284,12 @@ export default function App() {
       apiGetDocuments().then(freshDocs => {
         if (Array.isArray(freshDocs) && freshDocs.length > 0) {
           setDocuments(freshDocs);
-          localStorage.setItem('hsc_documents', JSON.stringify(freshDocs));
         }
       }).catch(() => {});
 
       apiGetCustomers().then(freshCusts => {
         if (Array.isArray(freshCusts) && freshCusts.length > 0) {
           setCustomers(freshCusts);
-          localStorage.setItem('hsc_customers', JSON.stringify(freshCusts));
         }
       }).catch(() => {});
     }, 6000);
@@ -387,7 +322,6 @@ export default function App() {
     setStaffUsers(updated);
     if (currentUser?.id === updatedStaff.id) {
       setCurrentUser(updatedStaff);
-      localStorage.setItem('jm_current_user', JSON.stringify(updatedStaff));
     }
     try {
       await apiSaveStaff(updatedStaff);
@@ -408,7 +342,6 @@ export default function App() {
 
   const handleLoginUser = (user: StaffUser) => {
     setCurrentUser(user);
-    localStorage.setItem('jm_current_user', JSON.stringify(user));
     setCurrentView('dashboard');
     
     // Auto redirect to permitted default tab
@@ -434,14 +367,6 @@ export default function App() {
         setPurchases([]);
         setSalesReturns([]);
         setExpenses([]);
-        localStorage.setItem('hsc_products', '[]');
-        localStorage.setItem('hsc_customers', '[]');
-        localStorage.setItem('hsc_documents', '[]');
-        localStorage.setItem('hsc_dispatches', '[]');
-        localStorage.setItem('hsc_suppliers', '[]');
-        localStorage.setItem('hsc_purchases', '[]');
-        localStorage.setItem('hsc_returns', '[]');
-        localStorage.setItem('hsc_expenses', '[]');
         alert("Database successfully cleared! You can now start with fresh data.");
       } catch (e: any) {
         console.error('Error clearing database:', e);
@@ -468,19 +393,16 @@ export default function App() {
   const handleAddProduct = async (p: Product) => {
     const list = [p, ...products];
     setProducts(list);
-    localStorage.setItem('hsc_products', JSON.stringify(list));
     try {
       await apiSaveProduct(p);
     } catch (e: any) {
       console.warn('Backend sync warning:', e);
-      // Data is saved in local browser state & localStorage
     }
   };
 
   const handleUpdateProduct = async (p: Product) => {
     const list = products.map(item => item.id === p.id ? p : item);
     setProducts(list);
-    localStorage.setItem('hsc_products', JSON.stringify(list));
     try {
       await apiSaveProduct(p);
     } catch (e: any) {
@@ -491,7 +413,6 @@ export default function App() {
   const handleDeleteProduct = async (id: string) => {
     const list = products.filter(p => p.id !== id);
     setProducts(list);
-    localStorage.setItem('hsc_products', JSON.stringify(list));
     try {
       await apiDeleteProduct(id);
     } catch (e: any) {
@@ -503,7 +424,6 @@ export default function App() {
   const handleAddCustomer = async (c: Customer) => {
     const list = [c, ...customers];
     setCustomers(list);
-    localStorage.setItem('hsc_customers', JSON.stringify(list));
     try {
       await apiSaveCustomer(c);
     } catch (e: any) {
@@ -520,7 +440,6 @@ export default function App() {
       list = [c, ...customers];
     }
     setCustomers(list);
-    localStorage.setItem('hsc_customers', JSON.stringify(list));
     try {
       await apiSaveCustomer(c);
     } catch (e: any) {
@@ -531,7 +450,6 @@ export default function App() {
   const handleDeleteCustomer = async (id: string) => {
     const list = customers.filter(c => c.id !== id);
     setCustomers(list);
-    localStorage.setItem('hsc_customers', JSON.stringify(list));
     try {
       await apiDeleteCustomer(id);
     } catch (e: any) {
@@ -550,7 +468,6 @@ export default function App() {
     }
 
     setDocuments(list);
-    localStorage.setItem('hsc_documents', JSON.stringify(list));
 
     try {
       await apiSaveDocument(doc);
@@ -575,7 +492,6 @@ export default function App() {
         return prod;
       });
       setProducts(updatedProducts);
-      localStorage.setItem('hsc_products', JSON.stringify(updatedProducts));
     }
 
     setEditingDocument(null);
@@ -659,7 +575,6 @@ export default function App() {
       list = [dispatch, ...dispatches];
     }
     setDispatches(list);
-    localStorage.setItem('hsc_dispatches', JSON.stringify(list));
 
     try {
       await apiSaveFieldDispatch(dispatch);
@@ -671,7 +586,6 @@ export default function App() {
   const handleDeleteDispatch = async (id: string) => {
     const list = dispatches.filter(d => d.id !== id);
     setDispatches(list);
-    localStorage.setItem('hsc_dispatches', JSON.stringify(list));
     try {
       await apiDeleteFieldDispatch(id);
     } catch (e) {
@@ -690,7 +604,6 @@ export default function App() {
       list = [supplier, ...suppliers];
     }
     setSuppliers(list);
-    localStorage.setItem('hsc_suppliers', JSON.stringify(list));
     try {
       await apiSaveSupplier(supplier);
     } catch (e) {
@@ -701,7 +614,6 @@ export default function App() {
   const handleDeleteSupplier = async (id: string) => {
     const list = suppliers.filter(s => s.id !== id);
     setSuppliers(list);
-    localStorage.setItem('hsc_suppliers', JSON.stringify(list));
     try {
       await apiDeleteSupplier(id);
     } catch (e) {
@@ -720,7 +632,6 @@ export default function App() {
       list = [purchase, ...purchases];
     }
     setPurchases(list);
-    localStorage.setItem('hsc_purchases', JSON.stringify(list));
 
     // Automatically update or create products in inventory
     let updatedProducts = [...products];
@@ -785,7 +696,6 @@ export default function App() {
       }
 
       setProducts(updatedProducts);
-      localStorage.setItem('hsc_products', JSON.stringify(updatedProducts));
     }
 
     try {
@@ -798,7 +708,6 @@ export default function App() {
   const handleDeletePurchase = async (id: string) => {
     const list = purchases.filter(p => p.id !== id);
     setPurchases(list);
-    localStorage.setItem('hsc_purchases', JSON.stringify(list));
     try {
       await apiDeletePurchase(id);
     } catch (e) {
@@ -817,7 +726,6 @@ export default function App() {
       list = [ret, ...salesReturns];
     }
     setSalesReturns(list);
-    localStorage.setItem('hsc_returns', JSON.stringify(list));
 
     // 1. If restocked, increase inventory product stock immediately!
     if (ret.restocked && ret.quantity > 0) {
@@ -833,7 +741,6 @@ export default function App() {
         return prod;
       });
       setProducts(updatedProducts);
-      localStorage.setItem('hsc_products', JSON.stringify(updatedProducts));
     }
 
     // 2. If deductFromDue, adjust customer's invoice/bill due amount
@@ -852,7 +759,6 @@ export default function App() {
         };
         const updatedDocs = documents.map(d => d.id === updatedDoc.id ? updatedDoc : d);
         setDocuments(updatedDocs);
-        localStorage.setItem('hsc_documents', JSON.stringify(updatedDocs));
         apiSaveDocument(updatedDoc).catch(() => {});
       }
     }
@@ -867,7 +773,6 @@ export default function App() {
   const handleDeleteReturn = async (id: string) => {
     const list = salesReturns.filter(r => r.id !== id);
     setSalesReturns(list);
-    localStorage.setItem('hsc_returns', JSON.stringify(list));
     try {
       await apiDeleteReturn(id);
     } catch (e) {
@@ -886,7 +791,6 @@ export default function App() {
       list = [expense, ...expenses];
     }
     setExpenses(list);
-    localStorage.setItem('hsc_expenses', JSON.stringify(list));
     try {
       await apiSaveExpense(expense);
     } catch (e) {
@@ -897,7 +801,6 @@ export default function App() {
   const handleDeleteExpense = async (id: string) => {
     const list = expenses.filter(e => e.id !== id);
     setExpenses(list);
-    localStorage.setItem('hsc_expenses', JSON.stringify(list));
     try {
       await apiDeleteExpense(id);
     } catch (e) {
@@ -910,7 +813,6 @@ export default function App() {
     const updatedMap = new Map(docsToUpdate.map(d => [d.id, d]));
     const list = documents.map(doc => updatedMap.has(doc.id) ? updatedMap.get(doc.id)! : doc);
     setDocuments(list);
-    localStorage.setItem('hsc_documents', JSON.stringify(list));
 
     for (const doc of docsToUpdate) {
       try {
@@ -934,7 +836,6 @@ export default function App() {
       return prod;
     });
     setProducts(updatedProducts);
-    localStorage.setItem('hsc_products', JSON.stringify(updatedProducts));
   };
 
   // HANDLER FOR SETTINGS SAVE
@@ -954,7 +855,6 @@ export default function App() {
   // Quick helper to logout / reset view
   const handleLogout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('jm_current_user');
     setCurrentView('catalog');
     setViewingDocument(null);
     setEditingDocument(null);
@@ -1068,7 +968,7 @@ export default function App() {
                 )}
 
                 {/* Tab: Customer List */}
-                {(currentUser?.role === 'ADMIN' || hasPermission('view_customers') || hasPermission('view_company_profiles')) && (
+                {(currentUser?.role === 'ADMIN' || hasPermission('view_customers') || hasPermission('view_company_profiles') || hasPermission('view_due_ledger')) && (
                   <button
                     onClick={() => { setActiveTab('customers'); setEditingDocument(null); setIsCreatingDoc(null); }}
                     className={`w-full flex items-center justify-between px-3.5 py-3 rounded-lg transition-all text-left cursor-pointer ${
@@ -1386,20 +1286,22 @@ export default function App() {
                   )}
 
                   {/* TAB PANEL: Customer List */}
-                  {activeTab === 'customers' && (currentUser?.role === 'ADMIN' || hasPermission('view_customers') || hasPermission('view_company_profiles')) && (
-                    <CustomerList 
-                      customers={customers}
-                      documents={documents}
-                      dispatches={dispatches}
-                      settings={settings}
-                      onSaveCustomer={handleSaveCustomer}
-                      onDeleteCustomer={handleDeleteCustomer}
-                      onViewDocument={(doc) => setViewingDocument(doc)}
-                      onCreateDocumentForCustomer={(customer, type) => {
-                        setIsCreatingDoc(type);
-                        setEditingDocument(null);
-                      }}
-                    />
+                  {activeTab === 'customers' && (currentUser?.role === 'ADMIN' || hasPermission('view_customers') || hasPermission('view_company_profiles') || hasPermission('view_due_ledger')) && (
+                    <ErrorBoundary fallbackTitle="Customer Directory">
+                      <CustomerList 
+                        customers={customers || []}
+                        documents={documents || []}
+                        dispatches={dispatches || []}
+                        settings={settings}
+                        onSaveCustomer={handleSaveCustomer}
+                        onDeleteCustomer={handleDeleteCustomer}
+                        onViewDocument={(doc) => setViewingDocument(doc)}
+                        onCreateDocumentForCustomer={(customer, type) => {
+                          setIsCreatingDoc(type);
+                          setEditingDocument(null);
+                        }}
+                      />
+                    </ErrorBoundary>
                   )}
 
                   {/* TAB PANEL 2b: Purchases & Inward Stock Management */}
