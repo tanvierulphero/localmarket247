@@ -25,17 +25,24 @@ export default function DocumentList({
 
   // Filtering documents
   const filteredDocuments = useMemo(() => {
-    return documents.filter(doc => {
-      const matchSearch = doc.docNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          doc.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (doc.customerCompany && doc.customerCompany.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                          (doc.subject && doc.subject.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchType = selectedType === 'ALL' || doc.type === selectedType;
-      const matchStatus = selectedStatus === 'ALL' || doc.status === selectedStatus;
+    return [...documents]
+      .sort((a, b) => {
+        const timeA = new Date(a.date || 0).getTime();
+        const timeB = new Date(b.date || 0).getTime();
+        if (timeB !== timeA) return timeB - timeA;
+        return (b.id || '').localeCompare(a.id || '');
+      })
+      .filter(doc => {
+        const matchSearch = doc.docNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            doc.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (doc.customerCompany && doc.customerCompany.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                            (doc.subject && doc.subject.toLowerCase().includes(searchQuery.toLowerCase()));
+        
+        const matchType = selectedType === 'ALL' || doc.type === selectedType;
+        const matchStatus = selectedStatus === 'ALL' || doc.status === selectedStatus;
 
-      return matchSearch && matchType && matchStatus;
-    });
+        return matchSearch && matchType && matchStatus;
+      });
   }, [documents, searchQuery, selectedType, selectedStatus]);
 
   // Group count for types

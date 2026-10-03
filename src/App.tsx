@@ -308,38 +308,66 @@ export default function App() {
   useEffect(() => {
     loadCloudSqlData();
 
-    // Establish Real-Time Socket Connection
-    const socket = io();
+    // Establish Real-Time Socket Connection (if Node environment available)
+    let socket: any = null;
+    try {
+      socket = io();
+      socket.on('db_change', (change: any) => {
+        if (change.entity === 'products') {
+          apiGetProducts().then(setProducts).catch(() => {});
+        } else if (change.entity === 'customers') {
+          apiGetCustomers().then(setCustomers).catch(() => {});
+        } else if (change.entity === 'documents') {
+          apiGetDocuments().then(setDocuments).catch(() => {});
+        } else if (change.entity === 'staff') {
+          apiGetStaff().then(setStaffUsers).catch(() => {});
+        } else if (change.entity === 'settings') {
+          apiGetSettings().then(s => { setSettings(s); setSettingsForm(s); }).catch(() => {});
+        } else if (change.entity === 'dispatches') {
+          apiGetFieldDispatches().then(setDispatches).catch(() => {});
+        } else if (change.entity === 'suppliers') {
+          apiGetSuppliers().then(setSuppliers).catch(() => {});
+        } else if (change.entity === 'purchases') {
+          apiGetPurchases().then(setPurchases).catch(() => {});
+        } else if (change.entity === 'returns') {
+          apiGetReturns().then(setSalesReturns).catch(() => {});
+        } else if (change.entity === 'expenses') {
+          apiGetExpenses().then(setExpenses).catch(() => {});
+        } else if (change.entity === 'database') {
+          loadCloudSqlData();
+        }
+      });
+    } catch {
+      // Socket not available on static PHP hosting
+    }
 
-    socket.on('db_change', (change) => {
-      console.log('Real-Time SQL Change Notification Received:', change);
-      if (change.entity === 'products') {
-        apiGetProducts().then(setProducts).catch(() => {});
-      } else if (change.entity === 'customers') {
-        apiGetCustomers().then(setCustomers).catch(() => {});
-      } else if (change.entity === 'documents') {
-        apiGetDocuments().then(setDocuments).catch(() => {});
-      } else if (change.entity === 'staff') {
-        apiGetStaff().then(setStaffUsers).catch(() => {});
-      } else if (change.entity === 'settings') {
-        apiGetSettings().then(s => { setSettings(s); setSettingsForm(s); }).catch(() => {});
-      } else if (change.entity === 'dispatches') {
-        apiGetFieldDispatches().then(setDispatches).catch(() => {});
-      } else if (change.entity === 'suppliers') {
-        apiGetSuppliers().then(setSuppliers).catch(() => {});
-      } else if (change.entity === 'purchases') {
-        apiGetPurchases().then(setPurchases).catch(() => {});
-      } else if (change.entity === 'returns') {
-        apiGetReturns().then(setSalesReturns).catch(() => {});
-      } else if (change.entity === 'expenses') {
-        apiGetExpenses().then(setExpenses).catch(() => {});
-      } else if (change.entity === 'database') {
-        loadCloudSqlData();
-      }
-    });
+    // Live Server Background Auto-Sync Polling (Every 6 seconds)
+    // Ensures quotation requests submitted on mobile/other browsers instantly appear in Admin Panel!
+    const pollTimer = setInterval(() => {
+      apiGetDocuments().then(freshDocs => {
+        if (Array.isArray(freshDocs) && freshDocs.length > 0) {
+          setDocuments(freshDocs);
+          localStorage.setItem('hsc_documents', JSON.stringify(freshDocs));
+        }
+      }).catch(() => {});
+
+      apiGetCustomers().then(freshCusts => {
+        if (Array.isArray(freshCusts) && freshCusts.length > 0) {
+          setCustomers(freshCusts);
+          localStorage.setItem('hsc_customers', JSON.stringify(freshCusts));
+        }
+      }).catch(() => {});
+    }, 6000);
+
+    const onWindowFocus = () => {
+      loadCloudSqlData();
+    };
+    window.addEventListener('focus', onWindowFocus);
 
     return () => {
-      socket.disconnect();
+      clearInterval(pollTimer);
+      window.removeEventListener('focus', onWindowFocus);
+      if (socket) socket.disconnect();
     };
   }, []);
 
