@@ -32,9 +32,31 @@ interface DueLedgerProps {
   onViewDocument: (doc: Document) => void;
 }
 
+// Helper: Compute real, reliable document accounting figures
+export function getDocFinancials(doc: Document) {
+  if (!doc) return { total: 0, paid: 0, due: 0 };
+  const total = Math.max(0, Number(doc.total) || 0);
+  let paid = doc.paidAmount !== undefined && doc.paidAmount !== null 
+    ? Number(doc.paidAmount) 
+    : (doc.status === 'Paid' ? total : 0);
+  let due = doc.dueAmount !== undefined && doc.dueAmount !== null && (Number(doc.dueAmount) > 0 || paid > 0 || doc.status === 'Paid')
+    ? Number(doc.dueAmount) 
+    : (doc.status === 'Paid' ? 0 : Math.max(0, total - paid));
+
+  // If due is 0 but total > 0 and paid < total and status is not Paid, correct the due!
+  if (due === 0 && paid < total && doc.status !== 'Paid') {
+    due = Math.max(0, total - paid);
+  }
+  if (doc.status === 'Paid') {
+    due = 0;
+    paid = total;
+  }
+  return { total, paid, due };
+}
+
 // Helper: Parse notes to extract payment transactions dynamically for reprinting later
 function parsePaymentsFromDoc(doc: Document) {
-  if (!doc.notes) return [];
+  if (!doc) return [];
   const results: {
     id: string;
     receiptNo: string;
@@ -48,50 +70,63 @@ function parsePaymentsFromDoc(doc: Document) {
     customerCompany: string;
     customerPhone: string;
   }[] = [];
-  
-  // Pattern 1: Single Collect
-  // [Payment Received: Tk. X on YYYY-MM-DD via Z - Notes]
-  const p1Regex = /\[Payment Received: Tk. ([\d,]+) on ([\d-]+) via ([^\]-]+) - (.*?)\]/g;
+
+  const { total, paid, due } = getDocFinancials(doc);
+  const notesText = doc.notes || '';
+
+  // Pattern 1: Single Collect or Company Due Collect
+  // [Payment Received: Tk. X on YYYY-MM-DD via Z - Notes - Ref: MR-...]
+  // [Company Due Received: Tk. X via Z on YYYY-MM-DD - Notes - Ref: MR-...]
+  const pRegex = /\[(?:Payment Received|Company Due Received|Due Collected|Payment Cleared): Tk\.?\s*([\d,]+)\s*(?:on|via)\s*([^\s\]-]+)?\s*(?:on|via)?\s*([\d-]+)?\s*-\s*([^\]]*)\]/gi;
   let match;
-  while ((match = p1Regex.exec(doc.notes)) !== null) {
-    const amountStr = match[1].replace(/,/g, '');
+  while ((match = pRegex.exec(notesText)) !== null) {
+    const amountStr = (match[1] || '0').replace(/,/g, '');
     const amount = parseInt(amountStr, 10) || 0;
-    const date = match[2];
-    const paymentMethod = match[3].trim();
-    const notes = match[4].trim();
+    if (amount <= 0) continue;
+
+    let partA = (match[2] || 'Cash').trim();
+    let partB = (match[3] || doc.date || new Date().toISOString().split('T')[0]).trim();
+    let paymentMethod = partA;
+    let date = partB;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(partA)) {
+      date = partA;
+      paymentMethod = partB || 'Cash';
+    }
+
+    let rawNote = (match[4] || '').trim();
+    let receiptNo = `MR-${date.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const refMatch = rawNote.match(/Ref:\s*(MR-[\w-]+)/i);
+    if (refMatch) {
+      receiptNo = refMatch[1];
+      rawNote = rawNote.replace(/Ref:\s*MR-[\w-]+/i, '').replace(/-\s*$/, '').trim();
+    }
+
     results.push({
-      id: `${doc.id}-p1-${match.index}`,
-      receiptNo: `MR-${date.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: `${doc.id}-p-${match.index}`,
+      receiptNo,
       date,
       amount,
-      paymentMethod,
-      notes,
+      paymentMethod: paymentMethod || 'Cash',
+      notes: rawNote || 'Payment Received',
       references: `${doc.type} #${doc.docNumber}`,
-      remainingDue: doc.dueAmount || 0,
+      remainingDue: due,
       customerName: doc.customerName,
       customerCompany: doc.customerCompany || '',
       customerPhone: doc.customerPhone || ''
     });
   }
 
-  // Pattern 2: Company Consolidated Collect
-  // [Company Due Received: Tk. X via Z on YYYY-MM-DD - Notes]
-  const p2Regex = /\[(?:Company Due Received|\u0995\u09cb\u09ae\u09cd\u09aa\u09be\u09a8\u09bf Due \u099c\u09ae\u09be): Tk\. ([\d,]+) via ([^\]-]+) on ([\d-]+) - (.*?)\]/g;
-  while ((match = p2Regex.exec(doc.notes)) !== null) {
-    const amountStr = match[1].replace(/,/g, '');
-    const amount = parseInt(amountStr, 10) || 0;
-    const paymentMethod = match[2].trim();
-    const date = match[3];
-    const notes = match[4].trim();
+  // Fallback: If no parsed payments found in notes, but doc has recorded paid amount > 0
+  if (results.length === 0 && paid > 0) {
     results.push({
-      id: `${doc.id}-p2-${match.index}`,
-      receiptNo: `MR-${date.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
-      date,
-      amount,
-      paymentMethod,
-      notes,
-      references: `${doc.type} #${doc.docNumber} (Ledger Payment)`,
-      remainingDue: doc.dueAmount || 0,
+      id: `${doc.id}-fallback-receipt`,
+      receiptNo: `MR-${(doc.date || '2026-01-01').replace(/-/g, '')}-${doc.docNumber.replace(/[^0-9]/g, '').slice(-4) || '1001'}`,
+      date: doc.date || new Date().toISOString().split('T')[0],
+      amount: paid,
+      paymentMethod: 'Cash / Bank',
+      notes: `Payment against ${doc.type} #${doc.docNumber}`,
+      references: `${doc.type} #${doc.docNumber}`,
+      remainingDue: due,
       customerName: doc.customerName,
       customerCompany: doc.customerCompany || '',
       customerPhone: doc.customerPhone || ''
@@ -115,48 +150,38 @@ function generateCustomerLedgerTransactions(item: { customer: Customer; document
   }[] = [];
 
   item.documents.forEach(doc => {
-    // 1. Add Billed Invoice entry
+    const { total } = getDocFinancials(doc);
+    const docLabel = doc.type === 'CHALLAN' 
+      ? 'Delivery Challan' 
+      : doc.type === 'BILL' 
+      ? 'Purchase Bill' 
+      : 'Sales Invoice';
+
+    // 1. Add Billed document entry
     transactions.push({
       id: `bill-${doc.id}`,
       date: doc.date,
       refNo: doc.docNumber,
       type: 'INVOICE',
-      particulars: `${doc.type === 'BILL' ? 'Purchase Bill' : 'Sales Invoice'} #${doc.docNumber}${doc.items && doc.items.length > 0 ? ` (${doc.items.map(i => i.name).join(', ')})` : ''}`,
-      billed: doc.total,
+      particulars: `${docLabel} #${doc.docNumber}${doc.items && doc.items.length > 0 ? ` (${doc.items.map(i => i.name).join(', ')})` : ''}`,
+      billed: total,
       paid: 0
     });
 
     // 2. Parse payment log entries from doc.notes
     const parsedPayments = parsePaymentsFromDoc(doc);
-    if (parsedPayments.length > 0) {
-      parsedPayments.forEach((p, idx) => {
-        transactions.push({
-          id: `pay-${doc.id}-${idx}`,
-          date: p.date,
-          refNo: p.receiptNo,
-          type: 'PAYMENT',
-          particulars: `Payment Received via ${p.paymentMethod}${p.notes ? ` (${p.notes})` : ''} [Ref: ${doc.docNumber}]`,
-          billed: 0,
-          paid: p.amount,
-          paymentMethod: p.paymentMethod
-        });
+    parsedPayments.forEach((p, idx) => {
+      transactions.push({
+        id: `pay-${doc.id}-${idx}`,
+        date: p.date,
+        refNo: p.receiptNo,
+        type: 'PAYMENT',
+        particulars: `Payment Received via ${p.paymentMethod}${p.notes ? ` (${p.notes})` : ''} [Ref: ${doc.docNumber}]`,
+        billed: 0,
+        paid: p.amount,
+        paymentMethod: p.paymentMethod
       });
-    } else {
-      // Fallback: If no parsed payments exist in notes, but doc has paidAmount > 0 or status === 'Paid'
-      const actualPaid = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
-      if (actualPaid > 0) {
-        transactions.push({
-          id: `pay-fallback-${doc.id}`,
-          date: doc.date,
-          refNo: `REC-${doc.docNumber}`,
-          type: 'PAYMENT',
-          particulars: `Payment Cleared for ${doc.docNumber}`,
-          billed: 0,
-          paid: actualPaid,
-          paymentMethod: 'Cash/Bank'
-        });
-      }
-    }
+    });
   });
 
   // Sort chronologically ascending by date
@@ -264,28 +289,54 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
     doc && (doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN' || (Number(doc.total) > 0 && doc.type !== 'QUOTATION' && doc.type !== 'OFFER_LETTER'))
   );
 
-  // Compute stats
-  const totalInvoiced = financialDocs.reduce((sum, doc) => sum + (Number(doc.total) || 0), 0);
-  
-  const totalPaid = financialDocs.reduce((sum, doc) => {
-    if (doc.paidAmount !== undefined) return sum + (Number(doc.paidAmount) || 0);
-    return doc.status === 'Paid' ? sum + (Number(doc.total) || 0) : sum;
-  }, 0);
-
-  const totalOutstanding = financialDocs.reduce((sum, doc) => {
-    if (doc.dueAmount !== undefined) return sum + (Number(doc.dueAmount) || 0);
-    return doc.status !== 'Paid' ? sum + (Number(doc.total) || 0) : sum;
-  }, 0);
+  // Compute stats using bulletproof getDocFinancials
+  const totalInvoiced = financialDocs.reduce((sum, doc) => sum + getDocFinancials(doc).total, 0);
+  const totalPaid = financialDocs.reduce((sum, doc) => sum + getDocFinancials(doc).paid, 0);
+  const totalOutstanding = financialDocs.reduce((sum, doc) => sum + getDocFinancials(doc).due, 0);
 
   const overdueOutstanding = financialDocs.reduce((sum, doc) => {
     if (doc.status === 'Overdue') {
-      return sum + (doc.dueAmount !== undefined ? Number(doc.dueAmount) : Number(doc.total));
+      return sum + getDocFinancials(doc).due;
     }
     return sum;
   }, 0);
 
-  // Group financial summaries by customer (matches by customerId, phone, or company name)
-  const customerLedger = (customers || []).map(cust => {
+  // Collect all known customers + any additional customer entities found in financial documents
+  const allCustomerEntities: Customer[] = [...(customers || [])];
+  const registeredIds = new Set(allCustomerEntities.map(c => String(c.id || '').trim()));
+  const registeredComps = new Set(allCustomerEntities.map(c => String(c.company || '').trim().toLowerCase()).filter(Boolean));
+  const registeredNames = new Set(allCustomerEntities.map(c => String(c.name || '').trim().toLowerCase()).filter(Boolean));
+
+  financialDocs.forEach(d => {
+    const dId = String(d.customerId || '').trim();
+    const dComp = String(d.customerCompany || '').trim();
+    const dName = String(d.customerName || dComp || 'Valued Client').trim();
+    const compLower = dComp.toLowerCase();
+    const nameLower = dName.toLowerCase();
+
+    const isKnown = (dId && registeredIds.has(dId)) || 
+                    (compLower && registeredComps.has(compLower)) || 
+                    (nameLower && registeredNames.has(nameLower));
+
+    if (!isKnown) {
+      if (dId) registeredIds.add(dId);
+      if (compLower) registeredComps.add(compLower);
+      if (nameLower) registeredNames.add(nameLower);
+
+      allCustomerEntities.push({
+        id: dId || `cust-auto-${Math.random().toString(36).substring(2, 9)}`,
+        companyId: `COMP-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: dName,
+        company: dComp || dName,
+        phone: d.customerPhone || 'N/A',
+        email: d.customerEmail || '',
+        address: d.customerAddress || 'Gazipur, BD',
+      });
+    }
+  });
+
+  // Group financial summaries by customer
+  const customerLedger = allCustomerEntities.map(cust => {
     if (!cust) return null;
     const targetId = String(cust.id || '');
     const targetPhone = String(cust.phone || '').trim().replace(/[^0-9]/g, '');
@@ -304,19 +355,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
       return false;
     });
     
-    const invoiced = custDocs.reduce((sum, d) => sum + (Number(d.total) || 0), 0);
-    
-    const paid = custDocs.reduce((sum, d) => {
-      if (d.paidAmount !== undefined) return sum + (Number(d.paidAmount) || 0);
-      return d.status === 'Paid' ? sum + (Number(d.total) || 0) : sum;
-    }, 0);
-
-    const due = custDocs.reduce((sum, d) => {
-      if (d.dueAmount !== undefined) return sum + (Number(d.dueAmount) || 0);
-      return d.status !== 'Paid' ? sum + (Number(d.total) || 0) : sum;
-    }, 0);
-
-    const overdueCount = custDocs.filter(d => d.status === 'Overdue').length;
+    const invoiced = custDocs.reduce((sum, d) => sum + getDocFinancials(d).total, 0);
+    const paid = custDocs.reduce((sum, d) => sum + getDocFinancials(d).paid, 0);
+    const due = custDocs.reduce((sum, d) => sum + getDocFinancials(d).due, 0);
+    const overdueCount = custDocs.filter(d => d.status === 'Overdue' && getDocFinancials(d).due > 0).length;
 
     return {
       customer: cust,
@@ -326,7 +368,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
       overdueCount,
       documents: custDocs
     };
-  }).filter((item): item is NonNullable<typeof item> => item !== null && item.invoiced > 0); // Only show customers with transaction history
+  }).filter((item): item is NonNullable<typeof item> => item !== null && item.invoiced > 0);
 
   // Filter customer ledger based on search
   const filteredCustomerLedger = customerLedger.filter(item => {
@@ -349,15 +391,15 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
     return matchesSearch;
   });
 
-  // Handle Payment Form submission
+  // Handle Single Document Payment Form submission
   const handleCollectPaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!collectingDoc) return;
+    if (!collectingDoc || paymentAmount <= 0) return;
 
-    // Current values or defaults
-    const currentPaid = collectingDoc.paidAmount !== undefined ? collectingDoc.paidAmount : (collectingDoc.status === 'Paid' ? collectingDoc.total : 0);
-    const newPaid = Math.min(collectingDoc.total, currentPaid + paymentAmount);
-    const newDue = Math.max(0, collectingDoc.total - newPaid);
+    const { total, paid: currentPaid, due: currentDue } = getDocFinancials(collectingDoc);
+    const safePayAmount = Math.min(currentDue, paymentAmount);
+    const newPaid = Math.min(total, currentPaid + safePayAmount);
+    const newDue = Math.max(0, total - newPaid);
 
     let newStatus: DocumentStatus = 'Partially Paid';
     if (newDue === 0) {
@@ -366,14 +408,15 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
       newStatus = 'Unpaid';
     }
 
-    // Append standard notes if any
+    // Append standard payment log note with Receipt No
+    const receiptNo = `MR-${singlePaymentDate.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
     let updatedNotes = collectingDoc.notes || '';
-    if (paymentNotes.trim()) {
-      updatedNotes += `\n[Payment Received: Tk. ${paymentAmount.toLocaleString()} on ${singlePaymentDate} via ${singlePaymentMethod} - ${paymentNotes}]`;
-    }
+    const noteMemo = `\n[Payment Received: Tk. ${safePayAmount.toLocaleString()} on ${singlePaymentDate} via ${singlePaymentMethod} - ${paymentNotes.trim() || 'Due Payment'} - Ref: ${receiptNo}]`;
+    updatedNotes += noteMemo;
 
     const updatedDoc: Document = {
       ...collectingDoc,
+      total,
       paidAmount: newPaid,
       dueAmount: newDue,
       status: newStatus,
@@ -382,16 +425,16 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
     onUpdateDocument(updatedDoc);
 
-    // Create printable receipt
+    // Create printable receipt immediately
     setRecentReceipt({
-      receiptNo: `MR-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      receiptNo,
       date: singlePaymentDate,
       customerName: collectingDoc.customerName,
       customerCompany: collectingDoc.customerCompany || '',
       customerPhone: collectingDoc.customerPhone || '',
-      amount: paymentAmount,
+      amount: safePayAmount,
       paymentMethod: singlePaymentMethod,
-      notes: paymentNotes || 'Invoice Due Payment',
+      notes: paymentNotes || 'Invoice Due Collection Receipt',
       references: `${collectingDoc.type} #${collectingDoc.docNumber}`,
       remainingDue: newDue
     });
@@ -415,23 +458,23 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
     setCompanyPayFeedback(null);
   };
 
-  // Handle Company Total Payment submission (distributes payment across due invoices oldest first)
+  // Handle Company Total Payment submission (distributes payment across due invoices/challans oldest first)
   const handleCompanyPaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!collectingCompany || companyPayAmount <= 0) return;
 
     // Filter unpaid/partially paid documents and sort oldest first
     const unpaidDocs = collectingCompany.documents
-      .filter(d => d.status !== 'Paid' && ((d.dueAmount !== undefined ? d.dueAmount : d.total) > 0))
+      .filter(d => getDocFinancials(d).due > 0 && d.status !== 'Paid')
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     let remainingToApply = companyPayAmount;
     const updatedDocs: Document[] = [];
+    const receiptNo = `MR-${companyPayDate.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     for (const doc of unpaidDocs) {
       if (remainingToApply <= 0) break;
-      const currentDue = doc.dueAmount !== undefined ? doc.dueAmount : doc.total;
-      const currentPaid = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
+      const { total, paid: currentPaid, due: currentDue } = getDocFinancials(doc);
 
       if (currentDue <= 0) continue;
 
@@ -442,10 +485,11 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
       const updatedDoc: Document = {
         ...doc,
+        total,
         dueAmount: newDue,
         paidAmount: newPaid,
         status: newDue === 0 ? 'Paid' : 'Partially Paid',
-        notes: (doc.notes || '') + `\n[Company Due Received: Tk. ${paymentForThisDoc.toLocaleString()} via ${companyPayMethod} on ${companyPayDate} - ${companyPayNotes || 'Ledger payment'}]`
+        notes: (doc.notes || '') + `\n[Company Due Received: Tk. ${paymentForThisDoc.toLocaleString()} via ${companyPayMethod} on ${companyPayDate} - ${companyPayNotes || 'Ledger Payment'} - Ref: ${receiptNo}]`
       };
       updatedDocs.push(updatedDoc);
     }
@@ -458,17 +502,17 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
     const remainingDue = Math.max(0, collectingCompany.totalDue - companyPayAmount);
     
-    // Create printable receipt for entire batch payment
+    // Create printable receipt for company consolidated payment
     setRecentReceipt({
-      receiptNo: `MR-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      receiptNo,
       date: companyPayDate,
       customerName: collectingCompany.customer.name,
       customerCompany: collectingCompany.customer.company || '',
       customerPhone: collectingCompany.customer.phone || '',
       amount: companyPayAmount,
       paymentMethod: companyPayMethod,
-      notes: companyPayNotes || 'Company Ledger Consolidated Payment',
-      references: `Invoices Paid: ` + updatedDocs.map(d => d.docNumber).join(', '),
+      notes: companyPayNotes || 'Company Consolidated Due Payment',
+      references: updatedDocs.length > 0 ? `Documents Paid: ` + updatedDocs.map(d => `${d.type} #${d.docNumber}`).join(', ') : 'Company Account Ledger Payment',
       remainingDue: remainingDue
     });
 
@@ -730,8 +774,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                       </thead>
                                       <tbody className="divide-y divide-slate-100 font-semibold text-slate-600">
                                         {item.documents.map((doc) => {
-                                          const paidAmt = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
-                                          const dueAmt = doc.dueAmount !== undefined ? doc.dueAmount : (doc.status !== 'Paid' ? doc.total : 0);
+                                          const { total: docTotal, paid: paidAmt, due: dueAmt } = getDocFinancials(doc);
                                           const parsedPayments = parsePaymentsFromDoc(doc);
                                           return (
                                             <tr key={doc.id} className="hover:bg-slate-50">
@@ -766,7 +809,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                                               </td>
                                               <td className="py-3 px-4">{doc.date}</td>
                                               <td className="py-3 px-4 font-mono">{doc.dueDate || '--'}</td>
-                                              <td className="py-3 px-4 text-right text-slate-900 font-bold">Tk. {doc.total.toLocaleString()}</td>
+                                              <td className="py-3 px-4 text-right text-slate-900 font-bold">Tk. {docTotal.toLocaleString()}</td>
                                               <td className="py-3 px-4 text-right text-emerald-600">Tk. {paidAmt.toLocaleString()}</td>
                                               <td className="py-3 px-4 text-right text-rose-600 font-bold">Tk. {dueAmt.toLocaleString()}</td>
                                               <td className="py-3 px-4 text-center">
@@ -868,8 +911,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {filteredInvoices.length > 0 ? (
                     filteredInvoices.map((doc) => {
-                      const paidAmt = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
-                      const dueAmt = doc.dueAmount !== undefined ? doc.dueAmount : (doc.status !== 'Paid' ? doc.total : 0);
+                      const { total: docTotal, paid: paidAmt, due: dueAmt } = getDocFinancials(doc);
                       const parsedPayments = parsePaymentsFromDoc(doc);
                       return (
                         <tr 
@@ -912,7 +954,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                           </td>
                           <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{doc.date}</td>
                           <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{doc.dueDate || '--'}</td>
-                          <td className="py-4 px-4 text-right font-bold text-slate-900">Tk. {doc.total.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-right font-bold text-slate-900">Tk. {docTotal.toLocaleString()}</td>
                           <td className="py-4 px-4 text-right font-bold text-emerald-600">Tk. {paidAmt.toLocaleString()}</td>
                           <td className="py-4 px-4 text-right font-bold text-rose-600">
                             <span className={dueAmt > 0 ? 'bg-rose-50 border border-rose-100 px-2 py-1 rounded-md' : 'text-slate-400'}>
@@ -1004,18 +1046,18 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 </div>
                 <div className="flex justify-between text-slate-500 font-semibold">
                   <span>Invoiced Total</span>
-                  <span className="font-bold text-slate-900">Tk. {collectingDoc.total.toLocaleString()}</span>
+                  <span className="font-bold text-slate-900">Tk. {getDocFinancials(collectingDoc).total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-slate-500 font-semibold">
                   <span>Previously Paid</span>
                   <span className="font-bold text-emerald-600">
-                    Tk. {(collectingDoc.paidAmount !== undefined ? collectingDoc.paidAmount : (collectingDoc.status === 'Paid' ? collectingDoc.total : 0)).toLocaleString()}
+                    Tk. {getDocFinancials(collectingDoc).paid.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-slate-200 pt-1.5 text-slate-800 font-bold">
                   <span>Outstanding Balance</span>
                   <span className="text-rose-600 font-extrabold">
-                    Tk. {(collectingDoc.dueAmount !== undefined ? collectingDoc.dueAmount : (collectingDoc.status !== 'Paid' ? collectingDoc.total : 0)).toLocaleString()}
+                    Tk. {getDocFinancials(collectingDoc).due.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -1029,7 +1071,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     type="number"
                     required
                     min={1}
-                    max={collectingDoc.dueAmount !== undefined ? collectingDoc.dueAmount : collectingDoc.total}
+                    max={getDocFinancials(collectingDoc).due}
                     value={paymentAmount === 0 ? '' : paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value === '' ? 0 : Number(e.target.value))}
                     placeholder="Enter collected amount"
@@ -1433,9 +1475,11 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
 
       {/* INDIVIDUAL CUSTOMER DUE & PAYMENT STATEMENT REPORT MODAL */}
       {viewingCustomerReport && (() => {
-        const ledgerTransactions = generateCustomerLedgerTransactions(viewingCustomerReport);
-        const cust = viewingCustomerReport.customer;
-        const allCustomerReceipts = viewingCustomerReport.documents.flatMap(doc => parsePaymentsFromDoc(doc));
+        // Derive live data from customerLedger so payments immediately reflect in the open statement
+        const liveReportItem = customerLedger.find(c => c.customer.id === viewingCustomerReport.customer.id) || viewingCustomerReport;
+        const ledgerTransactions = generateCustomerLedgerTransactions(liveReportItem);
+        const cust = liveReportItem.customer;
+        const allCustomerReceipts = liveReportItem.documents.flatMap(doc => parsePaymentsFromDoc(doc));
 
         return (
           <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
@@ -1456,10 +1500,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  {viewingCustomerReport.due > 0 && (
+                  {liveReportItem.due > 0 && (
                     <button
                       onClick={() => {
-                        const target = viewingCustomerReport;
+                        const target = liveReportItem;
                         setViewingCustomerReport(null);
                         handleOpenCompanyPay(target);
                       }}
@@ -1470,7 +1514,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                     </button>
                   )}
                   <button
-                    onClick={() => downloadCustomerStatementCSV(cust, ledgerTransactions, viewingCustomerReport)}
+                    onClick={() => downloadCustomerStatementCSV(cust, ledgerTransactions, liveReportItem)}
                     className="px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <Download className="w-3.5 h-3.5 text-blue-300" />
@@ -1571,17 +1615,17 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   <div className="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-1">
                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">1. Total Invoiced</span>
                     <span className="text-base sm:text-lg font-black text-slate-900 font-mono block">
-                      Tk. {viewingCustomerReport.invoiced.toLocaleString()}
+                      Tk. {liveReportItem.invoiced.toLocaleString()}
                     </span>
                     <span className="text-[9px] text-slate-400 font-semibold block">
-                      Total value of {viewingCustomerReport.documents.length} bills / challans
+                      Total value of {liveReportItem.documents.length} bills / challans
                     </span>
                   </div>
 
                   <div className="p-3 sm:p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
                     <span className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider block">2. Total Collected</span>
                     <span className="text-base sm:text-lg font-black text-emerald-700 font-mono block">
-                      Tk. {viewingCustomerReport.paid.toLocaleString()}
+                      Tk. {liveReportItem.paid.toLocaleString()}
                     </span>
                     <span className="text-[9px] text-emerald-600 font-semibold block">
                       Total payments deposited
@@ -1591,10 +1635,10 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   <div className="p-3 sm:p-4 bg-rose-50 border border-rose-200 rounded-xl text-center space-y-1">
                     <span className="text-[9px] font-bold text-rose-800 uppercase tracking-wider block">3. Remaining Due Balance</span>
                     <span className="text-base sm:text-xl font-black text-rose-700 font-mono block">
-                      Tk. {viewingCustomerReport.due.toLocaleString()}
+                      Tk. {liveReportItem.due.toLocaleString()}
                     </span>
                     <span className="text-[9px] text-rose-600 font-semibold block">
-                      {viewingCustomerReport.due === 0 ? 'All Cleared / Zero Outstanding' : 'Current Net Outstanding Due'}
+                      {liveReportItem.due === 0 ? 'All Cleared / Zero Outstanding' : 'Current Net Outstanding Due'}
                     </span>
                   </div>
                 </div>
@@ -1704,13 +1748,13 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                             Grand Total Balance:
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-black whitespace-nowrap">
-                            Tk. {viewingCustomerReport.invoiced.toLocaleString()}
+                            Tk. {liveReportItem.invoiced.toLocaleString()}
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-black text-emerald-700 whitespace-nowrap">
-                            Tk. {viewingCustomerReport.paid.toLocaleString()}
+                            Tk. {liveReportItem.paid.toLocaleString()}
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-black text-rose-700 text-sm whitespace-nowrap">
-                            Tk. {viewingCustomerReport.due.toLocaleString()}
+                            Tk. {liveReportItem.due.toLocaleString()}
                           </td>
                         </tr>
                       </tbody>

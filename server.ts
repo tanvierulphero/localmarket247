@@ -277,8 +277,27 @@ app.post('/api/documents', async (req, res) => {
     if (!item.id) {
       return res.status(400).json({ error: 'Missing document ID' });
     }
+
+    const totalNum = Math.max(0, Number(item.total) || 0);
+    const paidNum = item.paidAmount !== undefined && item.paidAmount !== null 
+      ? Number(item.paidAmount) 
+      : (item.status === 'Paid' ? totalNum : 0);
+    let dueNum = item.dueAmount !== undefined && item.dueAmount !== null && (Number(item.dueAmount) > 0 || paidNum > 0 || item.status === 'Paid')
+      ? Number(item.dueAmount) 
+      : (item.status === 'Paid' ? 0 : Math.max(0, totalNum - paidNum));
+    
+    if (dueNum === 0 && paidNum < totalNum && item.status !== 'Paid') {
+      dueNum = Math.max(0, totalNum - paidNum);
+    }
+    if (item.status === 'Paid') {
+      dueNum = 0;
+    }
+
     const dbItem = {
       ...item,
+      total: totalNum,
+      paidAmount: paidNum,
+      dueAmount: dueNum,
       vatEnabled: item.vatEnabled === false || item.vatEnabled === 0 ? 0 : 1
     };
 
@@ -308,9 +327,9 @@ app.post('/api/documents', async (req, res) => {
           taxRate: item.taxRate || 0,
           taxAmount: item.taxAmount || 0,
           discount: item.discount || 0,
-          total: item.total,
-          paidAmount: item.paidAmount || 0,
-          dueAmount: item.dueAmount || 0,
+          total: totalNum,
+          paidAmount: paidNum,
+          dueAmount: dueNum,
           status: item.status,
           terms: item.terms || '',
           notes: item.notes || null,

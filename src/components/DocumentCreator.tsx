@@ -325,6 +325,15 @@ export default function DocumentCreator({
     const calculatedTaxAmount = vatEnabled ? Math.round((calculatedSubtotal * taxRate) / 100) : 0;
     const calculatedTotal = Math.max(0, calculatedSubtotal + calculatedTaxAmount - discount);
 
+    const safePaid = editingDocument?.paidAmount !== undefined 
+      ? Number(editingDocument.paidAmount) 
+      : (status === 'Paid' ? calculatedTotal : 0);
+    const safeDue = editingDocument?.dueAmount !== undefined && (editingDocument.dueAmount > 0 || safePaid > 0)
+      ? Number(editingDocument.dueAmount) 
+      : (status === 'Paid' ? 0 : Math.max(0, calculatedTotal - safePaid));
+
+    const finalStatus: DocumentStatus = status || (safeDue === 0 ? 'Paid' : (safePaid > 0 ? 'Partially Paid' : 'Unpaid'));
+
     const doc: Document = {
       id: editingDocument ? editingDocument.id : `doc-${Date.now()}`,
       type: docType,
@@ -347,7 +356,9 @@ export default function DocumentCreator({
       taxAmount: calculatedTaxAmount,
       discount,
       total: calculatedTotal,
-      status,
+      paidAmount: safePaid,
+      dueAmount: safeDue,
+      status: finalStatus,
       terms,
       signatureName,
       signatureLabel,

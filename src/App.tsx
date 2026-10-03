@@ -192,6 +192,31 @@ export default function App() {
     return currentUser.permissions.includes(perm);
   };
 
+  // Helper: Sanitize document to guarantee total, paidAmount, and dueAmount follow accounting rules
+  const sanitizeDoc = (doc: Document): Document => {
+    if (!doc) return doc;
+    const total = Math.max(0, Number(doc.total) || 0);
+    let paid = doc.paidAmount !== undefined && doc.paidAmount !== null 
+      ? Number(doc.paidAmount) 
+      : (doc.status === 'Paid' ? total : 0);
+    let due = doc.dueAmount !== undefined && doc.dueAmount !== null && (Number(doc.dueAmount) > 0 || paid > 0 || doc.status === 'Paid')
+      ? Number(doc.dueAmount) 
+      : (doc.status === 'Paid' ? 0 : Math.max(0, total - paid));
+    if (due === 0 && paid < total && doc.status !== 'Paid') {
+      due = Math.max(0, total - paid);
+    }
+    if (doc.status === 'Paid') {
+      due = 0;
+      paid = total;
+    }
+    return {
+      ...doc,
+      total,
+      paidAmount: paid,
+      dueAmount: due,
+    };
+  };
+
   // Fetch all data from Cloud SQL Database on load
   const loadCloudSqlData = async () => {
     try {
@@ -215,7 +240,7 @@ export default function App() {
       setCustomers(safeCusts);
 
       const safeDocs = Array.isArray(docs) ? docs : [];
-      setDocuments(safeDocs);
+      setDocuments(safeDocs.map(sanitizeDoc));
 
       const safeDisps = Array.isArray(disps) ? disps : [];
       setDispatches(safeDisps);
@@ -283,7 +308,7 @@ export default function App() {
     const pollTimer = setInterval(() => {
       apiGetDocuments().then(freshDocs => {
         if (Array.isArray(freshDocs) && freshDocs.length > 0) {
-          setDocuments(freshDocs);
+          setDocuments(freshDocs.map(sanitizeDoc));
         }
       }).catch(() => {});
 
@@ -459,18 +484,19 @@ export default function App() {
 
   // HANDLERS FOR DOCUMENTS
   const handleSaveDocument = async (doc: Document) => {
+    const cleanDoc = sanitizeDoc(doc);
     let list = [...documents];
-    const exists = documents.some(d => d.id === doc.id);
+    const exists = documents.some(d => d.id === cleanDoc.id);
     if (exists) {
-      list = documents.map(d => d.id === doc.id ? doc : d);
+      list = documents.map(d => d.id === cleanDoc.id ? cleanDoc : d);
     } else {
-      list = [doc, ...documents];
+      list = [cleanDoc, ...documents];
     }
 
     setDocuments(list);
 
     try {
-      await apiSaveDocument(doc);
+      await apiSaveDocument(cleanDoc);
     } catch (e: any) {
       console.warn('Backend sync warning:', e);
     }
@@ -478,7 +504,7 @@ export default function App() {
     // Inventory Stock Management for Goods Sales:
     // Creating a challan does not deduct inventory stock.
     // Stock is deducted only when a Bill or Invoice is created.
-    if ((doc.type === 'BILL' || doc.type === 'INVOICE') && !exists) {
+    if ((cleanDoc.type === 'BILL' || cleanDoc.type === 'INVOICE') && !exists) {
       const updatedProducts = products.map(prod => {
         const itemInDoc = doc.items.find(it => it.productId === prod.id);
         if (itemInDoc) {
@@ -810,11 +836,12 @@ export default function App() {
 
   // Batch Update Documents Handler (for Company-wide Payment Allocation)
   const handleBatchUpdateDocuments = async (docsToUpdate: Document[]) => {
-    const updatedMap = new Map(docsToUpdate.map(d => [d.id, d]));
+    const cleanDocs = docsToUpdate.map(sanitizeDoc);
+    const updatedMap = new Map(cleanDocs.map(d => [d.id, d]));
     const list = documents.map(doc => updatedMap.has(doc.id) ? updatedMap.get(doc.id)! : doc);
     setDocuments(list);
 
-    for (const doc of docsToUpdate) {
+    for (const doc of cleanDocs) {
       try {
         await apiSaveDocument(doc);
       } catch (e) {
