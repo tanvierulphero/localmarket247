@@ -259,44 +259,61 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
     documents: Document[];
   } | null>(null);
 
-  // Helper: Extract only Invoice & Bill documents
-  const financialDocs = documents.filter(doc => doc.type === 'INVOICE' || doc.type === 'BILL');
+  // Helper: Extract only Invoice, Bill & Challan documents with monetary value
+  const financialDocs = (documents || []).filter(doc => 
+    doc && (doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN' || (Number(doc.total) > 0 && doc.type !== 'QUOTATION' && doc.type !== 'OFFER_LETTER'))
+  );
 
   // Compute stats
-  const totalInvoiced = financialDocs.reduce((sum, doc) => sum + doc.total, 0);
+  const totalInvoiced = financialDocs.reduce((sum, doc) => sum + (Number(doc.total) || 0), 0);
   
   const totalPaid = financialDocs.reduce((sum, doc) => {
-    // If explicit paidAmount exists, use it; otherwise if status is 'Paid', use doc.total
-    if (doc.paidAmount !== undefined) return sum + doc.paidAmount;
-    return doc.status === 'Paid' ? sum + doc.total : sum;
+    if (doc.paidAmount !== undefined) return sum + (Number(doc.paidAmount) || 0);
+    return doc.status === 'Paid' ? sum + (Number(doc.total) || 0) : sum;
   }, 0);
 
   const totalOutstanding = financialDocs.reduce((sum, doc) => {
-    if (doc.dueAmount !== undefined) return sum + doc.dueAmount;
-    return doc.status !== 'Paid' ? sum + doc.total : sum;
+    if (doc.dueAmount !== undefined) return sum + (Number(doc.dueAmount) || 0);
+    return doc.status !== 'Paid' ? sum + (Number(doc.total) || 0) : sum;
   }, 0);
 
   const overdueOutstanding = financialDocs.reduce((sum, doc) => {
     if (doc.status === 'Overdue') {
-      return sum + (doc.dueAmount !== undefined ? doc.dueAmount : doc.total);
+      return sum + (doc.dueAmount !== undefined ? Number(doc.dueAmount) : Number(doc.total));
     }
     return sum;
   }, 0);
 
-  // Group financial summaries by customer
-  const customerLedger = customers.map(cust => {
-    const custDocs = financialDocs.filter(d => d.customerId === cust.id);
+  // Group financial summaries by customer (matches by customerId, phone, or company name)
+  const customerLedger = (customers || []).map(cust => {
+    if (!cust) return null;
+    const targetId = String(cust.id || '');
+    const targetPhone = String(cust.phone || '').trim().replace(/[^0-9]/g, '');
+    const targetComp = String(cust.company || '').trim().toLowerCase();
+    const targetName = String(cust.name || '').trim().toLowerCase();
+
+    const custDocs = financialDocs.filter(d => {
+      if (!d) return false;
+      if (d.customerId && String(d.customerId) === targetId) return true;
+      const dPhone = String(d.customerPhone || '').trim().replace(/[^0-9]/g, '');
+      if (targetPhone && dPhone && dPhone === targetPhone) return true;
+      const dComp = String(d.customerCompany || '').trim().toLowerCase();
+      if (targetComp && dComp && dComp === targetComp) return true;
+      const dName = String(d.customerName || '').trim().toLowerCase();
+      if (targetName && dName && dName === targetName) return true;
+      return false;
+    });
     
-    const invoiced = custDocs.reduce((sum, d) => sum + d.total, 0);
+    const invoiced = custDocs.reduce((sum, d) => sum + (Number(d.total) || 0), 0);
     
     const paid = custDocs.reduce((sum, d) => {
-      if (d.paidAmount !== undefined) return sum + d.paidAmount;
-      return d.status === 'Paid' ? sum + d.total : sum;
+      if (d.paidAmount !== undefined) return sum + (Number(d.paidAmount) || 0);
+      return d.status === 'Paid' ? sum + (Number(d.total) || 0) : sum;
     }, 0);
 
     const due = custDocs.reduce((sum, d) => {
-      if (d.dueAmount !== undefined) return sum + d.dueAmount;
-      return d.status !== 'Paid' ? sum + d.total : sum;
+      if (d.dueAmount !== undefined) return sum + (Number(d.dueAmount) || 0);
+      return d.status !== 'Paid' ? sum + (Number(d.total) || 0) : sum;
     }, 0);
 
     const overdueCount = custDocs.filter(d => d.status === 'Overdue').length;
@@ -309,7 +326,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
       overdueCount,
       documents: custDocs
     };
-  }).filter(item => item.invoiced > 0); // Only show customers with transaction history
+  }).filter((item): item is NonNullable<typeof item> => item !== null && item.invoiced > 0); // Only show customers with transaction history
 
   // Filter customer ledger based on search
   const filteredCustomerLedger = customerLedger.filter(item => {
@@ -1418,6 +1435,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
       {viewingCustomerReport && (() => {
         const ledgerTransactions = generateCustomerLedgerTransactions(viewingCustomerReport);
         const cust = viewingCustomerReport.customer;
+        const allCustomerReceipts = viewingCustomerReport.documents.flatMap(doc => parsePaymentsFromDoc(doc));
 
         return (
           <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
@@ -1429,7 +1447,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   <FileSpreadsheet className="w-5 h-5 text-amber-400 flex-shrink-0" />
                   <div>
                     <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
-                      {cust.company || cust.name} - Customer Due & Payment Ledger Report
+                      {cust.company || cust.name} - Company Due Ledger & Payment Statement
                     </h3>
                     <p className="text-[10px] text-slate-400 hidden sm:block">
                       Chronological statement of invoices, payments received, and running due balance.
@@ -1438,6 +1456,19 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  {viewingCustomerReport.due > 0 && (
+                    <button
+                      onClick={() => {
+                        const target = viewingCustomerReport;
+                        setViewingCustomerReport(null);
+                        handleOpenCompanyPay(target);
+                      }}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      Collect Due Payment
+                    </button>
+                  )}
                   <button
                     onClick={() => downloadCustomerStatementCSV(cust, ledgerTransactions, viewingCustomerReport)}
                     className="px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
@@ -1447,7 +1478,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   </button>
                   <button
                     onClick={() => window.print()}
-                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-[10px] font-extrabold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shadow-xs"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     Print Report
@@ -1535,27 +1566,97 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   </div>
                 </div>
 
-                {/* Summary Balance Metric Cards */}
+                {/* Summary Balance Metric Cards - Structured as requested: Total Due/Invoiced, Total Collected, Remaining Due */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
-                  <div className="p-3 sm:p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-center">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Total Invoiced</span>
-                    <span className="text-sm sm:text-base font-extrabold text-slate-900 font-mono">Tk. {viewingCustomerReport.invoiced.toLocaleString()}</span>
+                  <div className="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">1. Total Invoiced</span>
+                    <span className="text-base sm:text-lg font-black text-slate-900 font-mono block">
+                      Tk. {viewingCustomerReport.invoiced.toLocaleString()}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-semibold block">
+                      Total value of {viewingCustomerReport.documents.length} bills / challans
+                    </span>
                   </div>
-                  <div className="p-3 sm:p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-emerald-600 uppercase tracking-wider block mb-0.5">Total Received</span>
-                    <span className="text-sm sm:text-base font-black text-emerald-700 font-mono">Tk. {viewingCustomerReport.paid.toLocaleString()}</span>
+
+                  <div className="p-3 sm:p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
+                    <span className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider block">2. Total Collected</span>
+                    <span className="text-base sm:text-lg font-black text-emerald-700 font-mono block">
+                      Tk. {viewingCustomerReport.paid.toLocaleString()}
+                    </span>
+                    <span className="text-[9px] text-emerald-600 font-semibold block">
+                      Total payments deposited
+                    </span>
                   </div>
-                  <div className="p-3 sm:p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
-                    <span className="text-[8px] sm:text-[9px] font-bold text-rose-600 uppercase tracking-wider block mb-0.5">Current Due Balance</span>
-                    <span className="text-sm sm:text-base font-black text-rose-700 font-mono">Tk. {viewingCustomerReport.due.toLocaleString()}</span>
+
+                  <div className="p-3 sm:p-4 bg-rose-50 border border-rose-200 rounded-xl text-center space-y-1">
+                    <span className="text-[9px] font-bold text-rose-800 uppercase tracking-wider block">3. Remaining Due Balance</span>
+                    <span className="text-base sm:text-xl font-black text-rose-700 font-mono block">
+                      Tk. {viewingCustomerReport.due.toLocaleString()}
+                    </span>
+                    <span className="text-[9px] text-rose-600 font-semibold block">
+                      {viewingCustomerReport.due === 0 ? 'All Cleared / Zero Outstanding' : 'Current Net Outstanding Due'}
+                    </span>
                   </div>
                 </div>
+
+                {/* Money Receipts Section (Payment Collection Receipts) */}
+                {allCustomerReceipts.length > 0 && (
+                  <div className="space-y-2.5 bg-blue-50/40 p-3.5 sm:p-4 rounded-xl border border-blue-200/80 no-print">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-1.5 font-display">
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
+                        Payment Collection Receipts & History
+                      </h4>
+                      <span className="text-[10px] font-mono text-blue-800 font-bold">
+                        Total {allCustomerReceipts.length} Money Receipts
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                      {allCustomerReceipts.map((rcpt, rIdx) => (
+                        <div key={rcpt.id || rIdx} className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-1.5 flex flex-col justify-between">
+                          <div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-mono font-bold text-blue-900 text-[11px]">{rcpt.receiptNo}</span>
+                              <span className="text-[9px] font-mono text-slate-400">{rcpt.date}</span>
+                            </div>
+                            <div className="text-sm font-black text-emerald-700 font-mono mt-0.5">
+                              Tk. {rcpt.amount.toLocaleString()}
+                            </div>
+                            <div className="text-[10px] text-slate-500 truncate">
+                              Method: <span className="font-semibold text-slate-800">{rcpt.paymentMethod}</span> {rcpt.notes ? `• ${rcpt.notes}` : ''}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setRecentReceipt({
+                              receiptNo: rcpt.receiptNo,
+                              date: rcpt.date,
+                              customerName: rcpt.customerName || cust.name,
+                              customerCompany: rcpt.customerCompany || cust.company || '',
+                              customerPhone: rcpt.customerPhone || cust.phone || '',
+                              amount: rcpt.amount,
+                              paymentMethod: rcpt.paymentMethod,
+                              notes: rcpt.notes,
+                              references: rcpt.references,
+                              remainingDue: rcpt.remainingDue
+                            })}
+                            className="w-full mt-1 py-1 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded font-bold text-[10px] uppercase flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Printer className="w-3 h-3 text-emerald-600" />
+                            Print Receipt
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Step-by-Step Payment Breakdown Table */}
                 <div className="space-y-2">
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1 sm:gap-0">
                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      Itemized Transaction & Payment History
+                      Itemized Transaction & Payment History (Running Due)
                     </h3>
                     <span className="text-[10px] text-slate-400 font-mono">
                       Total {ledgerTransactions.length} records
@@ -1567,7 +1668,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                       <thead>
                         <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[9px]">
                           <th className="py-2.5 px-3">Date</th>
-                          <th className="py-2.5 px-3">Invoice / Ref No.</th>
+                          <th className="py-2.5 px-3">Ref No.</th>
                           <th className="py-2.5 px-3">Particulars / Description</th>
                           <th className="py-2.5 px-3 text-right">Invoiced (Tk.)</th>
                           <th className="py-2.5 px-3 text-right">Paid (Tk.)</th>
@@ -1578,7 +1679,7 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                         {ledgerTransactions.map((tx) => {
                           const isPayment = tx.type === 'PAYMENT';
                           return (
-                            <tr key={tx.id} className={isPayment ? 'bg-emerald-50/30 font-semibold' : 'hover:bg-slate-50/50'}>
+                            <tr key={tx.id} className={isPayment ? 'bg-emerald-50/40 font-semibold' : 'hover:bg-slate-50/50'}>
                               <td className="py-2.5 px-3 font-mono text-[10px] font-bold text-slate-600 whitespace-nowrap">{tx.date}</td>
                               <td className="py-2.5 px-3 font-mono font-bold text-blue-900 text-[10px] whitespace-nowrap">{tx.refNo}</td>
                               <td className="py-2.5 px-3 max-w-xs">
