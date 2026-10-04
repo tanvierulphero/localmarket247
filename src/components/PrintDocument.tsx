@@ -556,8 +556,8 @@ Content-Location: document.html
     <p style="margin: 0; font-style: italic; color: #1e3a8a; font-size: 10pt; font-weight: bold;">
       "We supply all brand screw air compressor genuine spare parts"
     </p>
-    <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 6px; font-size: 8.5pt; color: #64748b;">
-      Print Date & Time: <strong>${printDateTime}</strong> &nbsp;|&nbsp; Developed by: <strong>Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <strong>01840684615</strong>
+    <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 6px; font-size: 8pt; color: #64748b; white-space: nowrap;">
+      Print Date & Time: <strong>${printDateTime}</strong> &nbsp;|&nbsp; Developed by: <strong>Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <strong>01840684615</strong> &nbsp;|&nbsp; Page 1 of 1
     </div>
   </div>
 </body>
@@ -942,12 +942,16 @@ ${rawBase64Logo}
               </p>
 
               {/* Single-line developer information at the very bottom with print date & time */}
-              <div className="pt-2 text-center text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center justify-between border-t border-slate-200 mt-2">
-                <span>Print Date & Time: <strong className="text-slate-900 font-mono font-bold">{printDateTime}</strong></span>
-                <span className="text-[10px] sm:text-[11px] text-slate-600 font-medium">
+              <div className="pt-2 text-[9px] text-slate-500 font-medium flex items-center justify-between border-t border-slate-200 mt-2 whitespace-nowrap w-full">
+                <span className="whitespace-nowrap flex-shrink-0">
+                  Print Date & Time: <strong className="text-slate-900 font-mono font-bold">{printDateTime}</strong>
+                </span>
+                <span className="whitespace-nowrap flex-shrink-0 text-slate-600">
                   Developed by: <strong className="text-slate-950 font-bold">Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <strong className="font-mono text-slate-950 font-bold">01840684615</strong>
                 </span>
-                <span>Page 1 of 1</span>
+                <span className="whitespace-nowrap flex-shrink-0 text-slate-400">
+                  Page 1 of 1
+                </span>
               </div>
             </div>
           </div>
