@@ -493,9 +493,7 @@ Content-Location: document.html
       <td class="title-text" style="vertical-align: middle;">${getDocTitle()}</td>
       <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 10pt; vertical-align: middle; line-height: 1.4;">
         Doc No: ${document.docNumber}<br/>
-        Doc Date: ${document.date}<br/>
-        <span style="color: #1e3a8a; font-weight: 800;">Print Date & Time: ${printDateTime}</span>
-        ${document.dueDate ? `<br/><span style="color: #dc2626;">Due Date: ${document.dueDate}</span>` : ''}
+        Doc Date: ${document.date}
       </td>
     </tr>
   </table>
@@ -938,10 +936,6 @@ ${rawBase64Logo}
               <div className="text-right text-xs sm:text-sm space-y-0.5 font-bold">
                 <div><span className="font-semibold text-slate-500">Document No:</span> <span className="font-black text-slate-900">{document.docNumber}</span></div>
                 <div><span className="font-semibold text-slate-500">Document Date:</span> <span className="font-black text-slate-900">{document.date}</span></div>
-                <div><span className="font-semibold text-slate-500">Print Date & Time:</span> <span className="font-black text-blue-900 font-mono">{printDateTime}</span></div>
-                {document.dueDate && (
-                  <div><span className="font-semibold text-rose-500">Due Date:</span> <span className="font-black text-slate-900">{document.dueDate}</span></div>
-                )}
               </div>
             </div>
 
