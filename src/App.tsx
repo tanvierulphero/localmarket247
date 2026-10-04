@@ -962,6 +962,7 @@ export default function App() {
         document={viewingDocument}
         settings={settings}
         currentUser={currentUser}
+        staffUsers={staffUsers}
         onBack={() => setViewingDocument(null)}
         onCreateInvoice={(challan) => {
           handleCreateInvoiceFromChallan(challan);
@@ -969,6 +970,8 @@ export default function App() {
         onCreateBill={(challan) => {
           handleCreateBillFromChallan(challan);
         }}
+        onSaveDocument={handleSaveDocument}
+        onSwitchUser={(user) => setCurrentUser(user)}
       />
     );
   }
@@ -1242,7 +1245,7 @@ export default function App() {
 
             {/* Sidebar Active User Profile Card */}
             {currentUser && (
-              <div className="p-4 border-t border-slate-950 bg-slate-950/60 space-y-2">
+              <div className="p-4 border-t border-slate-950 bg-slate-950/60 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-xs">
@@ -1259,15 +1262,39 @@ export default function App() {
                     {currentUser.role}
                   </span>
                 </div>
+
+                {/* Instant Account Switcher Dropdown */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                    Quick Account Switch:
+                  </label>
+                  <select
+                    value={currentUser.id}
+                    onChange={(e) => {
+                      const user = staffUsers.find(s => s.id === e.target.value);
+                      if (user) {
+                        setCurrentUser(user);
+                      }
+                    }}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg p-1.5 text-xs font-bold focus:outline-hidden cursor-pointer"
+                    title="Switch user account immediately"
+                  >
+                    {staffUsers.map((staff) => (
+                      <option key={staff.id} value={staff.id}>
+                        {staff.name} ({staff.designation || staff.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setCurrentView('login')}
                     className="flex items-center justify-center gap-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[10px] font-bold uppercase transition-colors cursor-pointer"
-                    title="Switch user account"
+                    title="Switch user account via password screen"
                   >
                     <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    Switch
+                    Lock / Switch
                   </button>
                   <button
                     onClick={handleLogout}
@@ -1300,6 +1327,33 @@ export default function App() {
 
               {/* Right Side Header Items */}
               <div className="flex items-center gap-3">
+                {/* 1-Click Quick Account Switcher in Header */}
+                {currentUser && staffUsers && staffUsers.length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 rounded-xl border border-slate-300">
+                    <UserCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <div className="flex flex-col text-left">
+                      <span className="text-[8.5px] font-extrabold uppercase text-slate-400 leading-none">Active Account</span>
+                      <select
+                        value={currentUser.id}
+                        onChange={(e) => {
+                          const user = staffUsers.find(s => s.id === e.target.value);
+                          if (user) {
+                            setCurrentUser(user);
+                          }
+                        }}
+                        className="bg-transparent font-extrabold text-slate-900 text-xs focus:outline-hidden cursor-pointer pr-1"
+                        title="Switch active user account instantly"
+                      >
+                        {staffUsers.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name} — {u.designation || u.role}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <span className="hidden lg:inline text-xs italic text-blue-900 font-medium font-sans">
                   "Your Problem Solution is Sustainable Partner"
                 </span>
@@ -1351,6 +1405,8 @@ export default function App() {
                   editingDocument={editingDocument}
                   initialDocType={isCreatingDoc}
                   documents={documents}
+                  currentUser={currentUser}
+                  staffUsers={staffUsers}
                   onCancel={() => { setEditingDocument(null); setIsCreatingDoc(null); }}
                 />
               ) : (

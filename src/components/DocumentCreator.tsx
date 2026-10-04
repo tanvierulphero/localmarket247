@@ -13,6 +13,17 @@ interface DocumentCreatorProps {
   initialDocType?: DocumentType | null;
   documents?: Document[];
   currentUser?: StaffUser | null;
+  staffUsers?: StaffUser[];
+}
+
+function getStaffDesignation(user?: StaffUser | null, settings?: BusinessSettings): string {
+  if (!user) return settings?.signatureLabel || 'Authorized Signatory';
+  if (user.designation) return user.designation;
+  if (user.role === 'ADMIN') return 'Managing Director & Owner';
+  if (user.role === 'MANAGER') return 'Operations Manager';
+  if (user.role === 'SALESMAN') return 'Senior Sales Executive';
+  if (user.role === 'STAFF') return 'Store & Inventory Keeper';
+  return settings?.signatureLabel || 'Authorized Signatory';
 }
 
 export default function DocumentCreator({
@@ -25,16 +36,13 @@ export default function DocumentCreator({
   onCancel,
   initialDocType,
   documents,
-  currentUser
+  currentUser,
+  staffUsers
 }: DocumentCreatorProps) {
   
   // Authorized Signatory dynamically sourced from the currently logged in user (Admin, Manager, Staff)
   const loggedInSigName = currentUser?.name || settings.signatureName || 'MD MAHI UDDIN';
-  const loggedInSigLabel = currentUser?.designation || (
-    currentUser?.role === 'ADMIN' ? 'Managing Director' :
-    currentUser?.role === 'MANAGER' ? 'Manager' :
-    currentUser?.role === 'SALESMAN' ? 'Sales Executive' : 'Authorized Officer'
-  ) || settings.signatureLabel || 'Authorized Officer';
+  const loggedInSigLabel = currentUser ? getStaffDesignation(currentUser, settings) : (settings.signatureLabel || 'Authorized Signatory');
 
   // Document Type Selector
   const [docType, setDocType] = useState<DocumentType>(() => {
@@ -1037,9 +1045,39 @@ export default function DocumentCreator({
                 {currentUser && (
                   <span className="text-[9.5px] font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
                     <UserCheck className="w-3 h-3 text-blue-700" />
-                    Logged in: {currentUser.name} ({currentUser.designation || currentUser.role})
+                    Active: {currentUser.name}
                   </span>
                 )}
+              </div>
+
+              {/* Quick Select Signatory Account */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700">Quick Select Signatory (অ্যাকাউন্ট অনুযায়ী নির্বাচন)</label>
+                <select
+                  value={staffUsers?.find(s => s.name === signatureName)?.id || (currentUser?.name === signatureName ? currentUser?.id : 'custom')}
+                  onChange={(e) => {
+                    const staffId = e.target.value;
+                    if (staffId === 'custom') return;
+                    const staff = staffUsers?.find(s => s.id === staffId);
+                    if (staff) {
+                      setSignatureName(staff.name);
+                      setSignatureLabel(getStaffDesignation(staff, settings));
+                    }
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:bg-white text-slate-900 text-xs cursor-pointer"
+                >
+                  {currentUser && (
+                    <option value={currentUser.id}>
+                      👤 Current Login: {currentUser.name} ({getStaffDesignation(currentUser, settings)})
+                    </option>
+                  )}
+                  {staffUsers && staffUsers.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} — {getStaffDesignation(s, settings)} ({s.role})
+                    </option>
+                  ))}
+                  <option value="custom">✏️ Custom Signatory Name & Designation</option>
+                </select>
               </div>
 
               <div className="space-y-1">

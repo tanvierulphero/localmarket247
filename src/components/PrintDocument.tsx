@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Document, BusinessSettings, StaffUser } from '../types';
-import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2, Receipt, FileText } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2, Receipt, FileText, UserCheck, Edit2, Check } from 'lucide-react';
 import Logo from './Logo';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -9,9 +9,22 @@ interface PrintDocumentProps {
   document: Document;
   settings: BusinessSettings;
   currentUser?: StaffUser | null;
+  staffUsers?: StaffUser[];
   onBack?: () => void;
   onCreateBill?: (challan: Document) => void;
   onCreateInvoice?: (challan: Document) => void;
+  onSaveDocument?: (doc: Document) => void;
+  onSwitchUser?: (user: StaffUser) => void;
+}
+
+function getStaffDesignation(user?: StaffUser | null, settings?: BusinessSettings): string {
+  if (!user) return settings?.signatureLabel || 'Authorized Signatory';
+  if (user.designation) return user.designation;
+  if (user.role === 'ADMIN') return 'Managing Director & Owner';
+  if (user.role === 'MANAGER') return 'Operations Manager';
+  if (user.role === 'SALESMAN') return 'Senior Sales Executive';
+  if (user.role === 'STAFF') return 'Store & Inventory Keeper';
+  return settings?.signatureLabel || 'Authorized Signatory';
 }
 
 // Convert numbers to Bangladeshi/Indian format words (Taka Only)
@@ -82,9 +95,21 @@ function numberToWords(num: number): string {
   return words.trim() + ' Taka Only';
 }
 
-export default function PrintDocument({ document, settings, currentUser, onBack, onCreateBill, onCreateInvoice }: PrintDocumentProps) {
+export default function PrintDocument({ 
+  document, 
+  settings, 
+  currentUser, 
+  staffUsers, 
+  onBack, 
+  onCreateBill, 
+  onCreateInvoice,
+  onSaveDocument,
+  onSwitchUser 
+}: PrintDocumentProps) {
   const [isGeneratingWord, setIsGeneratingWord] = useState(false);
   const [wordSuccessNotice, setWordSuccessNotice] = useState(false);
+  const [isCustomizingSignatory, setIsCustomizingSignatory] = useState(false);
+  const [savedFeedback, setSavedFeedback] = useState(false);
 
   const isOffer = document.type === 'OFFER_LETTER';
   const isQuotation = document.type === 'QUOTATION';
@@ -92,13 +117,63 @@ export default function PrintDocument({ document, settings, currentUser, onBack,
   const isBill = document.type === 'BILL';
   const isChallan = document.type === 'CHALLAN';
 
-  const effectiveSignatureName = document.signatureName || currentUser?.name || settings.signatureName || 'MD MAHI UDDIN';
-  const effectiveSignatureLabel = document.signatureLabel || currentUser?.designation || (
-    currentUser?.role === 'ADMIN' ? 'Managing Director & Owner' :
-    currentUser?.role === 'MANAGER' ? 'Operations Manager' :
-    currentUser?.role === 'SALESMAN' ? 'Senior Sales Executive' :
-    'Authorized Signatory'
-  ) || settings.signatureLabel || 'Authorized Signatory';
+  // Dynamic signature state - immediately reflects currentUser on login/account switch
+  const [signatureName, setSignatureName] = useState<string>(() => {
+    return currentUser?.name || document.signatureName || settings.signatureName || 'MD MAHI UDDIN';
+  });
+  const [signatureLabel, setSignatureLabel] = useState<string>(() => {
+    return (currentUser ? getStaffDesignation(currentUser, settings) : (document.signatureLabel || settings.signatureLabel || 'Authorized Signatory'));
+  });
+  const [selectedStaffId, setSelectedStaffId] = useState<string>(() => {
+    if (currentUser) return currentUser.id;
+    return 'custom';
+  });
+
+  // Automatically update signature when currentUser changes (e.g., account switch)
+  useEffect(() => {
+    if (currentUser) {
+      setSelectedStaffId(currentUser.id);
+      setSignatureName(currentUser.name);
+      setSignatureLabel(getStaffDesignation(currentUser, settings));
+    } else if (document.signatureName) {
+      setSelectedStaffId('doc');
+      setSignatureName(document.signatureName);
+      setSignatureLabel(document.signatureLabel || settings.signatureLabel || 'Authorized Signatory');
+    }
+  }, [currentUser, document.id]);
+
+  const handleSelectSignatory = (staffId: string) => {
+    setSelectedStaffId(staffId);
+    if (staffId === 'custom') {
+      setIsCustomizingSignatory(true);
+      return;
+    }
+    if (staffId === 'doc') {
+      setSignatureName(document.signatureName || settings.signatureName || 'MD MAHI UDDIN');
+      setSignatureLabel(document.signatureLabel || settings.signatureLabel || 'Authorized Signatory');
+      return;
+    }
+    const staff = (staffUsers || []).find(s => s.id === staffId);
+    if (staff) {
+      setSignatureName(staff.name);
+      setSignatureLabel(getStaffDesignation(staff, settings));
+      if (onSwitchUser) {
+        onSwitchUser(staff);
+      }
+    }
+  };
+
+  const handleSaveSignatoryToDocument = () => {
+    if (onSaveDocument) {
+      onSaveDocument({
+        ...document,
+        signatureName,
+        signatureLabel
+      });
+      setSavedFeedback(true);
+      setTimeout(() => setSavedFeedback(false), 2500);
+    }
+  };
 
   // Format document titles for presentation
   const getDocTitle = () => {
@@ -544,9 +619,9 @@ Content-Location: document.html
           <p style="font-style: italic; color: #64748b; margin-bottom: 20px; font-size: 9.5pt; text-align: right; line-height: 1.4;">${String(document.closingParagraph || '').replace(/\n/g, '<br/>')}</p>
         ` : ''}
         <div style="border-top: 1px solid #475569; width: 180px; margin-left: auto; margin-bottom: 5px;"></div>
-        <strong style="color: #0f172a; font-size: 11pt;">${effectiveSignatureName}</strong><br/>
-        <span style="font-size: 9.5pt; color: #64748b; font-weight: bold; text-transform: uppercase;">${effectiveSignatureLabel}</span><br/>
-        <span style="font-size: 8.5pt; color: #94a3b8; font-weight: bold; text-transform: uppercase;">JUBAYER MACHINERIES</span>
+        <strong style="color: #0f172a; font-size: 11pt;">${signatureName}</strong><br/>
+        <span style="font-size: 9.5pt; color: #64748b; font-weight: bold; text-transform: uppercase;">${signatureLabel}</span><br/>
+        <span style="font-size: 8.5pt; color: #94a3b8; font-weight: bold; text-transform: uppercase;">${settings.name || 'JUBAYER MACHINERIES'}</span>
       </td>
     </tr>
   </table>
@@ -684,6 +759,108 @@ ${rawBase64Logo}
           <button onClick={() => setWordSuccessNotice(false)} className="text-emerald-600 hover:text-emerald-900 font-bold">&times;</button>
         </div>
       )}
+
+      {/* Signatory Account Control Toolbar (Hidden in Print Mode) */}
+      <div className="w-full max-w-4xl bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 no-print flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
+            <UserCheck className="w-4 h-4 text-blue-900" />
+            <span>Signatory (স্বাক্ষরকারী):</span>
+          </span>
+
+          {/* Quick Select Signatory Dropdown */}
+          <select
+            value={selectedStaffId}
+            onChange={(e) => handleSelectSignatory(e.target.value)}
+            className="bg-slate-50 hover:bg-slate-100 border border-slate-300 font-bold text-slate-900 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:border-blue-900 cursor-pointer"
+            title="Switch authorized signatory name and designation"
+          >
+            {currentUser && (
+              <option value={currentUser.id}>
+                👤 Active Account: {currentUser.name} ({getStaffDesignation(currentUser, settings)})
+              </option>
+            )}
+            {staffUsers && staffUsers.length > 0 && staffUsers.map((staff) => (
+              <option key={staff.id} value={staff.id}>
+                {staff.id === currentUser?.id ? '⭐ ' : ''}{staff.name} — {getStaffDesignation(staff, settings)} ({staff.role})
+              </option>
+            ))}
+            {document.signatureName && (
+              <option value="doc">
+                📄 Original Document Creator: {document.signatureName} ({document.signatureLabel || 'Authorized Signatory'})
+              </option>
+            )}
+            <option value="custom">✏️ Custom Signatory / Edit Name</option>
+          </select>
+
+          {/* Inline Edit Inputs if custom or toggled */}
+          {isCustomizingSignatory && (
+            <div className="flex items-center gap-2 flex-wrap animate-fade-in bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+              <input
+                type="text"
+                value={signatureName}
+                onChange={(e) => { setSignatureName(e.target.value); setSelectedStaffId('custom'); }}
+                placeholder="Name"
+                className="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-bold text-slate-900 w-36"
+                title="Signature Name"
+              />
+              <input
+                type="text"
+                value={signatureLabel}
+                onChange={(e) => { setSignatureLabel(e.target.value); setSelectedStaffId('custom'); }}
+                placeholder="Designation"
+                className="bg-white border border-slate-300 rounded px-2 py-1 text-xs font-bold text-slate-900 w-40"
+                title="Signature Designation"
+              />
+              <button
+                type="button"
+                onClick={() => setIsCustomizingSignatory(false)}
+                className="px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[11px] font-bold cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          )}
+
+          {!isCustomizingSignatory && (
+            <button
+              type="button"
+              onClick={() => setIsCustomizingSignatory(true)}
+              className="px-2 py-1 text-slate-500 hover:text-blue-900 hover:bg-slate-100 rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              title="Edit name and designation manually"
+            >
+              <Edit2 className="w-3 h-3" />
+              <span>Edit</span>
+            </button>
+          )}
+        </div>
+
+        {/* Current Active Signatory Badge & Save to Doc Option */}
+        <div className="flex items-center gap-2">
+          <div className="text-right hidden sm:block">
+            <span className="text-[10px] text-slate-400 block font-bold uppercase">Signing as</span>
+            <span className="font-extrabold text-blue-950 block leading-tight">{signatureName} &bull; <span className="text-slate-600 font-medium">{signatureLabel}</span></span>
+          </div>
+
+          {onSaveDocument && (
+            <button
+              type="button"
+              onClick={handleSaveSignatoryToDocument}
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-900 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all"
+              title="Save this signatory name & designation to the document in database"
+            >
+              {savedFeedback ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-700">Saved!</span>
+                </>
+              ) : (
+                <span>Save to Doc</span>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* RENDER STYLED LETTERHEAD SHEETS FOR PRINT AND DISPLAY */}
       <div className="w-full flex justify-center pb-8">
@@ -928,8 +1105,8 @@ ${rawBase64Logo}
                 
                 <div className="mt-auto pt-4 text-right w-48 sm:w-56">
                   <div className="h-11 w-full mb-1 border-b-2 border-slate-900"></div>
-                  <p className="font-black text-slate-950 text-xs sm:text-sm font-display leading-none">{effectiveSignatureName}</p>
-                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">{effectiveSignatureLabel}</p>
+                  <p className="font-black text-slate-950 text-xs sm:text-sm font-display leading-none">{signatureName}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">{signatureLabel}</p>
                   <p className="text-[9px] sm:text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">{settings.name || 'Jubayer Machineries'}</p>
                 </div>
               </div>
