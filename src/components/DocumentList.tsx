@@ -8,6 +8,7 @@ interface DocumentListProps {
   onEditDocument: (doc: Document) => void;
   onDeleteDocument: (id: string) => void;
   onViewDocument: (doc: Document) => void;
+  onCreateInvoiceFromChallan?: (challan: Document) => void;
   onCreateBillFromChallan?: (challan: Document) => void;
 }
 
@@ -17,6 +18,7 @@ export default function DocumentList({
   onEditDocument,
   onDeleteDocument,
   onViewDocument,
+  onCreateInvoiceFromChallan,
   onCreateBillFromChallan
 }: DocumentListProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -154,17 +156,17 @@ export default function DocumentList({
           </div>
         </button>
 
-        {/* Card 5: Purchase Bill */}
+        {/* Card 5: Sales Bill */}
         <button
           onClick={() => onAddDocumentClick('BILL')}
-          className="bg-white border border-slate-200 hover:border-rose-500 hover:shadow-xs p-3.5 rounded-xl text-left space-y-1.5 transition-all cursor-pointer group"
+          className="bg-white border border-slate-200 hover:border-purple-500 hover:shadow-xs p-3.5 rounded-xl text-left space-y-1.5 transition-all cursor-pointer group"
         >
-          <div className="w-7 h-7 bg-rose-50 group-hover:bg-rose-100 text-rose-700 rounded-lg flex items-center justify-center transition-colors">
-            <FileText className="w-3.5 h-3.5" />
+          <div className="w-7 h-7 bg-purple-50 group-hover:bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center transition-colors">
+            <Receipt className="w-3.5 h-3.5" />
           </div>
           <div>
-            <span className="font-bold text-slate-900 block font-display leading-tight">Supplier Bill</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Purchase Bill</span>
+            <span className="font-bold text-slate-900 block font-display leading-tight">Sales Bill</span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">Customer Bill</span>
           </div>
         </button>
       </div>
@@ -344,16 +346,30 @@ export default function DocumentList({
                     {/* Option Triggers */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* If Challan: Option to directly create Bill / Invoice from this Challan */}
-                        {doc.type === 'CHALLAN' && onCreateBillFromChallan && (
-                          <button
-                            onClick={() => onCreateBillFromChallan(doc)}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors border border-emerald-700 cursor-pointer flex items-center gap-1.5 text-[11px] font-bold shadow-2xs"
-                            title="Generate sales bill directly from this delivery challan"
-                          >
-                            <Receipt className="w-3.5 h-3.5" />
-                            <span>Create Bill</span>
-                          </button>
+                        {/* If Challan: Option to directly create Invoice or Bill from this Challan */}
+                        {doc.type === 'CHALLAN' && (
+                          <div className="flex items-center gap-1">
+                            {onCreateInvoiceFromChallan && (
+                              <button
+                                onClick={() => onCreateInvoiceFromChallan(doc)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors border border-emerald-700 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
+                                title="Generate Sales Invoice directly from this delivery challan"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Create Invoice</span>
+                              </button>
+                            )}
+                            {onCreateBillFromChallan && (
+                              <button
+                                onClick={() => onCreateBillFromChallan(doc)}
+                                className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-colors border border-blue-800 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
+                                title="Generate Sales Bill directly from this delivery challan"
+                              >
+                                <Receipt className="w-3.5 h-3.5" />
+                                <span>Create Bill</span>
+                              </button>
+                            )}
+                          </div>
                         )}
 
                         {/* If Invoice/Bill: View linked Delivery Challan if one actually exists */}

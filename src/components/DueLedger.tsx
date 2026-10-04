@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react';
-import { Document, Customer, DocumentStatus, BusinessSettings } from '../types';
+import { Document, Customer, DocumentStatus, BusinessSettings, StaffUser } from '../types';
 import Logo from './Logo';
 import { 
   DollarSign, 
@@ -27,6 +27,7 @@ interface DueLedgerProps {
   documents: Document[];
   customers: Customer[];
   settings?: BusinessSettings;
+  currentUser?: StaffUser | null;
   onUpdateDocument: (doc: Document) => void;
   onBatchUpdateDocuments?: (docs: Document[]) => void;
   onViewDocument: (doc: Document) => void;
@@ -124,7 +125,7 @@ function parsePaymentsFromDoc(doc: Document) {
       date: doc.date || new Date().toISOString().split('T')[0],
       amount: paid,
       paymentMethod: 'Cash / Bank',
-      notes: `Payment against ${doc.type} #${doc.docNumber}`,
+      notes: 'Payment received',
       references: `${doc.type} #${doc.docNumber}`,
       remainingDue: due,
       customerName: doc.customerName,
@@ -154,8 +155,23 @@ function generateCustomerLedgerTransactions(item: { customer: Customer; document
     const docLabel = doc.type === 'CHALLAN' 
       ? 'Delivery Challan' 
       : doc.type === 'BILL' 
-      ? 'Purchase Bill' 
+      ? 'Sales Bill' 
       : 'Sales Invoice';
+
+    // Itemized goods / services description without bill number
+    let cleanSubject = doc.subject || '';
+    cleanSubject = cleanSubject
+      .replace(/against\s+Delivery\s+Challan:?\s*[A-Za-z0-9_\-\/]+/gi, '')
+      .replace(/against\s+Challan:?\s*[A-Za-z0-9_\-\/]+/gi, '')
+      .replace(/against\s+Bill:?\s*[A-Za-z0-9_\-\/]+/gi, '')
+      .replace(/against\s+Invoice:?\s*[A-Za-z0-9_\-\/]+/gi, '')
+      .replace(new RegExp(doc.docNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
+      .replace(/#\s*[A-Za-z0-9_\-\/]+/g, '')
+      .trim();
+
+    const itemsDescription = doc.items && doc.items.length > 0
+      ? doc.items.map(i => i.name).filter(Boolean).join(', ')
+      : (cleanSubject || 'Spare Parts & Services Supply');
 
     // 1. Add Billed document entry
     transactions.push({
@@ -163,7 +179,7 @@ function generateCustomerLedgerTransactions(item: { customer: Customer; document
       date: doc.date,
       refNo: doc.docNumber,
       type: 'INVOICE',
-      particulars: `${docLabel} #${doc.docNumber}${doc.items && doc.items.length > 0 ? ` (${doc.items.map(i => i.name).join(', ')})` : ''}`,
+      particulars: itemsDescription,
       billed: total,
       paid: 0
     });
@@ -171,12 +187,16 @@ function generateCustomerLedgerTransactions(item: { customer: Customer; document
     // 2. Parse payment log entries from doc.notes
     const parsedPayments = parsePaymentsFromDoc(doc);
     parsedPayments.forEach((p, idx) => {
+      const cleanNote = p.notes && !p.notes.includes(doc.docNumber) && !p.notes.includes('Payment against') && !p.notes.includes('Invoice Due Collection')
+        ? ` (${p.notes})`
+        : '';
+
       transactions.push({
         id: `pay-${doc.id}-${idx}`,
         date: p.date,
         refNo: p.receiptNo,
         type: 'PAYMENT',
-        particulars: `Payment Received via ${p.paymentMethod}${p.notes ? ` (${p.notes})` : ''} [Ref: ${doc.docNumber}]`,
+        particulars: `Payment Received via ${p.paymentMethod}${cleanNote}`,
         billed: 0,
         paid: p.amount,
         paymentMethod: p.paymentMethod
@@ -236,7 +256,7 @@ function downloadCustomerStatementCSV(
   document.body.removeChild(link);
 }
 
-export default function DueLedger({ documents, customers, settings, onUpdateDocument, onBatchUpdateDocuments, onViewDocument }: DueLedgerProps) {
+export default function DueLedger({ documents, customers, settings, currentUser, onUpdateDocument, onBatchUpdateDocuments, onViewDocument }: DueLedgerProps) {
   const [activeSubTab, setActiveSubTab] = useState<'customers' | 'invoices'>('customers');
   const [customerSearch, setCustomerSearch] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -1443,9 +1463,12 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   </div>
                   <div className="space-y-1">
                     <div className="border-t border-slate-400 pt-1.5 w-44 mx-auto text-slate-800 font-bold">
-                      Authorized Signature
+                      {currentUser?.name || settings?.signatureName || 'MD MAHI UDDIN'}
                     </div>
-                    <span className="text-[9px] text-slate-400 italic block">Authorized Signature</span>
+                    <span className="text-[9px] text-slate-500 font-semibold block">
+                      {currentUser?.designation || (currentUser?.role === 'ADMIN' ? 'Managing Director & Owner' : currentUser?.role === 'MANAGER' ? 'Operations Manager' : 'Authorized Signatory')}
+                    </span>
+                    <span className="text-[8px] text-slate-400 italic block">Authorized Signature</span>
                   </div>
                 </div>
 
@@ -1778,8 +1801,11 @@ export default function DueLedger({ documents, customers, settings, onUpdateDocu
                   </div>
                   <div className="space-y-1">
                     <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800 font-bold">
-                      {settings?.signatureName || 'Managing Director'}
+                      {currentUser?.name || settings?.signatureName || 'MD MAHI UDDIN'}
                     </div>
+                    <span className="text-[8px] sm:text-[9px] text-slate-500 font-semibold block">
+                      {currentUser?.designation || (currentUser?.role === 'ADMIN' ? 'Managing Director & Owner' : currentUser?.role === 'MANAGER' ? 'Operations Manager' : 'Authorized Signatory')}
+                    </span>
                     <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">Authorized By</span>
                   </div>
                 </div>

@@ -468,7 +468,7 @@ export default function DashboardOverview({
             <div className="space-y-1.5">
               <div className="flex justify-between font-bold text-slate-700">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Purchase Bills
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Sales Bills
                 </span>
                 <span>{docCounts.bills} items</span>
               </div>

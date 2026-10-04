@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Document, BusinessSettings } from '../types';
-import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2, Receipt } from 'lucide-react';
+import { Document, BusinessSettings, StaffUser } from '../types';
+import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2, Receipt, FileText } from 'lucide-react';
 import Logo from './Logo';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -8,8 +8,10 @@ import jsPDF from 'jspdf';
 interface PrintDocumentProps {
   document: Document;
   settings: BusinessSettings;
+  currentUser?: StaffUser | null;
   onBack?: () => void;
   onCreateBill?: (challan: Document) => void;
+  onCreateInvoice?: (challan: Document) => void;
 }
 
 // Convert numbers to Bangladeshi/Indian format words (Taka Only)
@@ -80,7 +82,7 @@ function numberToWords(num: number): string {
   return words.trim() + ' Taka Only';
 }
 
-export default function PrintDocument({ document, settings, onBack, onCreateBill }: PrintDocumentProps) {
+export default function PrintDocument({ document, settings, currentUser, onBack, onCreateBill, onCreateInvoice }: PrintDocumentProps) {
   const [isGeneratingWord, setIsGeneratingWord] = useState(false);
   const [wordSuccessNotice, setWordSuccessNotice] = useState(false);
 
@@ -89,6 +91,14 @@ export default function PrintDocument({ document, settings, onBack, onCreateBill
   const isInvoice = document.type === 'INVOICE';
   const isBill = document.type === 'BILL';
   const isChallan = document.type === 'CHALLAN';
+
+  const effectiveSignatureName = document.signatureName || currentUser?.name || settings.signatureName || 'MD MAHI UDDIN';
+  const effectiveSignatureLabel = document.signatureLabel || currentUser?.designation || (
+    currentUser?.role === 'ADMIN' ? 'Managing Director & Owner' :
+    currentUser?.role === 'MANAGER' ? 'Operations Manager' :
+    currentUser?.role === 'SALESMAN' ? 'Senior Sales Executive' :
+    'Authorized Signatory'
+  ) || settings.signatureLabel || 'Authorized Signatory';
 
   // Format document titles for presentation
   const getDocTitle = () => {
@@ -102,9 +112,30 @@ export default function PrintDocument({ document, settings, onBack, onCreateBill
     }
   };
 
+  const formatCurrentDateTime = () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+    return `${dateStr}, ${timeStr}`;
+  };
+
+  const [printDateTime, setPrintDateTime] = useState<string>(formatCurrentDateTime);
+
   // Native high-fidelity print on the main window directly using exact A4 styles
   const handlePrint = () => {
-    window.print();
+    setPrintDateTime(formatCurrentDateTime());
+    setTimeout(() => {
+      window.print();
+    }, 50);
   };
 
   // Helper function to dynamically generate a high-res PNG base64 representation of our exact Jubayer Machineries logo
@@ -368,14 +399,15 @@ Content-Location: document.html
         <img src="jubayer_logo.png" width="75" height="75" alt="Jubayer Machineries Logo" style="display: block; width: 75px; height: 75px; border: 0;" />
       </td>
       <td style="vertical-align: middle;">
-        <h1 class="company-name">Jubayer Machineries</h1>
-        <p class="slogan">Your Problem Solution is Sustainable Partner</p>
+        <h1 class="company-name" style="font-size: 20pt; font-weight: 900; margin: 0; color: #0f172a; text-transform: uppercase;">Jubayer Machineries</h1>
+        <p class="slogan" style="margin: 2px 0 0 0; color: #1e3a8a; font-style: italic; font-size: 9.5pt;">${settings.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
       </td>
-      <td class="contact-details" style="vertical-align: middle;">
-        <p style="margin: 0; font-weight: bold; color: #1e293b;">Corporate Office: ${settings.address}</p>
-        <p style="margin: 3px 0 0 0;">Hotline: ${settings.phone1}, ${settings.phone2}</p>
-        <p style="margin: 3px 0 0 0;">Email: ${settings.email}</p>
-        <p style="margin: 3px 0 0 0; color: #1e3a8a; font-weight: bold;">Website: ${settings.website}</p>
+      <td class="contact-details" style="vertical-align: middle; text-align: right;">
+        <p style="margin: 0; font-size: 15pt; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Jubayer Machineries</p>
+        <p style="margin: 4px 0 0 0; font-weight: bold; color: #1e293b; font-size: 10pt;">${settings.address}</p>
+        <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Hotline: ${settings.phone1}, ${settings.phone2}</p>
+        <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Email: ${settings.email}</p>
+        <p style="margin: 3px 0 0 0; color: #1e3a8a; font-weight: bold; font-size: 9pt;">Website: ${settings.website}</p>
       </td>
     </tr>
   </table>
@@ -384,9 +416,10 @@ Content-Location: document.html
   <table class="title-bar" border="0" cellspacing="0" cellpadding="0">
     <tr>
       <td class="title-text" style="vertical-align: middle;">${getDocTitle()}</td>
-      <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 11pt; vertical-align: middle;">
-        No: ${document.docNumber}<br/>
-        Date: ${document.date}
+      <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 10pt; vertical-align: middle; line-height: 1.4;">
+        Doc No: ${document.docNumber}<br/>
+        Doc Date: ${document.date}<br/>
+        <span style="color: #1e3a8a; font-weight: 800;">Print Date & Time: ${printDateTime}</span>
         ${document.dueDate ? `<br/><span style="color: #dc2626;">Due Date: ${document.dueDate}</span>` : ''}
       </td>
     </tr>
@@ -498,11 +531,11 @@ Content-Location: document.html
             <p style="margin: 0; line-height: 1.4; color: #475569; font-size: 9pt;">${String(document.terms || '').replace(/\n/g, '<br/>')}</p>
           </div>
         ` : ''}
-        ${isChallan ? `
+        ${(isChallan || isBill || isInvoice) ? `
           <div style="margin-top: 40px; text-align: left;">
             <div style="border-top: 1px solid #475569; width: 160px; margin-bottom: 5px;"></div>
             <strong style="color: #0f172a; font-size: 10pt;">Receiver's Signature</strong><br/>
-            <span style="font-size: 8.5pt; color: #64748b; font-weight: bold;">(Signature & Seal)</span>
+            <span style="font-size: 8.5pt; color: #64748b; font-weight: bold;">(Signature & Date / Seal)</span>
           </div>
         ` : ''}
       </td>
@@ -511,27 +544,21 @@ Content-Location: document.html
           <p style="font-style: italic; color: #64748b; margin-bottom: 20px; font-size: 9.5pt; text-align: right; line-height: 1.4;">${String(document.closingParagraph || '').replace(/\n/g, '<br/>')}</p>
         ` : ''}
         <div style="border-top: 1px solid #475569; width: 180px; margin-left: auto; margin-bottom: 5px;"></div>
-        <strong style="color: #0f172a; font-size: 11pt;">${document.signatureName}</strong><br/>
-        <span style="font-size: 9.5pt; color: #64748b; font-weight: bold; text-transform: uppercase;">${document.signatureLabel}</span><br/>
+        <strong style="color: #0f172a; font-size: 11pt;">${effectiveSignatureName}</strong><br/>
+        <span style="font-size: 9.5pt; color: #64748b; font-weight: bold; text-transform: uppercase;">${effectiveSignatureLabel}</span><br/>
         <span style="font-size: 8.5pt; color: #94a3b8; font-weight: bold; text-transform: uppercase;">JUBAYER MACHINERIES</span>
       </td>
     </tr>
   </table>
 
-  <!-- Footer brand screw list -->
-  <div class="footer-brands">
-    <span style="color: #1e293b;">HITACHI</span> | 
-    <span style="color: #0054a6;">ATLAS COPCO</span> | 
-    <span style="color: #007cc3;">LINGHEIN</span> | 
-    <span style="color: #f15a24;">KAESER</span> | 
-    <span style="color: #009639;">BOGE</span> | 
-    <span style="color: #ed1c24;">ELGI</span> | 
-    <span style="color: #003b46;">JAGUAR</span> | 
-    <span style="color: #e31b23;">IR INGERSOLL RAND</span> | 
-    <span style="color: #00529b;">GARDNER DENVER</span>
-    <p style="margin: 5px 0 0 0; font-style: italic; color: #1e3a8a; font-size: 10pt;">
+  <!-- Footer slogan and developer info -->
+  <div class="footer-brands" style="border-top: none; padding-top: 10px; margin-top: 25px; text-align: center;">
+    <p style="margin: 0; font-style: italic; color: #1e3a8a; font-size: 10pt; font-weight: bold;">
       "We supply all brand screw air compressor genuine spare parts"
     </p>
+    <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 6px; font-size: 8.5pt; color: #64748b;">
+      Print Date & Time: <strong>${printDateTime}</strong> &nbsp;|&nbsp; Developed by: <strong>Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <strong>01840684615</strong>
+    </div>
   </div>
 </body>
 </html>
@@ -589,16 +616,30 @@ ${rawBase64Logo}
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Create Bill from Challan shortcut */}
-          {document.type === 'CHALLAN' && onCreateBill && (
-            <button
-              onClick={() => onCreateBill(document)}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
-              title="Create sales bill from this delivery challan"
-            >
-              <Receipt className="w-4 h-4 text-emerald-100" />
-              Create Bill from Challan
-            </button>
+          {/* Create Invoice / Bill from Challan shortcut */}
+          {document.type === 'CHALLAN' && (
+            <div className="flex items-center gap-2">
+              {onCreateInvoice && (
+                <button
+                  onClick={() => onCreateInvoice(document)}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
+                  title="Create Sales Invoice directly from this delivery challan"
+                >
+                  <FileText className="w-4 h-4 text-emerald-100" />
+                  <span>Create Invoice</span>
+                </button>
+              )}
+              {onCreateBill && (
+                <button
+                  onClick={() => onCreateBill(document)}
+                  className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
+                  title="Create Sales Bill directly from this delivery challan"
+                >
+                  <Receipt className="w-4 h-4 text-blue-100" />
+                  <span>Create Bill</span>
+                </button>
+              )}
+            </div>
           )}
 
           {/* Print Button */}
@@ -681,23 +722,29 @@ ${rawBase64Logo}
             {/* Header Block matching uploaded image */}
             <div className="flex items-center justify-between pb-4 mb-2 border-b-2 border-[#1e3a8a]">
               {/* Left Brand Identity */}
-              <div className="flex items-center gap-3 h-12 sm:h-14 md:h-16 w-auto flex-shrink-0">
-                <Logo logoUrl={settings.logoUrl} className="h-full w-auto text-blue-900" alt={settings.name} />
+              <div className="flex items-center gap-3 h-14 sm:h-16 md:h-18 w-auto flex-shrink-0">
+                <Logo logoUrl={settings.logoUrl} className="h-full w-auto text-blue-900" alt="Jubayer Machineries" />
               </div>
 
-              {/* Right Contact Details */}
-              <div className="text-right text-[11px] sm:text-xs text-slate-600 space-y-1 font-sans flex-shrink-0 leading-normal">
-                <div className="flex items-center justify-end gap-1 font-bold text-slate-800 text-[12px] sm:text-[13px]">
-                  <MapPin className="w-3.5 h-3.5 text-blue-800 flex-shrink-0" />
-                  <span>Corporate Office: {settings.address}</span>
+              {/* Right Contact Details - Header Bold text "Jubayer Machineries" then under address */}
+              <div className="text-right space-y-1 font-sans flex-shrink-0 leading-normal max-w-[65%]">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-950 font-display tracking-tight leading-none uppercase">
+                  Jubayer Machineries
+                </h1>
+                <div className="flex items-start justify-end gap-1.5 font-bold text-slate-900 text-xs sm:text-[13px] pt-1">
+                  <MapPin className="w-3.5 h-3.5 text-blue-900 flex-shrink-0 mt-0.5" />
+                  <span className="font-extrabold text-slate-900">{settings.address}</span>
                 </div>
-                <div className="flex items-center justify-end gap-1 text-[11px] sm:text-xs">
-                  <Phone className="w-3.5 h-3.5 text-blue-800 flex-shrink-0" />
-                  <span>{settings.phone1}, {settings.phone2}</span>
-                </div>
-                <div className="flex items-center justify-end gap-1 text-[11px] sm:text-xs">
-                  <Mail className="w-3.5 h-3.5 text-blue-800 flex-shrink-0" />
-                  <span>{settings.email}</span>
+                <div className="flex items-center justify-end gap-2 text-[11px] sm:text-xs text-slate-600 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Phone className="w-3 h-3 text-blue-800 flex-shrink-0" />
+                    {settings.phone1}, {settings.phone2}
+                  </span>
+                  <span>&bull;</span>
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-blue-800 flex-shrink-0" />
+                    {settings.email}
+                  </span>
                 </div>
                 <div className="flex items-center justify-end gap-1 text-blue-800 font-bold text-[11px] sm:text-xs">
                   <Globe className="w-3.5 h-3.5 flex-shrink-0" />
@@ -712,8 +759,9 @@ ${rawBase64Logo}
                 {getDocTitle()}
               </span>
               <div className="text-right text-xs sm:text-sm space-y-0.5 font-bold">
-                <div><span className="font-semibold text-slate-500">No:</span> <span className="font-black text-slate-900">{document.docNumber}</span></div>
-                <div><span className="font-semibold text-slate-500">Date:</span> <span className="font-black text-slate-900">{document.date}</span></div>
+                <div><span className="font-semibold text-slate-500">Document No:</span> <span className="font-black text-slate-900">{document.docNumber}</span></div>
+                <div><span className="font-semibold text-slate-500">Document Date:</span> <span className="font-black text-slate-900">{document.date}</span></div>
+                <div><span className="font-semibold text-slate-500">Print Date & Time:</span> <span className="font-black text-blue-900 font-mono">{printDateTime}</span></div>
                 {document.dueDate && (
                   <div><span className="font-semibold text-rose-500">Due Date:</span> <span className="font-black text-slate-900">{document.dueDate}</span></div>
                 )}
@@ -861,11 +909,11 @@ ${rawBase64Logo}
                   </div>
                 ) : <div />}
 
-                {isChallan && (
-                  <div className="mt-auto pt-3 text-left w-44 sm:w-52">
-                    <div className="h-10 w-full mb-1 border-b-2 border-slate-400"></div>
-                    <p className="font-black text-slate-950 text-xs sm:text-sm font-display leading-none">Receiver's Signature</p>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">(Signature & Date)</p>
+                {(isChallan || isBill || isInvoice) && (
+                  <div className="mt-auto pt-4 text-left w-48 sm:w-56">
+                    <div className="h-11 w-full mb-1 border-b-2 border-slate-900"></div>
+                    <p className="font-black text-slate-950 text-xs sm:text-sm font-display uppercase tracking-wide leading-none">Receiver's Signature</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">(Signature & Date / Seal)</p>
                   </div>
                 )}
               </div>
@@ -878,40 +926,29 @@ ${rawBase64Logo}
                   </p>
                 )}
                 
-                <div className="mt-auto pt-3 text-right w-44 sm:w-52">
-                  <div className="h-10 w-full mb-1 border-b-2 border-slate-400"></div>
-                  <p className="font-black text-slate-950 text-xs sm:text-sm font-display leading-none">{document.signatureName}</p>
-                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">{document.signatureLabel}</p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">{settings.name}</p>
+                <div className="mt-auto pt-4 text-right w-48 sm:w-56">
+                  <div className="h-11 w-full mb-1 border-b-2 border-slate-900"></div>
+                  <p className="font-black text-slate-950 text-xs sm:text-sm font-display leading-none">{effectiveSignatureName}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1 uppercase font-bold">{effectiveSignatureLabel}</p>
+                  <p className="text-[9px] sm:text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">{settings.name || 'Jubayer Machineries'}</p>
                 </div>
               </div>
             </div>
 
-            {/* High-Fidelity Print Slogan and Brands Footer matching the image */}
-            <div className="pt-4 mt-auto text-center relative z-10 border-t-2 border-[#1e3a8a] space-y-1">
-              {/* Logo labels representing standard machinery footer brands with exact colors and uppercase styling */}
-              <div className="flex flex-wrap items-center justify-center gap-y-1 gap-x-2 mb-1.5 text-[9px] sm:text-[10px] font-extrabold tracking-wider font-sans uppercase">
-                <span className="text-[#0a192f] font-black">HITACHI</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#0054a6] font-black">ATLAS COPCO</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#007cc3] font-black">LINGHEIN</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#f15a24] font-black">KAESER</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#009639] font-black">BOGE</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#ed1c24] font-black">ELGI</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#003b46] font-black">JAGUAR</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#e31b23] font-black">IR INGERSOLL RAND</span>
-                <span className="text-slate-300">|</span>
-                <span className="text-[#00529b] font-black">GARDNER DENVER</span>
-              </div>
+            {/* Footer Slogan & Developer Info */}
+            <div className="pt-3 mt-auto text-center relative z-10 space-y-1.5">
               <p className="text-[10px] sm:text-xs font-black italic font-sans text-blue-900">
                 "We supply all brand screw air compressor genuine spare parts"
               </p>
+
+              {/* Single-line developer information at the very bottom with print date & time */}
+              <div className="pt-2 text-center text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center justify-between border-t border-slate-200 mt-2">
+                <span>Print Date & Time: <strong className="text-slate-900 font-mono font-bold">{printDateTime}</strong></span>
+                <span className="text-[10px] sm:text-[11px] text-slate-600 font-medium">
+                  Developed by: <strong className="text-slate-950 font-bold">Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <strong className="font-mono text-slate-950 font-bold">01840684615</strong>
+                </span>
+                <span>Page 1 of 1</span>
+              </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Product, Customer, Document, DocumentItem, DocumentType, DocumentStatus, BusinessSettings } from '../types';
-import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package } from 'lucide-react';
+import { Product, Customer, Document, DocumentItem, DocumentType, DocumentStatus, BusinessSettings, StaffUser } from '../types';
+import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package, UserCheck } from 'lucide-react';
 
 interface DocumentCreatorProps {
   products: Product[];
@@ -12,6 +12,7 @@ interface DocumentCreatorProps {
   onCancel: () => void;
   initialDocType?: DocumentType | null;
   documents?: Document[];
+  currentUser?: StaffUser | null;
 }
 
 export default function DocumentCreator({
@@ -23,9 +24,18 @@ export default function DocumentCreator({
   editingDocument,
   onCancel,
   initialDocType,
-  documents
+  documents,
+  currentUser
 }: DocumentCreatorProps) {
   
+  // Authorized Signatory dynamically sourced from the currently logged in user (Admin, Manager, Staff)
+  const loggedInSigName = currentUser?.name || settings.signatureName || 'MD MAHI UDDIN';
+  const loggedInSigLabel = currentUser?.designation || (
+    currentUser?.role === 'ADMIN' ? 'Managing Director' :
+    currentUser?.role === 'MANAGER' ? 'Manager' :
+    currentUser?.role === 'SALESMAN' ? 'Sales Executive' : 'Authorized Officer'
+  ) || settings.signatureLabel || 'Authorized Officer';
+
   // Document Type Selector
   const [docType, setDocType] = useState<DocumentType>(() => {
     if (editingDocument) return editingDocument.type;
@@ -43,6 +53,9 @@ export default function DocumentCreator({
 
   // Customer Selector/Creation & Unique ID Search
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+
+  // Check if document was already saved in database or is a new conversion from challan
+  const isExistingSavedDoc = !!(editingDocument && documents?.some(d => d.id === editingDocument.id));
   const [companyIdSearch, setCompanyIdSearch] = useState('');
   const [isAddingNewCustomer, setIsAddingNewCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
@@ -69,8 +82,13 @@ export default function DocumentCreator({
   const [discount, setDiscount] = useState(0);
   const [hasDiscount, setHasDiscount] = useState(false);
   const [terms, setTerms] = useState(settings.terms);
-  const [signatureName, setSignatureName] = useState(settings.signatureName);
-  const [signatureLabel, setSignatureLabel] = useState(settings.signatureLabel);
+  const [notes, setNotes] = useState(editingDocument?.notes || '');
+  const [signatureName, setSignatureName] = useState(() => {
+    return editingDocument?.signatureName || loggedInSigName;
+  });
+  const [signatureLabel, setSignatureLabel] = useState(() => {
+    return editingDocument?.signatureLabel || loggedInSigLabel;
+  });
 
   // Initialize or Load Edit Data
   useEffect(() => {
@@ -91,8 +109,9 @@ export default function DocumentCreator({
       setDiscount(editingDocument.discount);
       setHasDiscount(editingDocument.discount > 0);
       setTerms(editingDocument.terms);
-      setSignatureName(editingDocument.signatureName);
-      setSignatureLabel(editingDocument.signatureLabel);
+      setNotes(editingDocument.notes || '');
+      setSignatureName(editingDocument.signatureName || loggedInSigName);
+      setSignatureLabel(editingDocument.signatureLabel || loggedInSigLabel);
     } else {
       // Create New
       const targetType = initialDocType || 'CHALLAN';
@@ -102,6 +121,9 @@ export default function DocumentCreator({
       setDate(dateStr);
       setDiscount(0);
       setHasDiscount(false);
+      setNotes('');
+      setSignatureName(loggedInSigName);
+      setSignatureLabel(loggedInSigLabel);
       
       // Default 1 month due date for invoices
       const defaultDue = new Date();
@@ -111,7 +133,7 @@ export default function DocumentCreator({
       // Seed placeholders based on selected type
       updatePlaceholders(targetType, dateStr);
     }
-  }, [editingDocument, initialDocType]);
+  }, [editingDocument, initialDocType, currentUser]);
 
   const handleImportFromChallan = () => {
     if (!selectedChallanId) return;
@@ -119,8 +141,9 @@ export default function DocumentCreator({
     if (!ch) return;
 
     setSelectedCustomerId(ch.customerId);
-    setSubject(`Bill for Delivery Challan ${ch.docNumber}`);
+    setSubject(`${docType === 'INVOICE' ? 'Sales Invoice' : 'Bill'} for Delivery Challan ${ch.docNumber}`);
     if (ch.terms) setTerms(ch.terms);
+    setNotes(`Generated against Delivery Challan: ${ch.docNumber}`);
     
     // Populate items with prices from catalog or existing price
     const mappedItems: DocumentItem[] = ch.items.map(it => {
@@ -156,7 +179,7 @@ export default function DocumentCreator({
     if (type === 'OFFER_LETTER') {
       setStatus('Active');
       setSubject('Offer Letter for Genuine Compressor Spares & Consumables');
-      setOpeningParagraph('We refer to your requirement for compressed air system maintenance parts. hitachisolutioncenter is highly pleased to submit our offer letter detailing our capability to supply genuine filters and service components to keep your factory running at peak efficiency.');
+      setOpeningParagraph('We refer to your requirement for compressed air system maintenance parts. Jubayer Machineries is highly pleased to submit our offer letter detailing our capability to supply genuine filters and service components to keep your factory running at peak efficiency.');
       setClosingParagraph('We trust that our proposal matches your machinery parameters. Looking forward to your valued work order to establish our sustainable partnership.');
     } else if (type === 'QUOTATION') {
       setStatus('Sent');
@@ -168,6 +191,16 @@ export default function DocumentCreator({
       setSubject('Delivery Challan for Machinery & Spare Parts');
       setOpeningParagraph('Please receive the following genuine spare parts and equipment in good condition as per work order.');
       setClosingParagraph('Received the above goods in sound and complete condition.');
+    } else if (type === 'BILL') {
+      setStatus('Unpaid');
+      setSubject('Sales Bill for Machinery Spares & Services');
+      setOpeningParagraph('Please find our formal sales bill for the supplied equipment and genuine maintenance parts.');
+      setClosingParagraph('Thank you for your business. Please arrange payment at your earliest convenience.');
+    } else if (type === 'INVOICE') {
+      setStatus('Unpaid');
+      setSubject('Sales Invoice for Machinery & Spares');
+      setOpeningParagraph('Please find our commercial sales invoice for the supplied machinery, spare parts, and associated services.');
+      setClosingParagraph('Thank you for your business. Please settle the invoice as per the agreed payment terms.');
     } else {
       setStatus('Unpaid');
       setSubject('');
@@ -346,10 +379,10 @@ export default function DocumentCreator({
       customerPhone: cust.phone,
       customerEmail: cust.email,
       customerAddress: cust.address,
-      subject: (docType === 'OFFER_LETTER' || docType === 'QUOTATION') ? subject : undefined,
-      salutation: (docType === 'OFFER_LETTER' || docType === 'QUOTATION') ? salutation : undefined,
-      openingParagraph: (docType === 'OFFER_LETTER' || docType === 'QUOTATION') ? openingParagraph : undefined,
-      closingParagraph: (docType === 'OFFER_LETTER' || docType === 'QUOTATION') ? closingParagraph : undefined,
+      subject: subject || undefined,
+      salutation: salutation || undefined,
+      openingParagraph: openingParagraph || undefined,
+      closingParagraph: closingParagraph || undefined,
       items: validItems,
       subtotal: calculatedSubtotal,
       taxRate: vatEnabled ? taxRate : 0,
@@ -360,6 +393,7 @@ export default function DocumentCreator({
       dueAmount: safeDue,
       status: finalStatus,
       terms,
+      notes: notes || editingDocument?.notes,
       signatureName,
       signatureLabel,
       vatEnabled
@@ -399,14 +433,14 @@ export default function DocumentCreator({
                 <select
                   value={docType}
                   onChange={(e) => setDocType(e.target.value as DocumentType)}
-                  disabled={!!editingDocument}
+                  disabled={isExistingSavedDoc}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-bold text-slate-800 focus:outline-hidden cursor-pointer"
                 >
                   <option value="OFFER_LETTER">Offer Letter</option>
                   <option value="QUOTATION">Quotation</option>
                   <option value="CHALLAN">Delivery Challan</option>
                   <option value="INVOICE">Sales Invoice</option>
-                  <option value="BILL">Purchase Bill</option>
+                  <option value="BILL">Sales Bill</option>
                 </select>
               </div>
 
@@ -462,7 +496,7 @@ export default function DocumentCreator({
                     <span className="font-bold text-xs">Load Data from Existing Delivery Challan:</span>
                   </div>
                   <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                    Generate Bill from Challan
+                    Generate {docType === 'INVOICE' ? 'Invoice' : 'Bill'} from Challan
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 items-center">
@@ -489,7 +523,7 @@ export default function DocumentCreator({
                   </button>
                 </div>
                 <p className="text-[10px] text-emerald-800 font-medium">
-                  💡 Selecting a challan automatically fills customer details and items. Saving this bill will update your inventory stock.
+                  💡 Selecting a challan automatically fills customer details and items. Saving this {docType === 'INVOICE' ? 'sales invoice' : 'sales bill'} will update your inventory stock.
                 </p>
               </div>
             )}
@@ -994,26 +1028,38 @@ export default function DocumentCreator({
               />
             </div>
 
-            {/* Signature name */}
+            {/* Signature name & designation */}
             <div className="space-y-3 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  Authorized Signatory (স্বাক্ষরকারী):
+                </span>
+                {currentUser && (
+                  <span className="text-[9.5px] font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
+                    <UserCheck className="w-3 h-3 text-blue-700" />
+                    Logged in: {currentUser.name} ({currentUser.designation || currentUser.role})
+                  </span>
+                )}
+              </div>
+
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Authorized Signature Name</label>
+                <label className="font-bold text-slate-700">Authorized Signature Name (অনুমোদনকারীর নাম)</label>
                 <input
                   type="text"
                   value={signatureName}
                   onChange={(e) => setSignatureName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 font-bold focus:bg-white focus:outline-hidden"
+                  className="w-full bg-slate-50 border border-slate-200 rounded p-2 font-bold focus:bg-white focus:outline-hidden text-slate-900"
                 />
               </div>
 
               {/* Signature designation */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Designation / Role Title</label>
+                <label className="font-bold text-slate-700">Designation / Role Title (পদবি)</label>
                 <input
                   type="text"
                   value={signatureLabel}
                   onChange={(e) => setSignatureLabel(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 font-bold focus:bg-white focus:outline-hidden"
+                  className="w-full bg-slate-50 border border-slate-200 rounded p-2 font-bold focus:bg-white focus:outline-hidden text-slate-900"
                 />
               </div>
             </div>

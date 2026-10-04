@@ -526,7 +526,68 @@ export default function App() {
     setViewingDocument(doc); // View the printable layout immediately!
   };
 
-  // Convert an existing Delivery Challan into a Bill / Sales Invoice
+  // Convert an existing Delivery Challan into a Sales Invoice
+  const handleCreateInvoiceFromChallan = (challan: Document) => {
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const mappedItems = challan.items.map(it => {
+      const prod = products.find(p => p.id === it.productId);
+      const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
+      return {
+        ...it,
+        price: unitPrice,
+        total: unitPrice * it.quantity
+      };
+    });
+
+    const subtotal = mappedItems.reduce((acc, it) => acc + it.total, 0);
+    const taxRate = settings.taxRate || 0;
+    const taxAmount = Math.round((subtotal * taxRate) / 100);
+    const total = subtotal + taxAmount;
+
+    const newInvoice: Document = {
+      id: `doc-${Date.now()}`,
+      type: 'INVOICE',
+      docNumber: `${settings.invoicePrefix || 'JM/INV/2026/'}${randomId}`,
+      date: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      customerId: challan.customerId,
+      customerName: challan.customerName,
+      customerCompany: challan.customerCompany,
+      customerPhone: challan.customerPhone,
+      customerEmail: challan.customerEmail,
+      customerAddress: challan.customerAddress,
+      subject: `Sales Invoice against Delivery Challan: ${challan.docNumber}`,
+      salutation: challan.salutation || 'Dear Sir,',
+      openingParagraph: 'Please find our formal Sales Invoice for the goods delivered under the referenced delivery challan.',
+      closingParagraph: 'Thank you for your business.',
+      items: mappedItems,
+      subtotal,
+      taxRate,
+      taxAmount,
+      discount: 0,
+      total,
+      paidAmount: 0,
+      dueAmount: total,
+      status: 'Unpaid',
+      terms: challan.terms || settings.terms,
+      notes: `Generated against Delivery Challan: ${challan.docNumber}`,
+      signatureName: currentUser?.name || settings.signatureName || 'MD MAHI UDDIN',
+      signatureLabel: currentUser?.designation || (
+        currentUser?.role === 'ADMIN' ? 'Managing Director & Owner' :
+        currentUser?.role === 'MANAGER' ? 'Operations Manager' :
+        currentUser?.role === 'SALESMAN' ? 'Senior Sales Executive' :
+        'Authorized Signatory'
+      ) || settings.signatureLabel || 'Authorized Signatory',
+      vatEnabled: true
+    };
+
+    setViewingDocument(null);
+    setEditingDocument(newInvoice);
+    setIsCreatingDoc('INVOICE');
+    setActiveTab('docs');
+  };
+
+  // Convert an existing Delivery Challan into a Sales Bill
   const handleCreateBillFromChallan = (challan: Document) => {
     const randomId = Math.floor(1000 + Math.random() * 9000);
     const mappedItems = challan.items.map(it => {
@@ -571,11 +632,17 @@ export default function App() {
       status: 'Unpaid',
       terms: challan.terms || settings.terms,
       notes: `Generated against Delivery Challan: ${challan.docNumber}`,
-      signatureName: settings.signatureName,
-      signatureLabel: settings.signatureLabel,
+      signatureName: currentUser?.name || settings.signatureName || 'MD MAHI UDDIN',
+      signatureLabel: currentUser?.designation || (
+        currentUser?.role === 'ADMIN' ? 'Managing Director & Owner' :
+        currentUser?.role === 'MANAGER' ? 'Operations Manager' :
+        currentUser?.role === 'SALESMAN' ? 'Senior Sales Executive' :
+        'Authorized Signatory'
+      ) || settings.signatureLabel || 'Authorized Signatory',
       vatEnabled: true
     };
 
+    setViewingDocument(null);
     setEditingDocument(newBill);
     setIsCreatingDoc('BILL');
     setActiveTab('docs');
@@ -894,9 +961,12 @@ export default function App() {
       <PrintDocument 
         document={viewingDocument}
         settings={settings}
+        currentUser={currentUser}
         onBack={() => setViewingDocument(null)}
+        onCreateInvoice={(challan) => {
+          handleCreateInvoiceFromChallan(challan);
+        }}
         onCreateBill={(challan) => {
-          setViewingDocument(null);
           handleCreateBillFromChallan(challan);
         }}
       />
@@ -1357,6 +1427,7 @@ export default function App() {
                       onEditDocument={(doc) => setEditingDocument(doc)}
                       onDeleteDocument={handleDeleteDocument}
                       onViewDocument={(doc) => setViewingDocument(doc)}
+                      onCreateInvoiceFromChallan={handleCreateInvoiceFromChallan}
                       onCreateBillFromChallan={handleCreateBillFromChallan}
                     />
                   )}
@@ -1382,6 +1453,7 @@ export default function App() {
                       documents={documents}
                       customers={customers}
                       settings={settings}
+                      currentUser={currentUser}
                       onUpdateDocument={handleSaveDocument}
                       onBatchUpdateDocuments={handleBatchUpdateDocuments}
                       onViewDocument={(doc) => setViewingDocument(doc)}
