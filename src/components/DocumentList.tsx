@@ -346,30 +346,16 @@ export default function DocumentList({
                     {/* Option Triggers */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* If Challan: Option to directly create Invoice or Bill from this Challan */}
-                        {doc.type === 'CHALLAN' && (
-                          <div className="flex items-center gap-1">
-                            {onCreateInvoiceFromChallan && (
-                              <button
-                                onClick={() => onCreateInvoiceFromChallan(doc)}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors border border-emerald-700 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
-                                title="Generate Sales Invoice directly from this delivery challan"
-                              >
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>Create Invoice</span>
-                              </button>
-                            )}
-                            {onCreateBillFromChallan && (
-                              <button
-                                onClick={() => onCreateBillFromChallan(doc)}
-                                className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-colors border border-blue-800 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
-                                title="Generate Sales Bill directly from this delivery challan"
-                              >
-                                <Receipt className="w-3.5 h-3.5" />
-                                <span>Create Bill</span>
-                              </button>
-                            )}
-                          </div>
+                        {/* If Challan: Option to directly create Sales Invoice from this Challan */}
+                        {doc.type === 'CHALLAN' && onCreateInvoiceFromChallan && (
+                          <button
+                            onClick={() => onCreateInvoiceFromChallan(doc)}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors border border-emerald-700 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
+                            title="Generate Sales Invoice directly from this delivery challan"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Create Invoice</span>
+                          </button>
                         )}
 
                         {/* If Invoice/Bill: View linked Delivery Challan if one actually exists */}

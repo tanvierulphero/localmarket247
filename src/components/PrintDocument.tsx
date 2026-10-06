@@ -689,30 +689,16 @@ ${rawBase64Logo}
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Create Invoice / Bill from Challan shortcut */}
-          {document.type === 'CHALLAN' && (
-            <div className="flex items-center gap-2">
-              {onCreateInvoice && (
-                <button
-                  onClick={() => onCreateInvoice(document)}
-                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
-                  title="Create Sales Invoice directly from this delivery challan"
-                >
-                  <FileText className="w-4 h-4 text-emerald-100" />
-                  <span>Create Invoice</span>
-                </button>
-              )}
-              {onCreateBill && (
-                <button
-                  onClick={() => onCreateBill(document)}
-                  className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
-                  title="Create Sales Bill directly from this delivery challan"
-                >
-                  <Receipt className="w-4 h-4 text-blue-100" />
-                  <span>Create Bill</span>
-                </button>
-              )}
-            </div>
+          {/* Create Sales Invoice from Challan shortcut */}
+          {document.type === 'CHALLAN' && onCreateInvoice && (
+            <button
+              onClick={() => onCreateInvoice(document)}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
+              title="Create Sales Invoice directly from this delivery challan"
+            >
+              <FileText className="w-4 h-4 text-emerald-100" />
+              <span>Create Invoice</span>
+            </button>
           )}
 
           {/* Print Button */}
