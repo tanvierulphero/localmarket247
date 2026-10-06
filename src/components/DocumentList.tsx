@@ -99,7 +99,7 @@ export default function DocumentList({
     <div className="space-y-6 text-xs">
       
       {/* Dynamic shortcut creator cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Card 1: Offer Letter */}
         <button
           onClick={() => onAddDocumentClick('OFFER_LETTER')}
@@ -153,20 +153,6 @@ export default function DocumentList({
           <div>
             <span className="font-bold text-slate-900 block font-display leading-tight">Sales Invoice</span>
             <span className="text-[10px] text-slate-400 block mt-0.5">Commercial Invoice</span>
-          </div>
-        </button>
-
-        {/* Card 5: Sales Bill */}
-        <button
-          onClick={() => onAddDocumentClick('BILL')}
-          className="bg-white border border-slate-200 hover:border-purple-500 hover:shadow-xs p-3.5 rounded-xl text-left space-y-1.5 transition-all cursor-pointer group"
-        >
-          <div className="w-7 h-7 bg-purple-50 group-hover:bg-purple-100 text-purple-700 rounded-lg flex items-center justify-center transition-colors">
-            <Receipt className="w-3.5 h-3.5" />
-          </div>
-          <div>
-            <span className="font-bold text-slate-900 block font-display leading-tight">Sales Bill</span>
-            <span className="text-[10px] text-slate-400 block mt-0.5">Customer Bill</span>
           </div>
         </button>
       </div>
