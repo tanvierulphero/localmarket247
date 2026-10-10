@@ -526,6 +526,18 @@ export default function App() {
     setViewingDocument(doc); // View the printable layout immediately!
   };
 
+  // Quick update document without redirecting view (used for marking Paid, payment collection in lists, etc.)
+  const handleUpdateDocumentOnly = async (updatedDoc: Document) => {
+    const cleanDoc = sanitizeDoc(updatedDoc);
+    const list = documents.map(d => d.id === cleanDoc.id ? cleanDoc : d);
+    setDocuments(list);
+    try {
+      await apiSaveDocument(cleanDoc);
+    } catch (e: any) {
+      console.warn('Backend sync warning:', e);
+    }
+  };
+
   // Convert an existing Delivery Challan into a Sales Invoice
   const handleCreateInvoiceFromChallan = (challan: Document) => {
     const randomId = Math.floor(1000 + Math.random() * 9000);
@@ -1485,6 +1497,7 @@ export default function App() {
                       onViewDocument={(doc) => setViewingDocument(doc)}
                       onCreateInvoiceFromChallan={handleCreateInvoiceFromChallan}
                       onCreateBillFromChallan={handleCreateBillFromChallan}
+                      onUpdateDocument={handleUpdateDocumentOnly}
                     />
                   )}
 
@@ -1510,7 +1523,7 @@ export default function App() {
                       customers={customers}
                       settings={settings}
                       currentUser={currentUser}
-                      onUpdateDocument={handleSaveDocument}
+                      onUpdateDocument={handleUpdateDocumentOnly}
                       onBatchUpdateDocuments={handleBatchUpdateDocuments}
                       onViewDocument={(doc) => setViewingDocument(doc)}
                     />
