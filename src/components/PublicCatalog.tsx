@@ -442,18 +442,6 @@ export default function PublicCatalog({
                     <div className="absolute top-3 left-3 bg-blue-900 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
                       {product.brand}
                     </div>
-                    
-                    <div className="absolute top-3 right-3">
-                      {product.stock > 0 ? (
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 shadow-xs">
-                          In Stock ({product.stock})
-                        </span>
-                      ) : (
-                        <span className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-200 shadow-xs">
-                          Out of Stock
-                        </span>
-                      )}
-                    </div>
                   </div>
 
                   {/* Body Details */}
