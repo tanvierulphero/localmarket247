@@ -702,30 +702,35 @@ ${rawBase64Logo}
         </div>
 
         <div className="flex items-center gap-3">
-          {/* If Sales Invoice or Bill: Quick Paid Toggle Button */}
-          {(document.type === 'INVOICE' || document.type === 'BILL') && onSaveDocument && (
+          {/* If Sales Invoice, Bill, or Challan: Quick Paid Toggle Button (Optional for Challan) */}
+          {(document.type === 'INVOICE' || document.type === 'BILL' || document.type === 'CHALLAN') && onSaveDocument && (
             document.status === 'Paid' ? (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 text-emerald-800 px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>PAID &bull; পরিশোধিত</span>
                 <button
                   type="button"
-                  onClick={() => onSaveDocument({ ...document, status: 'Unpaid', paidAmount: 0, dueAmount: document.total })}
+                  onClick={() => onSaveDocument({ 
+                    ...document, 
+                    status: document.type === 'CHALLAN' ? 'Active' : 'Unpaid', 
+                    paidAmount: 0, 
+                    dueAmount: document.type === 'CHALLAN' ? 0 : document.total 
+                  })}
                   className="ml-1 text-[10px] text-rose-600 hover:text-rose-800 underline font-semibold cursor-pointer"
-                  title="Revert status to Unpaid"
+                  title="Remove Paid status"
                 >
-                  (Mark Unpaid)
+                  ({document.type === 'CHALLAN' ? 'Remove Paid' : 'Mark Unpaid'})
                 </button>
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => onSaveDocument({ ...document, status: 'Paid', paidAmount: document.total, dueAmount: 0 })}
+                onClick={() => onSaveDocument({ ...document, status: 'Paid', paidAmount: document.total || 0, dueAmount: 0 })}
                 className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
-                title="Mark this invoice as Paid"
+                title={document.type === 'CHALLAN' ? 'Mark this delivery challan as Paid (Optional)' : 'Mark this invoice as Paid'}
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-100" />
-                <span>Mark as Paid (টাকা পরিশোধ)</span>
+                <span>Mark as Paid {document.type === 'CHALLAN' ? '(ঐচ্ছিক)' : '(টাকা পরিশোধ)'}</span>
               </button>
             )
           )}

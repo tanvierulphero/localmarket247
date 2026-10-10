@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product, Customer, Document, DocumentItem, DocumentType, DocumentStatus, BusinessSettings, StaffUser } from '../types';
-import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package, UserCheck } from 'lucide-react';
+import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package, UserCheck, Coins } from 'lucide-react';
 
 interface DocumentCreatorProps {
   products: Product[];
@@ -373,7 +373,10 @@ export default function DocumentCreator({
       ? Number(editingDocument.dueAmount) 
       : (status === 'Paid' ? 0 : Math.max(0, calculatedTotal - safePaid));
 
-    const finalStatus: DocumentStatus = status || (safeDue === 0 ? 'Paid' : (safePaid > 0 ? 'Partially Paid' : 'Unpaid'));
+    // For Challan, Paid is purely optional; default to Active/selected status instead of forcing Paid on 0 due
+    const finalStatus: DocumentStatus = docType === 'CHALLAN'
+      ? (status === 'Paid' ? 'Paid' : (status || 'Active'))
+      : (status || (safeDue === 0 ? 'Paid' : (safePaid > 0 ? 'Partially Paid' : 'Unpaid')));
 
     const doc: Document = {
       id: editingDocument ? editingDocument.id : `doc-${Date.now()}`,
@@ -482,15 +485,42 @@ export default function DocumentCreator({
               </div>
             </div>
 
-            {/* Challan Workflow Guidance Notice */}
+            {/* Challan Workflow Guidance Notice & Optional Paid Toggle */}
             {docType === 'CHALLAN' && (
-              <div className="bg-blue-50/80 border border-blue-200 text-blue-900 rounded-xl p-3.5 flex items-start gap-3 animate-fade-in">
-                <Truck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-xs space-y-1">
-                  <span className="font-bold block">Delivery Challan:</span>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Create the Delivery Challan first when dispatching goods. <strong>Stock will not decrease when creating a challan.</strong> When the final Sales Bill or Invoice is created later from this challan, <strong>stock will automatically decrease.</strong>
-                  </p>
+              <div className="space-y-2.5 animate-fade-in">
+                <div className="bg-blue-50/80 border border-blue-200 text-blue-900 rounded-xl p-3.5 flex items-start gap-3">
+                  <Truck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <span className="font-bold block">Delivery Challan:</span>
+                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                      Create the Delivery Challan first when dispatching goods. <strong>Stock will not decrease when creating a challan.</strong> When the final Sales Bill or Invoice is created later from this challan, <strong>stock will automatically decrease.</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-emerald-600" />
+                    <div>
+                      <span className="font-bold text-xs text-slate-800 block">
+                        Mark as Paid / টাকা পরিশোধিত (ঐচ্ছিক)
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        চালান ডেলিভারির সময় নগদ বা চেক পেমেন্ট পাওয়া গেলে Paid হিসেবে চিহ্নিত করুন (ঐচ্ছিক)
+                      </span>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={status === 'Paid'}
+                      onChange={(e) => setStatus(e.target.checked ? 'Paid' : 'Active')}
+                      className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                    />
+                    <span className={`ml-2 text-xs font-bold ${status === 'Paid' ? 'text-emerald-700' : 'text-slate-500'}`}>
+                      {status === 'Paid' ? '✓ Paid' : 'Optional (Not Paid)'}
+                    </span>
+                  </label>
                 </div>
               </div>
             )}

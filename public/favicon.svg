@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1d4f"/>
+      <stop offset="100%" stop-color="#1c3f94"/>
+    </linearGradient>
+    <linearGradient id="gearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="rotorGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e676"/>
+      <stop offset="100%" stop-color="#00a651"/>
+    </linearGradient>
+    <linearGradient id="accentRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff5252"/>
+      <stop offset="100%" stop-color="#c1272d"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Base Applet Icon Container (Squircle) -->
+  <rect x="1" y="1" width="62" height="62" rx="14" fill="url(#bg)"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="13.5" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-opacity="0.45"/>
+
+  <!-- Mechanical Outer Gear Cogs (Precision industrial engineering cog) -->
+  <g transform="translate(32,32)" filter="url(#shadow)">
+    <!-- 8 Gear Teeth -->
+    <g fill="url(#gearGrad)" stroke="#1c3f94" stroke-width="0.8">
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2"/>
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2" transform="rotate(45)"/>
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2" transform="rotate(90)"/>
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2" transform="rotate(135)"/>
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2" transform="rotate(180)"/>
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2" transform="rotate(225)"/>
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2" transform="rotate(270)"/>
+      <rect x="-3" y="-23.5" width="6" height="5" rx="1.2" transform="rotate(315)"/>
+    </g>
+
+    <!-- Gear Outer Ring -->
+    <circle r="19.5" fill="url(#gearGrad)" stroke="#0b1d4f" stroke-width="1.2"/>
+    <circle r="14.5" fill="#0b1d4f"/>
+
+    <!-- Hitachi / Jubayer Industrial Screw Compressor Rotors / Vortex Core -->
+    <path d="M-8.5,-5 C-4,-12 4,-12 8.5,-5 C4,1 -4,1 -8.5,-5 Z" fill="url(#rotorGreen)"/>
+    <path d="M8.5,5 C4,12 -4,12 -8.5,5 C-4,-1 4,-1 8.5,5 Z" fill="url(#accentRed)"/>
+
+    <!-- High-tech Central Bearing Pin & Core -->
+    <circle r="5.5" fill="#ffffff" stroke="#1c3f94" stroke-width="1.2"/>
+    <circle r="2.5" fill="#0b1d4f"/>
+
+    <!-- Dynamic Flow Accents (Compressed Air Flow) -->
+    <path d="M-11,0 A11,11 0 0,1 0,-11" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M11,0 A11,11 0 0,1 0,11" fill="none" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Technical Online Status / Quality Indicator (Jubayer Emerald Dot) -->
+  <circle cx="51" cy="13" r="3.2" fill="#00e676" stroke="#ffffff" stroke-width="1.2"/>
+</svg>

@@ -52,6 +52,12 @@ export function getDocFinancials(doc: Document) {
     due = 0;
     paid = total;
   }
+
+  // Delivery Challan: payment is strictly optional. If not marked Paid, it does not force an overdue debt.
+  if (doc.type === 'CHALLAN' && doc.status !== 'Paid' && (!doc.paidAmount || doc.paidAmount === 0)) {
+    due = 0;
+  }
+
   return { total, paid, due };
 }
 
@@ -304,9 +310,9 @@ export default function DueLedger({ documents, customers, settings, currentUser,
     documents: Document[];
   } | null>(null);
 
-  // Helper: Extract only Invoice, Bill & Challan documents with monetary value
+  // Helper: Extract only Invoice, Bill & Paid Challan documents with monetary value
   const financialDocs = (documents || []).filter(doc => 
-    doc && (doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN' || (Number(doc.total) > 0 && doc.type !== 'QUOTATION' && doc.type !== 'OFFER_LETTER'))
+    doc && (doc.type === 'INVOICE' || doc.type === 'BILL' || (doc.type === 'CHALLAN' && (doc.status === 'Paid' || Number(doc.paidAmount) > 0)) || (Number(doc.total) > 0 && doc.type !== 'QUOTATION' && doc.type !== 'OFFER_LETTER' && doc.type !== 'CHALLAN'))
   );
 
   // Compute stats using bulletproof getDocFinancials

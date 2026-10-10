@@ -96,7 +96,7 @@ export default function DocumentList({
 
     onUpdateDocument(updatedDoc);
     setPaymentModalDoc(null);
-    setToastMessage(`✓ ${doc.type === 'INVOICE' ? 'Sales Invoice' : 'Document'} ${doc.docNumber} marked as PAID (৳${fin.total.toLocaleString()})!`);
+    setToastMessage(`✓ ${doc.type === 'CHALLAN' ? 'Delivery Challan' : doc.type === 'INVOICE' ? 'Sales Invoice' : 'Document'} ${doc.docNumber} marked as PAID (৳${fin.total.toLocaleString()})!`);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
@@ -112,11 +112,11 @@ export default function DocumentList({
       const updatedDoc: Document = {
         ...paymentModalDoc,
         paidAmount: 0,
-        dueAmount: fin.total,
-        status: 'Unpaid'
+        dueAmount: paymentModalDoc.type === 'CHALLAN' ? 0 : fin.total,
+        status: paymentModalDoc.type === 'CHALLAN' ? 'Active' : 'Unpaid'
       };
       onUpdateDocument(updatedDoc);
-      setToastMessage(`Invoice ${paymentModalDoc.docNumber} reverted to Unpaid status.`);
+      setToastMessage(`${paymentModalDoc.type === 'CHALLAN' ? 'Challan' : 'Invoice'} ${paymentModalDoc.docNumber} set to ${paymentModalDoc.type === 'CHALLAN' ? 'Active (Unpaid)' : 'Unpaid'}.`);
       setTimeout(() => setToastMessage(null), 3500);
       setPaymentModalDoc(null);
       return;
@@ -133,7 +133,7 @@ export default function DocumentList({
     } else {
       newPaid = Math.min(fin.total, fin.paid + numAmount);
       newDue = Math.max(0, fin.total - newPaid);
-      newStatus = newDue === 0 ? 'Paid' : 'Partially Paid';
+      newStatus = newDue === 0 ? 'Paid' : (paymentModalDoc.type === 'CHALLAN' ? 'Active' : 'Partially Paid');
     }
 
     const noteTag = `[Payment Received: Tk. ${numAmount.toLocaleString()} on ${paymentDate} via ${paymentMethod} - ${paymentNotes.trim()} - Ref: ${receiptNo.trim()}]`;
@@ -159,12 +159,12 @@ export default function DocumentList({
     const updatedDoc: Document = {
       ...doc,
       paidAmount: 0,
-      dueAmount: fin.total,
-      status: 'Unpaid'
+      dueAmount: doc.type === 'CHALLAN' ? 0 : fin.total,
+      status: doc.type === 'CHALLAN' ? 'Active' : 'Unpaid'
     };
 
     onUpdateDocument(updatedDoc);
-    setToastMessage(`Invoice ${doc.docNumber} marked as Unpaid.`);
+    setToastMessage(`${doc.type === 'CHALLAN' ? 'Challan' : 'Invoice'} ${doc.docNumber} set to ${doc.type === 'CHALLAN' ? 'Active' : 'Unpaid'}.`);
     setTimeout(() => setToastMessage(null), 3500);
     setPaymentModalDoc(null);
   };
@@ -466,7 +466,14 @@ export default function DocumentList({
                       <div className="font-extrabold text-slate-900 font-display text-xs sm:text-sm">
                         ৳ {doc.total.toLocaleString()}
                       </div>
-                      {(doc.type === 'INVOICE' || doc.type === 'BILL') && (() => {
+                      {doc.type === 'CHALLAN' ? (
+                        doc.status === 'Paid' ? (
+                          <div className="text-[10px] text-emerald-600 font-black flex items-center justify-end gap-1 mt-0.5">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Paid (ঐচ্ছিক)</span>
+                          </div>
+                        ) : null
+                      ) : (doc.type === 'INVOICE' || doc.type === 'BILL') ? (() => {
                         const fin = getDocFinancials(doc);
                         if (doc.status === 'Paid') {
                           return (
@@ -490,16 +497,16 @@ export default function DocumentList({
                             Due: ৳{fin.due.toLocaleString()}
                           </div>
                         );
-                      })()}
+                      })() : null}
                     </td>
 
-                    {/* Status badge - Clickable for Invoices/Bills to manage payment */}
+                    {/* Status badge - Clickable for Invoices/Bills/Challans to manage payment */}
                     <td className="py-3.5 px-3 text-center">
                       <button
                         type="button"
-                        onClick={() => (doc.type === 'INVOICE' || doc.type === 'BILL') && handleOpenPaymentModal(doc)}
-                        className={`inline-flex items-center gap-1 border text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider transition-all ${getStatusBadge(doc.status)} ${(doc.type === 'INVOICE' || doc.type === 'BILL') ? 'hover:shadow-xs hover:scale-105 cursor-pointer' : 'cursor-default'}`}
-                        title={(doc.type === 'INVOICE' || doc.type === 'BILL') ? 'Click to record payment or change status' : doc.status}
+                        onClick={() => (doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN') && handleOpenPaymentModal(doc)}
+                        className={`inline-flex items-center gap-1 border text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider transition-all ${getStatusBadge(doc.status)} ${(doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN') ? 'hover:shadow-xs hover:scale-105 cursor-pointer' : 'cursor-default'}`}
+                        title={(doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN') ? 'Click to record payment or change status (Paid optional)' : doc.status}
                       >
                         {doc.status === 'Paid' && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
                         <span>{doc.status}</span>
@@ -509,8 +516,8 @@ export default function DocumentList({
                     {/* Option Triggers */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                        {/* INVOICE / BILL: Dedicated "Mark Paid" / "Paid" Action */}
-                        {(doc.type === 'INVOICE' || doc.type === 'BILL') && (
+                        {/* INVOICE / BILL / CHALLAN: Dedicated "Mark Paid" / "Paid" Action */}
+                        {(doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN') && (
                           doc.status === 'Paid' ? (
                             <button
                               type="button"
@@ -525,11 +532,15 @@ export default function DocumentList({
                             <button
                               type="button"
                               onClick={() => handleOpenPaymentModal(doc)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg transition-all border border-emerald-700 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-xs hover:scale-[1.02]"
-                              title="টাকা পরিশোধ হলে Paid এর ব্যবস্থা করুন"
+                              className={`px-2.5 py-1 rounded-lg transition-all border cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-xs hover:scale-[1.02] ${
+                                doc.type === 'CHALLAN'
+                                  ? 'bg-blue-50 hover:bg-emerald-50 text-blue-900 hover:text-emerald-800 border-blue-200 hover:border-emerald-300'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white border-emerald-700'
+                              }`}
+                              title={doc.type === 'CHALLAN' ? 'Challan এ টাকা পরিশোধ হলে Paid হিসেবে রেকর্ড করুন (ঐচ্ছিক)' : 'টাকা পরিশোধ হলে Paid এর ব্যবস্থা করুন'}
                             >
-                              <Coins className="w-3.5 h-3.5 text-emerald-100" />
-                              <span>Mark Paid</span>
+                              <Coins className={`w-3.5 h-3.5 ${doc.type === 'CHALLAN' ? 'text-blue-700' : 'text-emerald-100'}`} />
+                              <span>{doc.type === 'CHALLAN' ? 'Paid (ঐচ্ছিক)' : 'Mark Paid'}</span>
                             </button>
                           )
                         )}
@@ -638,12 +649,20 @@ export default function DocumentList({
                   </div>
                   <div>
                     <h3 className="font-extrabold text-sm sm:text-base leading-tight font-display">
-                      Invoice Payment Settlement (টাকা পরিশোধ)
+                      {paymentModalDoc.type === 'CHALLAN' 
+                        ? 'Challan Payment (চালান টাকা পরিশোধ - ঐচ্ছিক)' 
+                        : 'Invoice Payment Settlement (টাকা পরিশোধ)'}
                     </h3>
                     <div className="flex items-center gap-2 text-[11px] text-slate-300 mt-0.5">
                       <span className="font-mono font-bold text-emerald-400">{paymentModalDoc.docNumber}</span>
                       <span>&bull;</span>
-                      <span>{paymentModalDoc.type === 'INVOICE' ? 'Sales Invoice' : 'Supplier Bill'}</span>
+                      <span>
+                        {paymentModalDoc.type === 'INVOICE' 
+                          ? 'Sales Invoice' 
+                          : paymentModalDoc.type === 'CHALLAN' 
+                          ? 'Delivery Challan (ঐচ্ছিক পেমেন্ট)' 
+                          : 'Supplier Bill'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -658,6 +677,12 @@ export default function DocumentList({
 
               {/* Client & Financial Snapshot */}
               <div className="p-5 space-y-4">
+                {paymentModalDoc.type === 'CHALLAN' && (
+                  <div className="bg-blue-50 border border-blue-200 text-blue-900 px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 font-medium">
+                    <Truck className="w-4 h-4 text-blue-700 flex-shrink-0" />
+                    <span>💡 চালানে টাকা পরিশোধ বাধ্যতামূলক নয়, সম্পূর্ণ ঐচ্ছিক। ডেলিভারির সময় নগদ বা চেক পাওয়া গেলে তবেই Paid হিসেবে চিহ্নিত করুন।</span>
+                  </div>
+                )}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
                   <div className="flex justify-between items-start text-xs">
                     <div>
