@@ -1835,7 +1835,7 @@ export default function App() {
                                   <img 
                                     src={settingsForm.faviconUrl || '/favicon.svg'} 
                                     alt="Favicon preview" 
-                                    className="w-4 h-4 object-contain rounded-xs"
+                                    className="h-4 w-auto max-w-[28px] object-contain rounded-xs"
                                     onError={(e) => {
                                       (e.target as HTMLImageElement).src = '/favicon.svg';
                                     }}
