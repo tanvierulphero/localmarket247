@@ -19,20 +19,8 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [error, setError] = useState('');
-  const [copiedPhone, setCopiedPhone] = useState(false);
 
   const selectedStaff = staffUsers.find(s => s.id === selectedStaffId);
-
-  const handleCopyPhone = () => {
-    try {
-      navigator.clipboard.writeText('01840684615');
-      setCopiedPhone(true);
-      setTimeout(() => setCopiedPhone(false), 2000);
-    } catch {
-      setCopiedPhone(true);
-      setTimeout(() => setCopiedPhone(false), 2000);
-    }
-  };
 
   // Handle direct passcode or account selection submit
   const handleSubmit = (e: React.FormEvent) => {
@@ -221,11 +209,8 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
         </form>
       </div>
 
-      {/* Single-line Developer Info at the Very Bottom */}
-      <div className="text-center text-xs text-slate-500 font-medium py-4 space-y-1">
-        <div>
-          Developed by: <strong className="text-slate-800 font-bold">Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <a href="https://wa.me/8801840684615" target="_blank" rel="noopener noreferrer" className="text-blue-900 font-bold hover:underline">01840684615</a>
-        </div>
+      {/* Footer Info at the Very Bottom */}
+      <div className="text-center text-xs text-slate-500 font-medium py-4">
         <div className="text-[10px] text-slate-400 font-medium">
           &copy; 2026 Jubayer Machineries &bull; All Rights Reserved
         </div>
