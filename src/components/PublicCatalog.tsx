@@ -346,41 +346,41 @@ export default function PublicCatalog({
       </header>
 
       {/* Hero Banner Section */}
-      <section className="bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 text-white py-16 md:py-24 px-4 relative overflow-hidden no-print">
+      <section className="bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 text-white py-8 md:py-12 px-4 relative overflow-hidden no-print">
         {/* Subtle geometric gear mesh in the background */}
         <div className="absolute inset-0 opacity-5 pointer-events-none flex items-center justify-center">
-          <svg className="w-[800px] h-[800px] text-white animate-spin-slow" viewBox="0 0 100 100" fill="currentColor">
+          <svg className="w-[500px] h-[500px] text-white animate-spin-slow" viewBox="0 0 100 100" fill="currentColor">
             <path d="M50,15A35,35 0 1,0 85,50A35,35 0 0,0 50,15 M50,30 A20,20 0 1,1 30,50 A20,20 0 0,1 50,30" />
             <path d="M50,5 L46,15 L54,15 Z M50,95 L46,85 L54,85 Z M5,50 L15,46 L15,54 Z M95,50 L85,46 L85,54 Z" />
           </svg>
         </div>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-          <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-1.5 bg-blue-800/60 border border-blue-700 text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
-              <Sparkles className="w-3.5 h-3.5 text-blue-300" />
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
+          <div className="lg:col-span-7 space-y-3.5">
+            <div className="inline-flex items-center gap-1.5 bg-blue-800/60 border border-blue-700 text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+              <Sparkles className="w-3 h-3 text-blue-300" />
               Industrial Machinery & Spares Supplier in Gazipur
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-black font-display tracking-tight leading-tight">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-black font-display tracking-tight leading-snug">
               Premium Screw Air Compressors & <span className="text-blue-300">Genuine Spare Parts</span>
             </h1>
             
-            <p className="text-slate-300 text-sm md:text-base leading-relaxed max-w-xl">
+            <p className="text-slate-300 text-xs md:text-sm leading-relaxed max-w-xl">
               We specialize in supply, commission, and repair services of all major brands of industrial screw air compressors, refrigerated dryers, and replacement filtration systems. Your Problem Solution is Sustainable Partner.
             </p>
 
-            <div className="flex flex-wrap gap-4 pt-2">
+            <div className="flex flex-wrap gap-3 pt-1">
               <a 
                 href="#products-showcase" 
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md transition-all hover:translate-x-1 flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all hover:translate-x-0.5 flex items-center gap-1.5 cursor-pointer"
               >
                 Browse Catalog
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </a>
               <a 
                 href="#contact" 
-                className="px-6 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 text-sm font-bold rounded-lg transition-colors cursor-pointer"
+                className="px-4 py-2 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold rounded-lg transition-colors cursor-pointer"
               >
                 Contact Sales Office
               </a>
@@ -388,20 +388,20 @@ export default function PublicCatalog({
           </div>
 
           {/* Slogan cards / visual points */}
-          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-5 rounded-xl space-y-2">
-              <Award className="w-8 h-8 text-blue-300" />
-              <h3 className="font-bold text-white text-base">Genuine Sourced</h3>
-              <p className="text-xs text-slate-300">We source directly to provide 100% genuine spares from world-leading brands.</p>
+          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-3.5 rounded-xl space-y-1.5">
+              <Award className="w-5 h-5 text-blue-300" />
+              <h3 className="font-bold text-white text-xs sm:text-sm">Genuine Sourced</h3>
+              <p className="text-[11px] text-slate-300 leading-snug">Direct sourcing for 100% genuine spares from world-leading brands.</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-5 rounded-xl space-y-2">
-              <ShieldCheck className="w-8 h-8 text-blue-300" />
-              <h3 className="font-bold text-white text-base">Expert Engineering</h3>
-              <p className="text-xs text-slate-300">Professional setup, technical troubleshooting, and maintenance services.</p>
+            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-3.5 rounded-xl space-y-1.5">
+              <ShieldCheck className="w-5 h-5 text-blue-300" />
+              <h3 className="font-bold text-white text-xs sm:text-sm">Expert Engineering</h3>
+              <p className="text-[11px] text-slate-300 leading-snug">Professional setup, troubleshooting, and maintenance services.</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-5 rounded-xl space-y-2 sm:col-span-2">
-              <h4 className="text-xs font-bold text-rose-300 uppercase tracking-widest">Our Promise</h4>
-              <p className="text-xs text-slate-200">"We supply all brand screw air compressor genuine spare parts with guaranteed post-sales support across industrial sectors in Bangladesh."</p>
+            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-3 rounded-xl space-y-1 sm:col-span-2">
+              <h4 className="text-[10px] font-bold text-rose-300 uppercase tracking-widest">Our Promise</h4>
+              <p className="text-[11px] text-slate-200 leading-snug">"We supply all brand screw air compressor genuine spare parts with guaranteed post-sales support across Bangladesh."</p>
             </div>
           </div>
         </div>
