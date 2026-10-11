@@ -209,8 +209,11 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
         </form>
       </div>
 
-      {/* Footer Info at the Very Bottom */}
-      <div className="text-center text-xs text-slate-500 font-medium py-4">
+      {/* Developer Info & Copyright at the Login Page Footer */}
+      <div className="text-center text-xs text-slate-500 font-medium py-4 space-y-1">
+        <div>
+          Developed by: <strong className="text-slate-800 font-bold">Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <a href="https://wa.me/8801840684615" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-bold">01840684615</a>
+        </div>
         <div className="text-[10px] text-slate-400 font-medium">
           &copy; 2026 Jubayer Machineries &bull; All Rights Reserved
         </div>

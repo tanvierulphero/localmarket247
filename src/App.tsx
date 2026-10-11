@@ -1354,7 +1354,7 @@ export default function App() {
                 <FolderLock className="w-5 h-5 text-blue-900" />
                 <div className="text-xs">
                   <span className="font-bold text-slate-900 font-display block">
-                    Jubayer Machineries Workspace
+                    {settings.name || 'Jubayer Machineries'} Workspace
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono block">
                     Session: {currentUser ? `${currentUser.name} (${currentUser.role})` : 'Active Session'}

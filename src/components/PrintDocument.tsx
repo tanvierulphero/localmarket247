@@ -474,11 +474,11 @@ Content-Location: document.html
         <img src="jubayer_logo.png" width="75" height="75" alt="Jubayer Machineries Logo" style="display: block; width: 75px; height: 75px; border: 0;" />
       </td>
       <td style="vertical-align: middle;">
-        <h1 class="company-name" style="font-size: 20pt; font-weight: 900; margin: 0; color: #0f172a; text-transform: uppercase;">Jubayer Machineries</h1>
+        <h1 class="company-name" style="font-size: 20pt; font-weight: 900; margin: 0; color: #0f172a; text-transform: uppercase;">${settings.name || 'Jubayer Machineries'}</h1>
         <p class="slogan" style="margin: 2px 0 0 0; color: #1e3a8a; font-style: italic; font-size: 9.5pt;">${settings.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
       </td>
       <td class="contact-details" style="vertical-align: middle; text-align: right;">
-        <p style="margin: 0; font-size: 15pt; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">Jubayer Machineries</p>
+        <p style="margin: 0; font-size: 15pt; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">${settings.name || 'Jubayer Machineries'}</p>
         <p style="margin: 4px 0 0 0; font-weight: bold; color: #1e293b; font-size: 10pt;">${settings.address}</p>
         <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Hotline: ${settings.phone1}, ${settings.phone2}</p>
         <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Email: ${settings.email}</p>
@@ -643,7 +643,7 @@ Content-Location: document.html
       "We supply all brand screw air compressor genuine spare parts"
     </p>
     <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 6px; font-size: 8pt; color: #64748b; white-space: nowrap;">
-      Print Date & Time: <strong>${printDateTime}</strong> &nbsp;|&nbsp; Developed by: <strong>Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <strong>01840684615</strong> &nbsp;|&nbsp; Page 1 of 1
+      Print Date & Time: <strong>${printDateTime}</strong> &nbsp;|&nbsp; Page 1 of 1
     </div>
   </div>
 </body>
@@ -936,7 +936,7 @@ ${rawBase64Logo}
               {/* Right Contact Details - Header Bold text "Jubayer Machineries" then under address */}
               <div className="text-right space-y-1 font-sans flex-shrink-0 leading-normal max-w-[65%]">
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-950 font-display tracking-tight leading-none uppercase">
-                  Jubayer Machineries
+                  {settings.name || 'Jubayer Machineries'}
                 </h1>
                 <div className="flex items-start justify-end gap-1.5 font-bold text-slate-900 text-xs sm:text-[13px] pt-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-900 flex-shrink-0 mt-0.5" />
@@ -1169,13 +1169,10 @@ ${rawBase64Logo}
                 "We supply all brand screw air compressor genuine spare parts"
               </p>
 
-              {/* Single-line developer information at the very bottom with print date & time */}
+              {/* Single-line footer with print date & time */}
               <div className="pt-2 text-[9px] text-slate-500 font-medium flex items-center justify-between border-t border-slate-200 mt-2 whitespace-nowrap w-full">
                 <span className="whitespace-nowrap flex-shrink-0">
                   Print Date & Time: <strong className="text-slate-900 font-mono font-bold">{printDateTime}</strong>
-                </span>
-                <span className="whitespace-nowrap flex-shrink-0 text-slate-600">
-                  Developed by: <strong className="text-slate-950 font-bold">Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <strong className="font-mono text-slate-950 font-bold">01840684615</strong>
                 </span>
                 <span className="whitespace-nowrap flex-shrink-0 text-slate-400">
                   Page 1 of 1

@@ -549,7 +549,7 @@ export default function PublicCatalog({
       {/* About Section */}
       <section id="about-us" className="py-16 px-4 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center no-print border-b border-slate-200">
         <div className="space-y-4">
-          <span className="text-xs font-bold text-blue-900 uppercase tracking-widest block">About hitachisolutioncenter</span>
+          <span className="text-xs font-bold text-blue-900 uppercase tracking-widest block">About Hitachi Air Solution Center</span>
           <h2 className="text-2xl md:text-3xl font-extrabold font-display text-slate-900 tracking-tight leading-tight">
             Reliable Partner in Industrial Compressed Air Solutions
           </h2>
@@ -643,7 +643,7 @@ export default function PublicCatalog({
                 <Check className="w-10 h-10 text-emerald-400 mx-auto" />
                 <h4 className="font-bold text-base text-white">Inquiry Submitted Successfully</h4>
                 <p className="text-xs text-slate-300">
-                  Thank you for contacting hitachisolutioncenter. Our sales team will reach out to you via your phone number within 1 hour.
+                  Thank you for contacting Hitachi Air Solution Center. Our sales team will reach out to you via your phone number within 1 hour.
                 </p>
               </div>
             ) : (
@@ -712,7 +712,7 @@ export default function PublicCatalog({
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div>
             <p className="font-bold text-slate-200">
-              &copy; 2026 hitachisolutioncenter &bull; <span className="text-blue-400">Technical support by Jubayer Machineries</span>
+              &copy; 2026 Hitachi Air Solution Center &bull; <span className="text-blue-400">Technical support by Jubayer Machineries</span>
             </p>
             <p className="text-[11px] text-slate-500 mt-0.5">All Rights Reserved &bull; Gazipur Industrial Zone, Bangladesh</p>
           </div>
