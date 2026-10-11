@@ -67,9 +67,9 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 py-6 relative">
       {/* Back link */}
-      <div>
+      <div className="w-full max-w-md mb-2.5 flex items-center justify-between">
         <button
           onClick={onBackToCatalog}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
@@ -80,7 +80,7 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
       </div>
 
       {/* Login Box */}
-      <div className="max-w-md w-full mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 p-8 space-y-6 md:p-10 relative overflow-hidden">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-7 space-y-4 sm:space-y-5 relative overflow-hidden">
         {/* Subtle decorative color line on top */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-blue-900"></div>
 
@@ -207,15 +207,26 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
             Authenticate & Open Workspace
           </button>
         </form>
-      </div>
 
-      {/* Developer Info & Copyright at the Login Page Footer */}
-      <div className="text-center text-xs text-slate-500 font-medium py-4 space-y-1">
-        <div>
-          Developed by: <strong className="text-slate-800 font-bold">Md. Tanvirul Islam (Tech Item)</strong> &bull; Contact / WhatsApp: <a href="https://wa.me/8801840684615" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-bold">01840684615</a>
-        </div>
-        <div className="text-[10px] text-slate-400 font-medium">
-          &copy; 2026 Jubayer Machineries &bull; All Rights Reserved
+        {/* Developer Info & Copyright inside the card at the very bottom */}
+        <div className="pt-4 border-t border-slate-100 text-center space-y-1">
+          <p className="text-[11px] text-slate-600 font-medium">
+            Developed by: <strong className="text-slate-900 font-bold">Md. Tanvirul Islam (Tech Item)</strong>
+          </p>
+          <p className="text-[11px] text-slate-500 font-medium">
+            Contact / WhatsApp:{' '}
+            <a
+              href="https://wa.me/8801840684615"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-700 hover:text-blue-900 font-bold underline decoration-blue-300 hover:decoration-blue-700 inline-flex items-center gap-1"
+            >
+              01840684615
+            </a>
+          </p>
+          <p className="text-[10px] text-slate-400 font-medium pt-0.5">
+            &copy; 2026 Jubayer Machineries &bull; All Rights Reserved
+          </p>
         </div>
       </div>
     </div>
