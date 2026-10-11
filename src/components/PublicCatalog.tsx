@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Product, Customer, Document, BusinessSettings } from '../types';
-import { Search, SlidersHorizontal, Check, ArrowRight, Phone, Mail, MapPin, Award, ShieldCheck, Settings2, Sparkles, Loader2, FileText } from 'lucide-react';
+import { Search, SlidersHorizontal, Check, ArrowRight, Phone, Mail, MapPin, Award, ShieldCheck, Settings2, Sparkles, Loader2, FileText, Shuffle } from 'lucide-react';
 import { apiSaveDocument, apiSaveCustomer } from '../lib/api';
 import Logo from './Logo';
 
@@ -27,6 +27,7 @@ export default function PublicCatalog({
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [randomSeed, setRandomSeed] = useState<number>(0);
   
   // Quote request form states
   const [quoteRequest, setQuoteRequest] = useState({
@@ -62,18 +63,71 @@ export default function PublicCatalog({
     return ['All', ...Array.from(list)];
   }, [products]);
 
-  // Filtering products
+  // Shuffle handler to generate a fresh random 20 product selection
+  const handleShuffleRandomProducts = () => {
+    setRandomSeed(prev => prev + 1);
+  };
+
+  // Pre-compute 20 randomly sampled products from full catalog for "All Categories" view
+  const random20Products = useMemo(() => {
+    if (products.length <= 20) {
+      return products;
+    }
+    // Fisher-Yates shuffle on array copy
+    const pool = [...products];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 20);
+  }, [products, randomSeed]);
+
+  // Filtering products:
+  // - In "All Categories" view: randomly show 20 products
+  // - When a specific category is selected: show ALL products of that category!
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const matchCategory = selectedCategory === 'All' || product.category === selectedCategory;
-      const matchBrand = selectedBrand === 'All' || product.brand === selectedBrand;
-      const matchSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.category.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchCategory && matchBrand && matchSearch;
-    });
-  }, [products, selectedCategory, selectedBrand, searchQuery]);
+    const query = searchQuery.trim().toLowerCase();
+
+    // 1. If actively searching, match across products so visitor can find any item
+    if (query.length > 0) {
+      return products.filter(product => {
+        const matchCategory = selectedCategory === 'All' || product.category === selectedCategory;
+        const matchBrand = selectedBrand === 'All' || product.brand === selectedBrand;
+        const matchSearch = product.name.toLowerCase().includes(query) || 
+                            product.sku.toLowerCase().includes(query) ||
+                            product.brand.toLowerCase().includes(query) ||
+                            product.category.toLowerCase().includes(query);
+        return matchCategory && matchBrand && matchSearch;
+      });
+    }
+
+    // 2. If a specific category is selected, show ALL products of that category!
+    if (selectedCategory !== 'All') {
+      return products.filter(product => {
+        const matchCategory = product.category === selectedCategory;
+        const matchBrand = selectedBrand === 'All' || product.brand === selectedBrand;
+        return matchCategory && matchBrand;
+      });
+    }
+
+    // 3. In "All Categories" view (selectedCategory === 'All'):
+    // Show randomly 20 products
+    if (selectedBrand === 'All') {
+      return random20Products;
+    } else {
+      // If a brand filter is also selected in All Categories
+      const brandFiltered = products.filter(p => p.brand === selectedBrand);
+      if (brandFiltered.length <= 20) {
+        return brandFiltered;
+      }
+      const pool = [...brandFiltered];
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, 20);
+    }
+  }, [products, selectedCategory, selectedBrand, searchQuery, random20Products]);
 
   // Handle Quote Submission
   const handleQuoteSubmit = async (e: React.FormEvent) => {
@@ -390,7 +444,12 @@ export default function PublicCatalog({
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setSelectedCategory(cat);
+                  if (cat === 'All') {
+                    handleShuffleRandomProducts();
+                  }
+                }}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   selectedCategory === cat 
                     ? 'bg-blue-900 text-white shadow-xs' 
@@ -419,6 +478,77 @@ export default function PublicCatalog({
                 {brand === 'All' ? 'All Brands' : brand}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* View Status & Category Summary Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white p-3.5 px-4 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className={`w-2.5 h-2.5 rounded-full ${
+              searchQuery.trim().length > 0
+                ? 'bg-emerald-500'
+                : selectedCategory === 'All' 
+                  ? 'bg-amber-500 animate-pulse' 
+                  : 'bg-blue-600'
+            }`}></span>
+            
+            <div className="text-xs">
+              {searchQuery.trim().length > 0 ? (
+                <span className="text-slate-700 font-medium">
+                  Search results for <span className="text-blue-900 font-bold">"{searchQuery}"</span> &bull; Found{' '}
+                  <span className="font-extrabold text-blue-950 font-mono">
+                    {filteredProducts.length}
+                  </span>{' '}
+                  product{filteredProducts.length === 1 ? '' : 's'}
+                </span>
+              ) : selectedCategory === 'All' ? (
+                <span className="text-slate-700 font-medium">
+                  <strong className="text-slate-900 font-bold">All Categories View:</strong> Showing{' '}
+                  <span className="font-extrabold text-blue-900 font-mono">
+                    {filteredProducts.length}
+                  </span>{' '}
+                  randomly selected products {products.length > 20 && `(out of ${products.length} total)`}
+                  {products.length > 20 && (
+                    <span className="text-slate-400 text-[11px] ml-1.5 hidden md:inline">
+                      &bull; Select any specific category above to view all products in that category
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className="text-slate-700 font-medium">
+                  <strong className="text-slate-900 font-bold">Category: {selectedCategory}</strong> &bull; Showing{' '}
+                  <span className="font-extrabold text-blue-900 font-mono">
+                    all {filteredProducts.length}
+                  </span>{' '}
+                  products
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {selectedCategory === 'All' && products.length > 20 && !searchQuery.trim() && (
+              <button
+                onClick={handleShuffleRandomProducts}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold rounded-lg border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="Shuffle and view 20 different random products"
+              >
+                <Shuffle className="w-3.5 h-3.5 text-blue-700" />
+                <span>Shuffle 20 Products</span>
+              </button>
+            )}
+
+            {selectedCategory !== 'All' && (
+              <button
+                onClick={() => {
+                  setSelectedCategory('All');
+                  handleShuffleRandomProducts();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 transition-all cursor-pointer"
+              >
+                Back to All (20 Random)
+              </button>
+            )}
           </div>
         </div>
 
@@ -500,7 +630,12 @@ export default function PublicCatalog({
               Try updating your search query or setting the category and brand filters back to "All".
             </p>
             <button 
-              onClick={() => { setSelectedCategory('All'); setSelectedBrand('All'); setSearchQuery(''); }}
+              onClick={() => { 
+                setSelectedCategory('All'); 
+                setSelectedBrand('All'); 
+                setSearchQuery(''); 
+                handleShuffleRandomProducts();
+              }}
               className="mt-4 px-4 py-2 bg-blue-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg cursor-pointer"
             >
               Reset Filters
