@@ -1300,29 +1300,7 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* Instant Account Switcher Dropdown */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider block">
-                    Quick Account Switch:
-                  </label>
-                  <select
-                    value={currentUser.id}
-                    onChange={(e) => {
-                      const user = staffUsers.find(s => s.id === e.target.value);
-                      if (user) {
-                        setCurrentUser(user);
-                      }
-                    }}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg p-1.5 text-xs font-bold focus:outline-hidden cursor-pointer"
-                    title="Switch user account immediately"
-                  >
-                    {staffUsers.map((staff) => (
-                      <option key={staff.id} value={staff.id}>
-                        {staff.name} ({staff.designation || staff.role})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Account Switcher disabled per user request */}
                 
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -1364,29 +1342,15 @@ export default function App() {
 
               {/* Right Side Header Items */}
               <div className="flex items-center gap-3">
-                {/* 1-Click Quick Account Switcher in Header */}
-                {currentUser && staffUsers && staffUsers.length > 0 && (
-                  <div className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1.5 rounded-xl border border-slate-300">
+                {/* Active Account Display (Switching disabled) */}
+                {currentUser && (
+                  <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-300">
                     <UserCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                     <div className="flex flex-col text-left">
                       <span className="text-[8.5px] font-extrabold uppercase text-slate-400 leading-none">Active Account</span>
-                      <select
-                        value={currentUser.id}
-                        onChange={(e) => {
-                          const user = staffUsers.find(s => s.id === e.target.value);
-                          if (user) {
-                            setCurrentUser(user);
-                          }
-                        }}
-                        className="bg-transparent font-extrabold text-slate-900 text-xs focus:outline-hidden cursor-pointer pr-1"
-                        title="Switch active user account instantly"
-                      >
-                        {staffUsers.map((u) => (
-                          <option key={u.id} value={u.id}>
-                            {u.name} — {u.designation || u.role}
-                          </option>
-                        ))}
-                      </select>
+                      <span className="font-extrabold text-slate-900 text-xs truncate max-w-[140px]">
+                        {currentUser.name} — {currentUser.designation || currentUser.role}
+                      </span>
                     </div>
                   </div>
                 )}
