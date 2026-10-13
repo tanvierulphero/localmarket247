@@ -108,14 +108,17 @@ export default function CustomerList({
 
       const custDocs = safeDocuments.filter(d => {
         if (!d) return false;
-        const dPhone = String(d.customerPhone || '').trim();
+        // Strict match if document has customerId (prevents dues leaking to other companies)
+        if (d.customerId) {
+          return String(d.customerId) === String(c.id);
+        }
+        // Fallback ONLY for legacy documents without any customerId
+        const dPhone = String(d.customerPhone || '').trim().replace(/[^0-9]/g, '');
+        const cPhoneClean = cPhone.replace(/[^0-9]/g, '');
+        if (cPhoneClean && cPhoneClean !== '01700000000' && cPhoneClean.length >= 10 && dPhone === cPhoneClean) return true;
         const dCompany = String(d.customerCompany || '').toLowerCase().trim();
-
-        return (
-          d.customerId === c.id ||
-          (dPhone && cPhone && dPhone === cPhone) ||
-          (dCompany && cCompany && dCompany === cCompany)
-        );
+        if (cCompany && dCompany && cCompany === dCompany && cCompany.length > 2 && cCompany !== 'walk-in client' && cCompany !== 'general sales / cash client') return true;
+        return false;
       });
 
       let totalInvoiced = 0;
@@ -392,14 +395,17 @@ export default function CustomerList({
     return safeDocs
       .filter(d => {
         if (!d) return false;
-        const dPhone = String(d.customerPhone || '').trim();
+        // Strict match if document has customerId
+        if (d.customerId) {
+          return String(d.customerId) === String(selectedCustomerForLedger.id);
+        }
+        // Fallback ONLY for legacy documents without any customerId
+        const dPhone = String(d.customerPhone || '').trim().replace(/[^0-9]/g, '');
+        const targetPhoneClean = targetPhone.replace(/[^0-9]/g, '');
+        if (targetPhoneClean && targetPhoneClean !== '01700000000' && targetPhoneClean.length >= 10 && dPhone === targetPhoneClean) return true;
         const dCompany = String(d.customerCompany || '').toLowerCase().trim();
-
-        return (
-          d.customerId === selectedCustomerForLedger.id ||
-          (dPhone && targetPhone && dPhone === targetPhone) ||
-          (dCompany && targetCompany && dCompany === targetCompany)
-        );
+        if (targetCompany && dCompany && targetCompany === dCompany && targetCompany.length > 2 && targetCompany !== 'walk-in client' && targetCompany !== 'general sales / cash client') return true;
+        return false;
       })
       .sort((a, b) => new Date(b?.date || '').getTime() - new Date(a?.date || '').getTime());
   }, [documents, selectedCustomerForLedger]);

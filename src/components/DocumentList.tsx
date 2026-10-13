@@ -35,6 +35,7 @@ interface DocumentListProps {
   onViewDocument: (doc: Document) => void;
   onCreateInvoiceFromChallan?: (challan: Document) => void;
   onCreateBillFromChallan?: (challan: Document) => void;
+  onCreateChallanFromInvoice?: (invoice: Document) => void;
   onUpdateDocument?: (doc: Document) => void;
 }
 
@@ -46,6 +47,7 @@ export default function DocumentList({
   onViewDocument,
   onCreateInvoiceFromChallan,
   onCreateBillFromChallan,
+  onCreateChallanFromInvoice,
   onUpdateDocument
 }: DocumentListProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -545,36 +547,102 @@ export default function DocumentList({
                           )
                         )}
 
-                        {/* If Challan: Option to directly create Sales Invoice from this Challan */}
-                        {doc.type === 'CHALLAN' && onCreateInvoiceFromChallan && (
-                          <button
-                            onClick={() => onCreateInvoiceFromChallan(doc)}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors border border-emerald-700 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
-                            title="Generate Sales Invoice directly from this delivery challan"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>Create Invoice</span>
-                          </button>
-                        )}
+                        {/* If Challan: If invoice already created, hide Create Invoice and show Invoiced badge */}
+                        {doc.type === 'CHALLAN' && (() => {
+                          const linkedInvoice = documents.find(d => 
+                            (d.type === 'INVOICE' || d.type === 'BILL') && (
+                              (d.notes && d.notes.includes(doc.docNumber)) ||
+                              (d.subject && d.subject.includes(doc.docNumber)) ||
+                              (doc.subject && doc.subject.includes(d.docNumber)) ||
+                              (doc.notes && doc.notes.includes(d.docNumber))
+                            )
+                          );
+                          const isAlreadyInvoiced = !!linkedInvoice || 
+                            (doc.notes && (doc.notes.includes('Invoiced under') || doc.notes.includes('INV/'))) ||
+                            (doc.subject && doc.subject.includes('INV/'));
 
-                        {/* If Invoice/Bill: View linked Delivery Challan if one actually exists */}
+                          if (linkedInvoice) {
+                            return (
+                              <button
+                                onClick={() => onViewDocument(linkedInvoice)}
+                                className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg hover:text-emerald-950 transition-colors border border-emerald-300 cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                                title={`ইনভয়েস ইতিমধ্যে তৈরি সম্পন্ন: ${linkedInvoice.docNumber} (ক্লিক করে দেখুন)`}
+                              >
+                                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Invoiced ({linkedInvoice.docNumber.split('/').pop() || 'INV'})</span>
+                              </button>
+                            );
+                          }
+
+                          if (isAlreadyInvoiced) {
+                            return (
+                              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-200 text-[11px] font-bold flex items-center gap-1">
+                                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Invoiced</span>
+                              </span>
+                            );
+                          }
+
+                          if (onCreateInvoiceFromChallan) {
+                            return (
+                              <button
+                                onClick={() => onCreateInvoiceFromChallan(doc)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors border border-emerald-700 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
+                                title="Generate Sales Invoice directly from this delivery challan"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Create Invoice</span>
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        {/* If Invoice/Bill: If challan already created, hide Create Challan and show Challan badge */}
                         {(doc.type === 'INVOICE' || doc.type === 'BILL') && (() => {
                           const linked = documents.find(d => 
                             d.type === 'CHALLAN' && (
                               (doc.notes && doc.notes.includes(d.docNumber)) ||
                               (doc.subject && doc.subject.includes(d.docNumber)) ||
-                              (d.subject && d.subject.includes(doc.docNumber))
+                              (d.subject && d.subject.includes(doc.docNumber)) ||
+                              (d.notes && d.notes.includes(doc.docNumber))
                             )
                           );
+                          const hasChallanCreated = !!linked || 
+                            (doc.notes && (doc.notes.includes('Delivery Challan') || doc.notes.includes('Challan') || doc.notes.includes('CH/'))) ||
+                            (doc.subject && (doc.subject.includes('Delivery Challan') || doc.subject.includes('CH/')));
+
                           if (linked) {
                             return (
                               <button
                                 onClick={() => onViewDocument(linked)}
                                 className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg hover:text-blue-900 transition-colors border border-blue-200 cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                title={`View linked challan: ${linked.docNumber}`}
+                                title={`চালান ইতিমধ্যে তৈরি সম্পন্ন: ${linked.docNumber} (ক্লিক করে দেখুন)`}
                               >
                                 <Truck className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Challan</span>
+                                <span>Challan ({linked.docNumber.split('/').pop() || 'CH'})</span>
+                              </button>
+                            );
+                          }
+
+                          if (hasChallanCreated) {
+                            return (
+                              <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 text-[11px] font-bold flex items-center gap-1">
+                                <Truck className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Challan Issued</span>
+                              </span>
+                            );
+                          }
+
+                          if (onCreateChallanFromInvoice) {
+                            return (
+                              <button
+                                onClick={() => onCreateChallanFromInvoice(doc)}
+                                className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg transition-colors border border-amber-300 cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-2xs"
+                                title="Generate Delivery Challan directly from this invoice"
+                              >
+                                <Truck className="w-3.5 h-3.5 text-amber-700" />
+                                <span>Create Challan</span>
                               </button>
                             );
                           }

@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Document, BusinessSettings, StaffUser } from '../types';
-import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2, Receipt, FileText, UserCheck, Edit2, Check } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, CheckCircle2, Receipt, FileText, UserCheck, Edit2, Check, Truck, Layers } from 'lucide-react';
 import Logo from './Logo';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
 interface PrintDocumentProps {
   document: Document;
+  documents?: Document[];
   settings: BusinessSettings;
   currentUser?: StaffUser | null;
   staffUsers?: StaffUser[];
   onBack?: () => void;
+  onViewDocument?: (doc: Document) => void;
   onCreateBill?: (challan: Document) => void;
   onCreateInvoice?: (challan: Document) => void;
+  onCreateChallan?: (invoice: Document) => void;
   onSaveDocument?: (doc: Document) => void;
   onSwitchUser?: (user: StaffUser) => void;
 }
@@ -97,12 +100,15 @@ function numberToWords(num: number): string {
 
 export default function PrintDocument({ 
   document, 
+  documents,
   settings, 
   currentUser, 
   staffUsers, 
   onBack, 
+  onViewDocument,
   onCreateBill, 
   onCreateInvoice,
+  onCreateChallan,
   onSaveDocument,
   onSwitchUser 
 }: PrintDocumentProps) {
@@ -735,17 +741,107 @@ ${rawBase64Logo}
             )
           )}
 
-          {/* Create Sales Invoice from Challan shortcut */}
-          {document.type === 'CHALLAN' && onCreateInvoice && (
-            <button
-              onClick={() => onCreateInvoice(document)}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
-              title="Create Sales Invoice directly from this delivery challan"
-            >
-              <FileText className="w-4 h-4 text-emerald-100" />
-              <span>Create Invoice</span>
-            </button>
-          )}
+          {/* If Challan: Create Sales Invoice only if NOT already invoiced! */}
+          {document.type === 'CHALLAN' && (() => {
+            const linkedInvoice = documents?.find(d => 
+              (d.type === 'INVOICE' || d.type === 'BILL') && (
+                (d.notes && d.notes.includes(document.docNumber)) ||
+                (d.subject && d.subject.includes(document.docNumber)) ||
+                (document.subject && document.subject.includes(d.docNumber)) ||
+                (document.notes && document.notes.includes(d.docNumber))
+              )
+            );
+            const isAlreadyInvoiced = !!linkedInvoice || 
+              (document.notes && (document.notes.includes('Invoiced under') || document.notes.includes('INV/'))) ||
+              (document.subject && document.subject.includes('INV/'));
+
+            if (linkedInvoice) {
+              return (
+                <button
+                  onClick={() => onViewDocument?.(linkedInvoice)}
+                  className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold rounded-xl border border-emerald-300 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  title={`ইনভয়েস ইতিমধ্যে তৈরি সম্পন্ন: ${linkedInvoice.docNumber} (ক্লিক করে দেখুন)`}
+                >
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  <span>Invoiced ({linkedInvoice.docNumber.split('/').pop() || 'INV'})</span>
+                </button>
+              );
+            }
+
+            if (isAlreadyInvoiced) {
+              return (
+                <span className="px-3.5 py-2 bg-emerald-50 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-300 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  <span>Invoiced</span>
+                </span>
+              );
+            }
+
+            if (onCreateInvoice) {
+              return (
+                <button
+                  onClick={() => onCreateInvoice(document)}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
+                  title="Create Sales Invoice directly from this delivery challan"
+                >
+                  <FileText className="w-4 h-4 text-emerald-100" />
+                  <span>Create Invoice</span>
+                </button>
+              );
+            }
+            return null;
+          })()}
+
+          {/* If Invoice/Bill: Create Delivery Challan only if NOT already created! */}
+          {(document.type === 'INVOICE' || document.type === 'BILL') && (() => {
+            const linkedChallan = documents?.find(d => 
+              d.type === 'CHALLAN' && (
+                (document.notes && document.notes.includes(d.docNumber)) ||
+                (document.subject && document.subject.includes(d.docNumber)) ||
+                (d.subject && d.subject.includes(document.docNumber)) ||
+                (d.notes && d.notes.includes(document.docNumber))
+              )
+            );
+            const hasChallanCreated = !!linkedChallan || 
+              (document.notes && (document.notes.includes('Delivery Challan') || document.notes.includes('Challan') || document.notes.includes('CH/'))) ||
+              (document.subject && (document.subject.includes('Delivery Challan') || document.subject.includes('CH/')));
+
+            if (linkedChallan) {
+              return (
+                <button
+                  onClick={() => onViewDocument?.(linkedChallan)}
+                  className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold rounded-xl border border-blue-200 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  title={`চালান ইতিমধ্যে তৈরি সম্পন্ন: ${linkedChallan.docNumber} (ক্লিক করে দেখুন)`}
+                >
+                  <Truck className="w-4 h-4 text-blue-600" />
+                  <span>Challan ({linkedChallan.docNumber.split('/').pop() || 'CH'})</span>
+                </button>
+              );
+            }
+
+            if (hasChallanCreated) {
+              return (
+                <span className="px-3.5 py-2 bg-blue-50 text-blue-800 text-xs font-bold rounded-xl border border-blue-200 flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-blue-600" />
+                  <span>Challan Issued</span>
+                </span>
+              );
+            }
+
+            if (onCreateChallan) {
+              return (
+                <button
+                  onClick={() => onCreateChallan(document)}
+                  className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02] flex items-center gap-1.5 cursor-pointer"
+                  title="Create Delivery Challan directly from this invoice"
+                >
+                  <Truck className="w-4 h-4 text-amber-100" />
+                  <span>Create Challan</span>
+                </button>
+              );
+            }
+            return null;
+          })()}
 
           {/* Print Button */}
           <button

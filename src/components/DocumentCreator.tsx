@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product, Customer, Document, DocumentItem, DocumentType, DocumentStatus, BusinessSettings, StaffUser } from '../types';
-import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package, UserCheck, Coins } from 'lucide-react';
+import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package, UserCheck, Coins, Search, X, CheckCircle2, AlertCircle, CreditCard } from 'lucide-react';
 
 interface DocumentCreatorProps {
   products: Product[];
@@ -84,6 +84,10 @@ export default function DocumentCreator({
   // Items table
   const [items, setItems] = useState<DocumentItem[]>([]);
   
+  // Part Number product search state
+  const [partNumberSearch, setPartNumberSearch] = useState('');
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+
   // Totals & Overrides
   const [vatEnabled, setVatEnabled] = useState(true);
   const [taxRate, setTaxRate] = useState(settings.taxRate);
@@ -96,6 +100,17 @@ export default function DocumentCreator({
   });
   const [signatureLabel, setSignatureLabel] = useState(() => {
     return editingDocument?.signatureLabel || loggedInSigLabel;
+  });
+
+  // Partial Pay and Due state
+  const [paidAmount, setPaidAmount] = useState<number>(() => {
+    if (editingDocument?.paidAmount !== undefined && editingDocument.paidAmount !== null) {
+      return Number(editingDocument.paidAmount);
+    }
+    if (editingDocument?.status === 'Paid') {
+      return Number(editingDocument.total || 0);
+    }
+    return 0;
   });
 
   // Initialize or Load Edit Data
@@ -120,6 +135,13 @@ export default function DocumentCreator({
       setNotes(editingDocument.notes || '');
       setSignatureName(editingDocument.signatureName || loggedInSigName);
       setSignatureLabel(editingDocument.signatureLabel || loggedInSigLabel);
+      if (editingDocument.paidAmount !== undefined && editingDocument.paidAmount !== null) {
+        setPaidAmount(Number(editingDocument.paidAmount));
+      } else if (editingDocument.status === 'Paid') {
+        setPaidAmount(Number(editingDocument.total || 0));
+      } else {
+        setPaidAmount(0);
+      }
     } else {
       // Create New
       const targetType = initialDocType || 'CHALLAN';
@@ -132,6 +154,7 @@ export default function DocumentCreator({
       setNotes('');
       setSignatureName(loggedInSigName);
       setSignatureLabel(loggedInSigLabel);
+      setPaidAmount(0);
       
       // Default 1 month due date for invoices
       const defaultDue = new Date();
@@ -282,11 +305,23 @@ export default function DocumentCreator({
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const taxAmount = vatEnabled ? Math.round((subtotal * taxRate) / 100) : 0;
   const total = Math.max(0, subtotal + taxAmount - discount);
+  const calculatedDue = docType === 'CHALLAN' ? 0 : Math.max(0, total - (paidAmount || 0));
+
+  // Filter products for Part Number search box
+  const filteredProductsByPartNumber = (products || []).filter(p => {
+    if (!partNumberSearch.trim()) return false;
+    const term = partNumberSearch.trim().toLowerCase();
+    const sku = String(p.sku || '').toLowerCase();
+    const name = String(p.name || '').toLowerCase();
+    const brand = String(p.brand || '').toLowerCase();
+    const category = String(p.category || '').toLowerCase();
+    return sku.includes(term) || name.includes(term) || brand.includes(term) || category.includes(term);
+  }).slice(0, 15);
 
   // Quick Unique Company ID Search auto-select
   const handleCompanyIdSearch = (input: string) => {
     setCompanyIdSearch(input);
-    if (!input.trim()) return;
+    if (!input.trim() || input.trim().length < 2) return;
 
     const term = input.trim().toLowerCase();
     const matched = customers.find(c => {
@@ -294,10 +329,9 @@ export default function DocumentCreator({
       const compId = String(c.companyId || `COMP-${String(c.id || '').replace('cust-', '100')}`).toLowerCase();
       const cComp = String(c.company || '').toLowerCase();
       const cName = String(c.name || '').toLowerCase();
-      return compId === term || 
-             compId.includes(term) || 
-             cComp.includes(term) ||
-             cName.includes(term);
+      if (compId === term || compId.replace('comp-', '') === term.replace('comp-', '')) return true;
+      if (compId.startsWith(term)) return true;
+      return cComp === term || cName === term || cComp.includes(term);
     });
 
     if (matched) {
@@ -309,9 +343,9 @@ export default function DocumentCreator({
   const handleCreateCustomer = (e: React.FormEvent) => {
     e.preventDefault();
     const generatedCompId = newCustomer.companyId.trim() || `COMP-${1001 + customers.length}`;
-    const compName = newCustomer.company.trim() || newCustomer.name.trim() || 'General Customer / Cash Client';
+    const compName = newCustomer.company.trim() || newCustomer.name.trim() || 'General Customer';
     const contactName = newCustomer.name.trim() || compName;
-    const contactPhone = newCustomer.phone.trim() || '01700-000000';
+    const contactPhone = newCustomer.phone.trim();
 
     const created: Customer = {
       id: `cust-${Date.now()}`,
@@ -330,16 +364,38 @@ export default function DocumentCreator({
 
   // Save the full document (Fallback defaults ensure work always completes smoothly)
   const handleSave = () => {
-    // 1. Fallback Customer if none selected
-    const cust = customers.find(c => c.id === selectedCustomerId) || {
-      id: `cust-walkin-${Date.now()}`,
-      companyId: 'COMP-WALKIN',
-      name: 'Walk-in Client / General Customer',
-      company: 'General Sales / Cash Client',
-      phone: '01700-000000',
-      email: '',
-      address: 'Gazipur, Bangladesh'
-    };
+    // 1. Resolve Customer (from selected, or from newCustomer form if being filled)
+    let cust = customers.find(c => c.id === selectedCustomerId);
+    
+    if (!cust && isAddingNewCustomer && (newCustomer.company.trim() || newCustomer.name.trim() || newCustomer.phone.trim())) {
+      const generatedCompId = newCustomer.companyId.trim() || `COMP-${1001 + customers.length}`;
+      const compName = newCustomer.company.trim() || newCustomer.name.trim() || 'General Customer';
+      const contactName = newCustomer.name.trim() || compName;
+      const contactPhone = newCustomer.phone.trim();
+      const created: Customer = {
+        id: `cust-${Date.now()}`,
+        companyId: generatedCompId,
+        name: contactName,
+        company: compName,
+        phone: contactPhone,
+        email: newCustomer.email.trim(),
+        address: newCustomer.address.trim() || 'Gazipur, BD'
+      };
+      onAddCustomer(created);
+      cust = created;
+    }
+
+    if (!cust) {
+      cust = {
+        id: `cust-walkin-${Date.now()}`,
+        companyId: 'COMP-WALKIN',
+        name: 'Walk-in Client / General Customer',
+        company: 'General Sales / Cash Client',
+        phone: '',
+        email: '',
+        address: 'Gazipur, Bangladesh'
+      };
+    }
 
     // 2. Fallback Item line if table is empty
     let validItems = items.map(it => ({
@@ -366,17 +422,16 @@ export default function DocumentCreator({
     const calculatedTaxAmount = vatEnabled ? Math.round((calculatedSubtotal * taxRate) / 100) : 0;
     const calculatedTotal = Math.max(0, calculatedSubtotal + calculatedTaxAmount - discount);
 
-    const safePaid = editingDocument?.paidAmount !== undefined 
-      ? Number(editingDocument.paidAmount) 
-      : (status === 'Paid' ? calculatedTotal : 0);
-    const safeDue = editingDocument?.dueAmount !== undefined && (editingDocument.dueAmount > 0 || safePaid > 0)
-      ? Number(editingDocument.dueAmount) 
-      : (status === 'Paid' ? 0 : Math.max(0, calculatedTotal - safePaid));
+    const safePaid = docType === 'CHALLAN' 
+      ? (paidAmount || 0) 
+      : Math.min(calculatedTotal, Math.max(0, paidAmount || 0));
+    const safeDue = docType === 'CHALLAN' 
+      ? 0 
+      : Math.max(0, calculatedTotal - safePaid);
 
-    // For Challan, Paid is purely optional; default to Active/selected status instead of forcing Paid on 0 due
     const finalStatus: DocumentStatus = docType === 'CHALLAN'
       ? (status === 'Paid' ? 'Paid' : (status || 'Active'))
-      : (status || (safeDue === 0 ? 'Paid' : (safePaid > 0 ? 'Partially Paid' : 'Unpaid')));
+      : (safeDue === 0 ? 'Paid' : (safePaid > 0 ? 'Partially Paid' : 'Unpaid'));
 
     const doc: Document = {
       id: editingDocument ? editingDocument.id : `doc-${Date.now()}`,
@@ -543,12 +598,21 @@ export default function DocumentCreator({
                     onChange={(e) => setSelectedChallanId(e.target.value)}
                     className="w-full bg-white border border-emerald-300 rounded-lg p-2 text-xs font-semibold text-slate-800 focus:outline-hidden"
                   >
-                    <option value="">&mdash; Select a Delivery Challan &mdash;</option>
-                    {documents.filter(d => d.type === 'CHALLAN').map(ch => (
-                      <option key={ch.id} value={ch.id}>
-                        [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; Date: {ch.date} &bull; ({ch.items.length} items)
-                      </option>
-                    ))}
+                    <option value="">&mdash; Select an Un-invoiced Delivery Challan &mdash;</option>
+                    {documents.filter(d => d.type === 'CHALLAN').map(ch => {
+                      const alreadyInvoiced = documents.some(inv => 
+                        (inv.type === 'INVOICE' || inv.type === 'BILL') && (
+                          (inv.notes && inv.notes.includes(ch.docNumber)) ||
+                          (inv.subject && inv.subject.includes(ch.docNumber)) ||
+                          (ch.notes && ch.notes.includes(inv.docNumber))
+                        )
+                      );
+                      return (
+                        <option key={ch.id} value={ch.id} disabled={alreadyInvoiced} className={alreadyInvoiced ? 'text-slate-400 bg-slate-100' : ''}>
+                          [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; Date: {ch.date} &bull; ({ch.items.length} items){alreadyInvoiced ? ' [Already Invoiced / ইনভয়েস সম্পন্ন]' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                   <button
                     type="button"
@@ -614,6 +678,48 @@ export default function DocumentCreator({
                   </button>
                 </div>
               </div>
+
+              {/* Selected Customer Card Preview */}
+              {(() => {
+                const selectedCust = customers.find(c => c.id === selectedCustomerId);
+                if (selectedCust) {
+                  return (
+                    <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex items-center justify-between animate-fade-in">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
+                          {String(selectedCust.company || selectedCust.name || 'C').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-extrabold text-blue-950 text-xs flex items-center gap-2">
+                            <span>{selectedCust.company || selectedCust.name}</span>
+                            <span className="font-mono text-[10px] text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded font-bold">
+                              {selectedCust.companyId || `COMP-${selectedCust.id.substring(0, 6)}`}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
+                            {selectedCust.name && <span>Attn: <strong>{selectedCust.name}</strong></span>}
+                            {selectedCust.phone && <span>&bull; Phone: <strong>{selectedCust.phone}</strong></span>}
+                            {selectedCust.address && <span className="truncate max-w-[220px]">&bull; {selectedCust.address}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCustomerId('')}
+                        className="px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:text-rose-600 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
+                        title="Deselect customer"
+                      >
+                        Reset / Switch
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="text-[11px] text-slate-500 italic bg-slate-50/60 rounded-lg p-2 border border-slate-200/60 flex items-center justify-between">
+                    <span>Target: <strong>Walk-in Client / General Customer</strong> (Or select registered company from dropdown)</span>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Quick Add Customer Subform (All fields optional for zero-block completion) */}
@@ -813,6 +919,104 @@ export default function DocumentCreator({
                   >
                     + Custom Item Row
                   </button>
+                </div>
+              </div>
+
+              {/* SEARCH BOX BY PART NUMBER / SKU */}
+              <div className="bg-blue-50/50 border border-blue-200/90 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                    <Search className="w-3.5 h-3.5 text-blue-700" />
+                    Search Product by Part Number / SKU (পার্টস নাম্বার দিয়ে সার্চ ও সিলেক্ট করুন)
+                  </label>
+                  <span className="text-[10px] font-bold text-slate-500">
+                    {products.length} products in inventory
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <div className="relative flex items-center">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={partNumberSearch}
+                      onChange={(e) => {
+                        setPartNumberSearch(e.target.value);
+                        setIsSearchDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsSearchDropdownOpen(true)}
+                      placeholder="Type Part Number (e.g. 55302021, 21114040, SKU, Model, Brand, Name)..."
+                      className="w-full bg-white border border-slate-300 focus:border-blue-700 focus:ring-1 focus:ring-blue-700 rounded-lg py-2 pl-9 pr-8 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-hidden shadow-2xs"
+                    />
+                    {partNumberSearch && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPartNumberSearch('');
+                          setIsSearchDropdownOpen(false);
+                        }}
+                        className="absolute right-2.5 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Results */}
+                  {isSearchDropdownOpen && partNumberSearch.trim().length > 0 && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-blue-300 rounded-xl shadow-xl max-h-72 overflow-y-auto divide-y divide-slate-100">
+                      {filteredProductsByPartNumber.length > 0 ? (
+                        filteredProductsByPartNumber.map((p) => (
+                          <div
+                            key={p.id}
+                            onClick={() => {
+                              handleAddItem(p.id);
+                              setPartNumberSearch('');
+                              setIsSearchDropdownOpen(false);
+                            }}
+                            className="p-2.5 hover:bg-blue-50/80 transition-colors cursor-pointer flex items-center justify-between gap-3 group"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono font-black text-xs text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded border border-blue-200">
+                                  Part #: {p.sku || 'N/A'}
+                                </span>
+                                <span className="font-bold text-slate-900 text-xs truncate group-hover:text-blue-900">
+                                  {p.name}
+                                </span>
+                                {p.brand && (
+                                  <span className="text-[10px] text-slate-500 font-semibold">
+                                    ({p.brand})
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
+                                <span>Category: <strong className="text-slate-700">{p.category || 'Spares'}</strong></span>
+                                <span>&bull;</span>
+                                <span>Unit: <strong className="text-slate-700">{p.unit || 'Pcs'}</strong></span>
+                                <span>&bull;</span>
+                                <span className={p.stock > 0 ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold'}>
+                                  Stock: {p.stock} {p.unit || 'Pcs'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="font-mono font-black text-xs text-slate-900 block">
+                                Tk. {p.price.toLocaleString()}
+                              </span>
+                              <span className="text-[10px] text-blue-700 font-bold group-hover:underline">
+                                + Add to Document
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-xs text-slate-500">
+                          No product found matching Part Number "{partNumberSearch}". Click "+ Custom Item Row" to add custom spare part.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1045,6 +1249,93 @@ export default function DocumentCreator({
                 <span>Total Payable (BDT):</span>
                 <span className="text-base text-blue-950 font-display">Tk. {total.toLocaleString()}</span>
               </div>
+
+              {/* Partial Pay & Due Tracking for Sales Invoices and Bills */}
+              {(docType === 'INVOICE' || docType === 'BILL') && (
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3.5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-blue-700" />
+                        Partial Pay / Paid Amount (জমা টাকা)
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-500">
+                        Total: Tk. {total.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold font-mono text-xs">
+                        Tk.
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={total}
+                        value={paidAmount === 0 ? '' : paidAmount}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          setPaidAmount(Math.max(0, val));
+                        }}
+                        placeholder="0 (Enter collected amount)"
+                        className="w-full bg-white border border-blue-300 rounded-lg py-2 pl-9 pr-3 text-right font-black font-mono text-emerald-800 text-sm focus:border-blue-900 focus:outline-hidden"
+                      />
+                    </div>
+
+                    {/* Quick calculation shortcuts */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setPaidAmount(total)}
+                        className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold rounded-md transition-colors cursor-pointer"
+                      >
+                        Full Paid (সম্পূর্ণ পরিশোধ)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaidAmount(Math.round(total / 2))}
+                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-bold rounded-md transition-colors cursor-pointer"
+                      >
+                        50% Advance
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaidAmount(0)}
+                        className="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 text-[10px] font-bold rounded-md transition-colors cursor-pointer"
+                      >
+                        Full Due / Credit (বাকি)
+                      </button>
+                    </div>
+
+                    {/* Outstanding Due Highlight Box */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center justify-between shadow-2xs">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Outstanding Due (অবশিষ্ট বকেয়া)
+                        </span>
+                        <span className={`text-base font-black font-mono ${calculatedDue > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                          Tk. {calculatedDue.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        {calculatedDue === 0 ? (
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Fully Paid
+                          </span>
+                        ) : paidAmount > 0 ? (
+                          <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Partial Paid
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Full Credit / Due
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -518,6 +518,32 @@ export default function App() {
       list = [cleanDoc, ...documents];
     }
 
+    // Bidirectional document cross-linking:
+    // If invoice created from challan, update challan to mark it invoiced
+    if ((cleanDoc.type === 'INVOICE' || cleanDoc.type === 'BILL') && cleanDoc.notes) {
+      const origChallan = list.find(d => d.type === 'CHALLAN' && cleanDoc.notes?.includes(d.docNumber));
+      if (origChallan && !origChallan.notes?.includes(cleanDoc.docNumber)) {
+        const updatedChallan = {
+          ...origChallan,
+          notes: (origChallan.notes ? `${origChallan.notes}\n` : '') + `Invoiced under: ${cleanDoc.docNumber}`
+        };
+        list = list.map(d => d.id === updatedChallan.id ? updatedChallan : d);
+        apiSaveDocument(updatedChallan).catch(() => {});
+      }
+    }
+    // If challan created from invoice, update invoice to mark challan issued
+    if (cleanDoc.type === 'CHALLAN' && cleanDoc.notes) {
+      const origInvoice = list.find(d => (d.type === 'INVOICE' || d.type === 'BILL') && cleanDoc.notes?.includes(d.docNumber));
+      if (origInvoice && !origInvoice.notes?.includes(cleanDoc.docNumber)) {
+        const updatedInvoice = {
+          ...origInvoice,
+          notes: (origInvoice.notes ? `${origInvoice.notes}\n` : '') + `Delivery Challan: ${cleanDoc.docNumber}`
+        };
+        list = list.map(d => d.id === updatedInvoice.id ? updatedInvoice : d);
+        apiSaveDocument(updatedInvoice).catch(() => {});
+      }
+    }
+
     setDocuments(list);
 
     try {
@@ -682,6 +708,58 @@ export default function App() {
     setViewingDocument(null);
     setEditingDocument(newBill);
     setIsCreatingDoc('BILL');
+    setActiveTab('docs');
+  };
+
+  // Convert an existing Sales Invoice or Bill into a Delivery Challan
+  const handleCreateChallanFromInvoice = (invoice: Document) => {
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const mappedItems = invoice.items.map(it => ({
+      ...it,
+      price: it.price || 0,
+      total: (it.price || 0) * (it.quantity || 1)
+    }));
+
+    const newChallan: Document = {
+      id: `doc-${Date.now()}`,
+      type: 'CHALLAN',
+      docNumber: `JM/CH/2026/${randomId}`,
+      date: new Date().toISOString().split('T')[0],
+      dueDate: undefined,
+      customerId: invoice.customerId,
+      customerName: invoice.customerName,
+      customerCompany: invoice.customerCompany,
+      customerPhone: invoice.customerPhone,
+      customerEmail: invoice.customerEmail,
+      customerAddress: invoice.customerAddress,
+      subject: `Delivery Challan against ${invoice.type === 'INVOICE' ? 'Sales Invoice' : 'Bill'}: ${invoice.docNumber}`,
+      salutation: invoice.salutation || 'Dear Sir,',
+      openingParagraph: 'Please receive the following genuine machinery spare parts and equipment in sound condition.',
+      closingParagraph: 'Received the above goods in sound and complete condition.',
+      items: mappedItems,
+      subtotal: invoice.subtotal || 0,
+      taxRate: invoice.taxRate || 0,
+      taxAmount: invoice.taxAmount || 0,
+      discount: invoice.discount || 0,
+      total: invoice.total || 0,
+      paidAmount: invoice.paidAmount || 0,
+      dueAmount: invoice.dueAmount || 0,
+      status: 'Active',
+      terms: invoice.terms || settings.terms,
+      notes: `Generated against ${invoice.type === 'INVOICE' ? 'Sales Invoice' : 'Bill'}: ${invoice.docNumber}`,
+      signatureName: currentUser?.name || settings.signatureName || 'MD MAHI UDDIN',
+      signatureLabel: currentUser?.designation || (
+        currentUser?.role === 'ADMIN' ? 'Managing Director & Owner' :
+        currentUser?.role === 'MANAGER' ? 'Operations Manager' :
+        currentUser?.role === 'SALESMAN' ? 'Senior Sales Executive' :
+        'Authorized Signatory'
+      ) || settings.signatureLabel || 'Authorized Signatory',
+      vatEnabled: false
+    };
+
+    setViewingDocument(null);
+    setEditingDocument(newChallan);
+    setIsCreatingDoc('CHALLAN');
     setActiveTab('docs');
   };
 
@@ -997,15 +1075,20 @@ export default function App() {
     return (
       <PrintDocument 
         document={viewingDocument}
+        documents={documents}
         settings={settings}
         currentUser={currentUser}
         staffUsers={staffUsers}
         onBack={() => setViewingDocument(null)}
+        onViewDocument={(doc) => setViewingDocument(doc)}
         onCreateInvoice={(challan) => {
           handleCreateInvoiceFromChallan(challan);
         }}
         onCreateBill={(challan) => {
           handleCreateBillFromChallan(challan);
+        }}
+        onCreateChallan={(invoice) => {
+          handleCreateChallanFromInvoice(invoice);
         }}
         onSaveDocument={handleSaveDocument}
         onSwitchUser={(user) => setCurrentUser(user)}
@@ -1453,8 +1536,39 @@ export default function App() {
                         onDeleteCustomer={handleDeleteCustomer}
                         onViewDocument={(doc) => setViewingDocument(doc)}
                         onCreateDocumentForCustomer={(customer, type) => {
+                          const randomId = Math.floor(1000 + Math.random() * 9000);
+                          const prefix = type === 'INVOICE' ? (settings.invoicePrefix || 'JM/INV/2026/') :
+                                         type === 'BILL' ? (settings.billPrefix || 'JM/BILL/2026/') :
+                                         type === 'QUOTATION' ? (settings.quotePrefix || 'JM/QT/2026/') :
+                                         'JM/CH/2026/';
+                          const newDoc: Document = {
+                            id: `doc-${Date.now()}`,
+                            type,
+                            docNumber: `${prefix}${randomId}`,
+                            date: new Date().toISOString().split('T')[0],
+                            dueDate: (type === 'INVOICE' || type === 'BILL') ? new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0] : undefined,
+                            customerId: customer.id,
+                            customerName: customer.name,
+                            customerCompany: customer.company || customer.name,
+                            customerPhone: customer.phone,
+                            customerEmail: customer.email,
+                            customerAddress: customer.address,
+                            items: [],
+                            subtotal: 0,
+                            taxRate: settings.taxRate || 0,
+                            taxAmount: 0,
+                            discount: 0,
+                            total: 0,
+                            paidAmount: 0,
+                            dueAmount: 0,
+                            status: type === 'CHALLAN' ? 'Active' : 'Unpaid',
+                            terms: settings.terms || '',
+                            signatureName: currentUser?.name || settings.signatureName || 'MD MAHI UDDIN',
+                            signatureLabel: currentUser?.designation || settings.signatureLabel || 'Authorized Signatory',
+                            vatEnabled: true
+                          };
+                          setEditingDocument(newDoc);
                           setIsCreatingDoc(type);
-                          setEditingDocument(null);
                         }}
                       />
                     </ErrorBoundary>
@@ -1486,6 +1600,7 @@ export default function App() {
                       onViewDocument={(doc) => setViewingDocument(doc)}
                       onCreateInvoiceFromChallan={handleCreateInvoiceFromChallan}
                       onCreateBillFromChallan={handleCreateBillFromChallan}
+                      onCreateChallanFromInvoice={handleCreateChallanFromInvoice}
                       onUpdateDocument={handleUpdateDocumentOnly}
                     />
                   )}
@@ -1510,10 +1625,13 @@ export default function App() {
                     <DueLedger 
                       documents={documents}
                       customers={customers}
+                      suppliers={suppliers}
+                      purchases={purchases}
                       settings={settings}
                       currentUser={currentUser}
                       onUpdateDocument={handleUpdateDocumentOnly}
                       onBatchUpdateDocuments={handleBatchUpdateDocuments}
+                      onSavePurchase={handleSavePurchase}
                       onViewDocument={(doc) => setViewingDocument(doc)}
                     />
                   )}

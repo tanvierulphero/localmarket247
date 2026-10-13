@@ -78,11 +78,15 @@ export default function CompanyProfileManager({
   // Documents associated with this customer
   const companyDocs = useMemo(() => {
     if (!activeCustomer) return [];
-    return documents.filter(d => 
-      d.customerId === activeCustomer.id ||
-      d.customerPhone === activeCustomer.phone ||
-      (d.customerCompany && activeCustomer.company && d.customerCompany.toLowerCase() === activeCustomer.company.toLowerCase())
-    );
+    return documents.filter(d => {
+      if (!d) return false;
+      if (d.customerId) return String(d.customerId) === String(activeCustomer.id);
+      const dPhone = String(d.customerPhone || '').replace(/[^0-9]/g, '');
+      const aPhone = String(activeCustomer.phone || '').replace(/[^0-9]/g, '');
+      if (aPhone && aPhone !== '01700000000' && aPhone.length >= 10 && dPhone === aPhone) return true;
+      if (d.customerCompany && activeCustomer.company && activeCustomer.company.length > 2 && d.customerCompany.toLowerCase() === activeCustomer.company.toLowerCase()) return true;
+      return false;
+    });
   }, [documents, activeCustomer]);
 
   // Field Dispatches & Services associated with this customer
