@@ -31,7 +31,7 @@ interface DocumentListProps {
   documents: Document[];
   onAddDocumentClick: (type: DocumentType) => void;
   onEditDocument: (doc: Document) => void;
-  onDeleteDocument: (id: string) => void;
+  onDeleteDocument?: (id: string) => void;
   onViewDocument: (doc: Document) => void;
   onCreateInvoiceFromChallan?: (challan: Document) => void;
   onCreateBillFromChallan?: (challan: Document) => void;
@@ -668,17 +668,19 @@ export default function DocumentList({
                         </button>
 
                         {/* Delete */}
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to permanently delete document ${doc.docNumber}?`)) {
-                              onDeleteDocument(doc.id);
-                            }
-                          }}
-                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg hover:text-rose-700 transition-colors border border-rose-200 cursor-pointer"
-                          title="Delete document"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {onDeleteDocument && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to permanently delete document ${doc.docNumber}?`)) {
+                                onDeleteDocument(doc.id);
+                              }
+                            }}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg hover:text-rose-700 transition-colors border border-rose-200 cursor-pointer"
+                            title="Delete document (Admin Only)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product, Customer, Document, DocumentItem, DocumentType, DocumentStatus, BusinessSettings, StaffUser } from '../types';
+import { generateNextDocNumber } from '../lib/documentNumber';
 import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package, UserCheck, Coins, Search, X, CheckCircle2, AlertCircle, CreditCard } from 'lucide-react';
 
 interface DocumentCreatorProps {
@@ -197,15 +198,8 @@ export default function DocumentCreator({
   }, [docType]);
 
   const updatePlaceholders = (type: DocumentType, currentDate: string) => {
-    const randomId = Math.floor(1000 + Math.random() * 9000);
-    const prefix = 
-      type === 'OFFER_LETTER' ? settings.offerPrefix :
-      type === 'QUOTATION' ? settings.quotePrefix :
-      type === 'BILL' ? settings.billPrefix :
-      type === 'CHALLAN' ? 'JM/CH/2026/' :
-      settings.invoicePrefix;
-    
-    setDocNumber(`${prefix}${randomId}`);
+    const nextNumber = generateNextDocNumber(type, documents || [], settings);
+    setDocNumber(nextNumber);
 
     if (type === 'OFFER_LETTER') {
       setStatus('Active');
@@ -436,7 +430,7 @@ export default function DocumentCreator({
     const doc: Document = {
       id: editingDocument ? editingDocument.id : `doc-${Date.now()}`,
       type: docType,
-      docNumber: docNumber.trim() || `JM/${docType}/2026/${Math.floor(1000 + Math.random() * 9000)}`,
+      docNumber: docNumber.trim() || generateNextDocNumber(docType, documents || [], settings),
       date: date || new Date().toISOString().split('T')[0],
       dueDate: (docType === 'INVOICE' || docType === 'BILL') ? (dueDate || date) : undefined,
       customerId: cust.id,

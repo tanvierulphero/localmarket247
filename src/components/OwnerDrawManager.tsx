@@ -585,17 +585,19 @@ export default function OwnerDrawManager({
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete owner draw record "${exp.title}" (Tk. ${exp.amount.toLocaleString()})?`)) {
-                              onDeleteExpense(exp.id);
-                            }
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                          title="Delete draw"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {currentUser?.role === 'ADMIN' && onDeleteExpense && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete owner draw record "${exp.title}" (Tk. ${exp.amount.toLocaleString()})?`)) {
+                                onDeleteExpense(exp.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                            title="Delete draw (Admin Only)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

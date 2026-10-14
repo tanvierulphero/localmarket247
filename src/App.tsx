@@ -6,6 +6,8 @@ import {
   INITIAL_STAFF_USERS
 } from './initialData';
 
+import { generateNextDocNumber } from './lib/documentNumber';
+
 // Component imports
 import PublicCatalog from './components/PublicCatalog';
 import AdminLogin from './components/AdminLogin';
@@ -106,6 +108,7 @@ export default function App() {
   // Staff Sub-Accounts & Current Active User
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>(INITIAL_STAFF_USERS);
   const [currentUser, setCurrentUser] = useState<StaffUser | null>(null);
+  const isAdmin = currentUser?.role === 'ADMIN';
 
   // Core Database lists
   const [products, setProducts] = useState<Product[]>([]);
@@ -128,6 +131,7 @@ export default function App() {
   const [settingsForm, setSettingsForm] = useState<BusinessSettings>(DEFAULT_SETTINGS);
   const [settingsSavedFeedback, setSettingsSavedFeedback] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingPublicLogo, setIsUploadingPublicLogo] = useState(false);
   const [isUploadingWatermark, setIsUploadingWatermark] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
 
@@ -144,6 +148,21 @@ export default function App() {
       alert('Failed to upload logo image. Please check file size and try again.');
     } finally {
       setIsUploadingLogo(false);
+    }
+  };
+
+  const handlePublicLogoFileUpload = async (file: File) => {
+    setIsUploadingPublicLogo(true);
+    try {
+      const res = await apiUploadImage(file);
+      if (res && res.url) {
+        setSettingsForm(prev => ({ ...prev, publicLogoUrl: res.url }));
+      }
+    } catch (err) {
+      console.error('Failed to upload public logo:', err);
+      alert('Failed to upload public logo image. Please try again.');
+    } finally {
+      setIsUploadingPublicLogo(false);
     }
   };
 
@@ -356,6 +375,24 @@ export default function App() {
     }
   }, [settings?.faviconUrl]);
 
+  // Suppress browser default page header (site title/URL) when printing
+  useEffect(() => {
+    let originalTitle = document.title;
+    const handleBeforePrint = () => {
+      originalTitle = document.title;
+      document.title = '';
+    };
+    const handleAfterPrint = () => {
+      document.title = originalTitle || 'Hitachi Air Solution Center';
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
   // Staff Account Handlers
   const handleAddStaff = async (newStaff: StaffUser) => {
     const updated = [newStaff, ...staffUsers];
@@ -381,6 +418,10 @@ export default function App() {
   };
 
   const handleDeleteStaff = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন স্টাফ অ্যাকাউন্ট ডিলেট করতে পারবেন (Only Administrator can delete staff accounts).');
+      return;
+    }
     const updated = staffUsers.filter(s => s.id !== id);
     setStaffUsers(updated);
     try {
@@ -406,6 +447,10 @@ export default function App() {
 
   // Clear All Data Handler (for fresh entry)
   const handleClearAllData = async () => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন সম্পূর্ণ ডাটাবেস ক্লিয়ার করতে পারবেন (Only Administrator can clear database data).');
+      return;
+    }
     if (window.confirm("Are you sure you want to clear all products, customers, invoices, purchases, challans, and expenses from the database? This allows setting up fresh data.")) {
       try {
         await apiClearDatabase();
@@ -461,6 +506,10 @@ export default function App() {
   };
 
   const handleDeleteProduct = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন প্রোডাক্ট ডিলেট করতে পারবেন (Only Administrator can delete products).');
+      return;
+    }
     const list = products.filter(p => p.id !== id);
     setProducts(list);
     try {
@@ -498,6 +547,10 @@ export default function App() {
   };
 
   const handleDeleteCustomer = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন কাস্টমার রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete customers).');
+      return;
+    }
     const list = customers.filter(c => c.id !== id);
     setCustomers(list);
     try {
@@ -591,7 +644,7 @@ export default function App() {
 
   // Convert an existing Delivery Challan into a Sales Invoice
   const handleCreateInvoiceFromChallan = (challan: Document) => {
-    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const nextInvoiceDocNumber = generateNextDocNumber('INVOICE', documents, settings);
     const mappedItems = challan.items.map(it => {
       const prod = products.find(p => p.id === it.productId);
       const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
@@ -610,7 +663,7 @@ export default function App() {
     const newInvoice: Document = {
       id: `doc-${Date.now()}`,
       type: 'INVOICE',
-      docNumber: `${settings.invoicePrefix || 'JM/INV/2026/'}${randomId}`,
+      docNumber: nextInvoiceDocNumber,
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       customerId: challan.customerId,
@@ -652,7 +705,7 @@ export default function App() {
 
   // Convert an existing Delivery Challan into a Sales Bill
   const handleCreateBillFromChallan = (challan: Document) => {
-    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const nextBillDocNumber = generateNextDocNumber('BILL', documents, settings);
     const mappedItems = challan.items.map(it => {
       const prod = products.find(p => p.id === it.productId);
       const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
@@ -671,7 +724,7 @@ export default function App() {
     const newBill: Document = {
       id: `doc-${Date.now()}`,
       type: 'BILL',
-      docNumber: `${settings.billPrefix || 'JM/BILL/2026/'}${randomId}`,
+      docNumber: nextBillDocNumber,
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       customerId: challan.customerId,
@@ -713,7 +766,7 @@ export default function App() {
 
   // Convert an existing Sales Invoice or Bill into a Delivery Challan
   const handleCreateChallanFromInvoice = (invoice: Document) => {
-    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const nextChallanDocNumber = generateNextDocNumber('CHALLAN', documents, settings);
     const mappedItems = invoice.items.map(it => ({
       ...it,
       price: it.price || 0,
@@ -723,7 +776,7 @@ export default function App() {
     const newChallan: Document = {
       id: `doc-${Date.now()}`,
       type: 'CHALLAN',
-      docNumber: `JM/CH/2026/${randomId}`,
+      docNumber: nextChallanDocNumber,
       date: new Date().toISOString().split('T')[0],
       dueDate: undefined,
       customerId: invoice.customerId,
@@ -764,6 +817,10 @@ export default function App() {
   };
 
   const handleDeleteDocument = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন ডকুমেন্টস ডিলেট করতে পারবেন (Only Administrator can delete documents).');
+      return;
+    }
     const list = documents.filter(d => d.id !== id);
     setDocuments(list);
     try {
@@ -792,6 +849,10 @@ export default function App() {
   };
 
   const handleDeleteDispatch = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন ফিল্ড সার্ভিস রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete dispatch records).');
+      return;
+    }
     const list = dispatches.filter(d => d.id !== id);
     setDispatches(list);
     try {
@@ -820,6 +881,10 @@ export default function App() {
   };
 
   const handleDeleteSupplier = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন সাপ্লায়ার রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete suppliers).');
+      return;
+    }
     const list = suppliers.filter(s => s.id !== id);
     setSuppliers(list);
     try {
@@ -914,6 +979,10 @@ export default function App() {
   };
 
   const handleDeletePurchase = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন পারচেজ রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete purchases).');
+      return;
+    }
     const list = purchases.filter(p => p.id !== id);
     setPurchases(list);
     try {
@@ -979,6 +1048,10 @@ export default function App() {
   };
 
   const handleDeleteReturn = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন সেলস রিটার্ন রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete return records).');
+      return;
+    }
     const list = salesReturns.filter(r => r.id !== id);
     setSalesReturns(list);
     try {
@@ -1007,6 +1080,10 @@ export default function App() {
   };
 
   const handleDeleteExpense = async (id: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      alert('শুধুমাত্র অ্যাডমিন খরচ রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete expenses).');
+      return;
+    }
     const list = expenses.filter(e => e.id !== id);
     setExpenses(list);
     try {
@@ -1518,7 +1595,8 @@ export default function App() {
                         dispatches={dispatches}
                         onAddProduct={handleAddProduct}
                         onUpdateProduct={handleUpdateProduct}
-                        onDeleteProduct={handleDeleteProduct}
+                        onDeleteProduct={isAdmin ? handleDeleteProduct : undefined}
+                        currentUser={currentUser}
                         onViewDocument={(doc) => setViewingDocument(doc)}
                       />
                     </ErrorBoundary>
@@ -1533,18 +1611,14 @@ export default function App() {
                         dispatches={dispatches || []}
                         settings={settings}
                         onSaveCustomer={handleSaveCustomer}
-                        onDeleteCustomer={handleDeleteCustomer}
+                        onDeleteCustomer={isAdmin ? handleDeleteCustomer : undefined}
                         onViewDocument={(doc) => setViewingDocument(doc)}
                         onCreateDocumentForCustomer={(customer, type) => {
-                          const randomId = Math.floor(1000 + Math.random() * 9000);
-                          const prefix = type === 'INVOICE' ? (settings.invoicePrefix || 'JM/INV/2026/') :
-                                         type === 'BILL' ? (settings.billPrefix || 'JM/BILL/2026/') :
-                                         type === 'QUOTATION' ? (settings.quotePrefix || 'JM/QT/2026/') :
-                                         'JM/CH/2026/';
+                          const nextDocNumber = generateNextDocNumber(type, documents, settings);
                           const newDoc: Document = {
                             id: `doc-${Date.now()}`,
                             type,
-                            docNumber: `${prefix}${randomId}`,
+                            docNumber: nextDocNumber,
                             date: new Date().toISOString().split('T')[0],
                             dueDate: (type === 'INVOICE' || type === 'BILL') ? new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0] : undefined,
                             customerId: customer.id,
@@ -1583,9 +1657,9 @@ export default function App() {
                       settings={settings}
                       currentUser={currentUser}
                       onSavePurchase={handleSavePurchase}
-                      onDeletePurchase={handleDeletePurchase}
+                      onDeletePurchase={isAdmin ? handleDeletePurchase : undefined}
                       onSaveSupplier={handleSaveSupplier}
-                      onDeleteSupplier={handleDeleteSupplier}
+                      onDeleteSupplier={isAdmin ? handleDeleteSupplier : undefined}
                       onUpdateProductStock={handleUpdateProductStock}
                     />
                   )}
@@ -1596,7 +1670,7 @@ export default function App() {
                       documents={documents}
                       onAddDocumentClick={(type) => setIsCreatingDoc(type)}
                       onEditDocument={(doc) => setEditingDocument(doc)}
-                      onDeleteDocument={handleDeleteDocument}
+                      onDeleteDocument={isAdmin ? handleDeleteDocument : undefined}
                       onViewDocument={(doc) => setViewingDocument(doc)}
                       onCreateInvoiceFromChallan={handleCreateInvoiceFromChallan}
                       onCreateBillFromChallan={handleCreateBillFromChallan}
@@ -1616,7 +1690,7 @@ export default function App() {
                       purchases={purchases}
                       dispatches={dispatches}
                       onSaveReturn={handleSaveReturn}
-                      onDeleteReturn={handleDeleteReturn}
+                      onDeleteReturn={isAdmin ? handleDeleteReturn : undefined}
                     />
                   )}
 
@@ -1644,7 +1718,7 @@ export default function App() {
                       currentUser={currentUser}
                       settings={settings}
                       onSaveExpense={handleSaveExpense}
-                      onDeleteExpense={handleDeleteExpense}
+                      onDeleteExpense={isAdmin ? handleDeleteExpense : undefined}
                     />
                   )}
 
@@ -1659,7 +1733,7 @@ export default function App() {
                       currentUser={currentUser}
                       settings={settings}
                       onSaveExpense={handleSaveExpense}
-                      onDeleteExpense={handleDeleteExpense}
+                      onDeleteExpense={isAdmin ? handleDeleteExpense : undefined}
                     />
                   )}
 
@@ -1670,8 +1744,9 @@ export default function App() {
                       customers={customers}
                       staffUsers={staffUsers}
                       settings={settings}
+                      currentUser={currentUser}
                       onSaveDispatch={handleSaveDispatch}
-                      onDeleteDispatch={handleDeleteDispatch}
+                      onDeleteDispatch={isAdmin ? handleDeleteDispatch : undefined}
                     />
                   )}
 
@@ -1694,7 +1769,7 @@ export default function App() {
                       currentUser={currentUser}
                       onAddStaff={handleAddStaff}
                       onUpdateStaff={handleUpdateStaff}
-                      onDeleteStaff={handleDeleteStaff}
+                      onDeleteStaff={isAdmin ? handleDeleteStaff : undefined}
                     />
                   )}
 
@@ -1787,6 +1862,72 @@ export default function App() {
                                   </div>
                                   <p className="text-[10px] text-slate-400">
                                     Displayed on invoices, quotations, bills, and navigation headers.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* SECTION A2: PUBLIC WEBSITE LOGO (পাবলিক সাইটের লগো) */}
+                            <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-3">
+                              <div className="flex justify-between items-center">
+                                <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                                  <Globe className="w-3.5 h-3.5 text-blue-700" />
+                                  Public Website Logo (পাবলিক সাইটের লগো)
+                                </label>
+                                {settingsForm.publicLogoUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSettingsForm({ ...settingsForm, publicLogoUrl: '' })}
+                                    className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    Reset to Default Hitachi Logo
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Upload Button & File Input */}
+                              <div className="flex items-center gap-3">
+                                <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingPublicLogo ? 'opacity-60 pointer-events-none' : ''}`}>
+                                  <Upload className="w-4 h-4 text-blue-700" />
+                                  <span>{isUploadingPublicLogo ? 'Uploading public logo...' : 'Upload Public Site Logo (লগো আপলোড)'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handlePublicLogoFileUpload(file);
+                                    }}
+                                    className="hidden"
+                                    disabled={isUploadingPublicLogo}
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Manual Image URL Input */}
+                              <div className="space-y-1">
+                                <span className="text-[10px] text-slate-500 font-semibold">Or Direct Image URL (সরাসরি ছবির লিঙ্ক):</span>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. /api/uploads/public_logo.png or https://example.com/logo.png"
+                                  value={settingsForm.publicLogoUrl || ''}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, publicLogoUrl: e.target.value })}
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono focus:border-blue-900 focus:outline-hidden"
+                                />
+                              </div>
+
+                              {/* Live Logo Preview Box */}
+                              <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
+                                <div className="w-28 h-12 flex items-center justify-center bg-slate-100/80 rounded-lg border border-slate-200 p-1 flex-shrink-0">
+                                  <Logo logoUrl={settingsForm.publicLogoUrl} forPublic={true} className="max-h-full max-w-full text-blue-900" alt="Public Logo Preview" />
+                                </div>
+                                <div className="text-[11px] text-slate-600 space-y-0.5">
+                                  <div className="font-bold text-slate-800 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>{settingsForm.publicLogoUrl ? 'Custom Public Site Logo Active' : 'Default Hitachi Air Solution Center Vector Logo'}</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-400">
+                                    Displayed on the public product showcase, catalog landing page, and online quote requests.
                                   </p>
                                 </div>
                               </div>

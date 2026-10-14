@@ -298,8 +298,10 @@ export interface BusinessSettings {
   signatureName: string;
   signatureLabel: string;
   logoUrl?: string;
+  publicLogoUrl?: string;
   watermarkUrl?: string;
   faviconUrl?: string;
+  challanPrefix?: string;
   watermarkOpacity?: number; // e.g. 0.04 to 0.20
   showWatermark?: boolean | number;
 }

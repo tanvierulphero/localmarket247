@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Product, Customer, Document, BusinessSettings } from '../types';
 import { Search, SlidersHorizontal, Check, ArrowRight, Phone, Mail, MapPin, Award, ShieldCheck, Settings2, Sparkles, Loader2, FileText, Shuffle } from 'lucide-react';
 import { apiSaveDocument, apiSaveCustomer } from '../lib/api';
+import { generateNextDocNumber } from '../lib/documentNumber';
 import Logo from './Logo';
 
 interface PublicCatalogProps {
@@ -162,9 +163,7 @@ export default function PublicCatalog({
       };
 
       // 2. Generate Quotation Document
-      const quotePrefix = settings?.quotePrefix || 'JM/QT/2026/';
-      const randomId = Math.floor(1000 + Math.random() * 9000);
-      const generatedDocNumber = `${quotePrefix}${randomId}`;
+      const generatedDocNumber = generateNextDocNumber('QUOTATION', documents, settings);
       const todayStr = new Date().toISOString().split('T')[0];
       const qty = Math.max(1, Number(quoteRequest.quantity) || 1);
       const unitPrice = selectedProduct.price || 0;
@@ -316,7 +315,7 @@ export default function PublicCatalog({
             {/* Logo & Technical Partner Tag */}
             <div className="flex items-center gap-3">
               <div className="h-11 w-auto flex-shrink-0">
-                <Logo className="h-full w-auto text-blue-900" forPublic={true} />
+                <Logo logoUrl={settings?.publicLogoUrl} className="h-full w-auto text-blue-900" forPublic={true} />
               </div>
               <div className="hidden lg:flex flex-col justify-center border-l border-slate-200 pl-3">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
@@ -741,7 +740,7 @@ export default function PublicCatalog({
                 <div>
                   <h4 className="font-bold text-white">Office Address</h4>
                   <p className="text-slate-300 text-xs mt-1 leading-relaxed">
-                    Corporate Office: Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City, Bangladesh.
+                    Showroom & Office: Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City, Bangladesh.
                   </p>
                 </div>
               </div>
@@ -845,11 +844,16 @@ export default function PublicCatalog({
       {/* Footer copyright */}
       <footer className="bg-slate-950 text-slate-400 text-xs py-8 border-t border-slate-900 no-print">
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-          <div>
-            <p className="font-bold text-slate-200">
-              &copy; 2026 Hitachi Air Solution Center &bull; <span className="text-blue-400">Technical support by Jubayer Machineries</span>
-            </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">All Rights Reserved &bull; Gazipur Industrial Zone, Bangladesh</p>
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-auto flex-shrink-0">
+              <Logo logoUrl={settings?.publicLogoUrl} className="h-full w-auto text-white" light={true} forPublic={true} />
+            </div>
+            <div>
+              <p className="font-bold text-slate-200">
+                &copy; 2026 Hitachi Air Solution Center &bull; <span className="text-blue-400">Technical support by Jubayer Machineries</span>
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5">All Rights Reserved &bull; Gazipur Industrial Zone, Bangladesh</p>
+            </div>
           </div>
           <p className="italic text-xs font-medium text-slate-400">"Your Problem Solution is Sustainable Partner."</p>
         </div>

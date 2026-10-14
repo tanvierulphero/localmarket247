@@ -396,7 +396,7 @@ export default function StaffManagement({
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
-                        {staff.id !== currentUser?.id && (
+                        {currentUser?.role === 'ADMIN' && staff.id !== currentUser?.id && (
                           <button
                             onClick={() => {
                               if (confirm(`Are you sure you want to delete sub-account for ${staff.name}?`)) {
@@ -404,7 +404,7 @@ export default function StaffManagement({
                               }
                             }}
                             className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="Delete Sub-Account"
+                            title="Delete Sub-Account (Admin Only)"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

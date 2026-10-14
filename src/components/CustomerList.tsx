@@ -39,7 +39,7 @@ interface CustomerListProps {
   dispatches?: FieldDispatch[];
   settings: BusinessSettings;
   onSaveCustomer: (customer: Customer) => Promise<void>;
-  onDeleteCustomer: (id: string) => Promise<void>;
+  onDeleteCustomer?: (id: string) => Promise<void>;
   onViewDocument: (doc: Document) => void;
   onCreateDocumentForCustomer?: (customer: Customer, type: DocumentType) => void;
 }
@@ -862,13 +862,15 @@ export default function CustomerList({
                           </button>
 
                           {/* Delete Customer */}
-                          <button
-                            onClick={() => setCustomerToDelete(customer)}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white rounded-lg transition-all shadow-2xs cursor-pointer"
-                            title="Delete customer record"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {onDeleteCustomer && (
+                            <button
+                              onClick={() => setCustomerToDelete(customer)}
+                              className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white rounded-lg transition-all shadow-2xs cursor-pointer"
+                              title="Delete customer record (Admin Only)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1005,13 +1007,15 @@ export default function CustomerList({
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => setCustomerToDelete(customer)}
-                    className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
-                    title="Delete customer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {onDeleteCustomer && (
+                    <button
+                      onClick={() => setCustomerToDelete(customer)}
+                      className="p-1.5 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer"
+                      title="Delete customer (Admin Only)"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             );

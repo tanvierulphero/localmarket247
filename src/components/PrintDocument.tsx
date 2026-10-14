@@ -488,7 +488,6 @@ Content-Location: document.html
         <p style="margin: 4px 0 0 0; font-weight: bold; color: #1e293b; font-size: 10pt;">${settings.address}</p>
         <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Hotline: ${settings.phone1}, ${settings.phone2}</p>
         <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Email: ${settings.email}</p>
-        <p style="margin: 3px 0 0 0; color: #1e3a8a; font-weight: bold; font-size: 9pt;">Website: ${settings.website}</p>
       </td>
     </tr>
   </table>
@@ -1036,7 +1035,7 @@ ${rawBase64Logo}
                 </h1>
                 <div className="flex items-start justify-end gap-1.5 font-bold text-slate-900 text-xs sm:text-[13px] pt-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-900 flex-shrink-0 mt-0.5" />
-                  <span className="font-extrabold text-slate-900">{settings.address}</span>
+                  <span className="font-extrabold text-slate-900">{(settings.address || '').replace(/corporate\s*office:?\s*/gi, '').trim()}</span>
                 </div>
                 <div className="flex items-center justify-end gap-2 text-[11px] sm:text-xs text-slate-600 font-medium">
                   <span className="flex items-center gap-1">
@@ -1048,10 +1047,6 @@ ${rawBase64Logo}
                     <Mail className="w-3 h-3 text-blue-800 flex-shrink-0" />
                     {settings.email}
                   </span>
-                </div>
-                <div className="flex items-center justify-end gap-1 text-blue-800 font-bold text-[11px] sm:text-xs">
-                  <Globe className="w-3.5 h-3.5 flex-shrink-0" />
-                  <a href={`https://${settings.website}`} target="_blank" rel="noopener noreferrer">{settings.website}</a>
                 </div>
               </div>
             </div>

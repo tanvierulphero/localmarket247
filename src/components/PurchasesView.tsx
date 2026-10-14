@@ -36,9 +36,9 @@ interface PurchasesViewProps {
   settings: BusinessSettings;
   currentUser: StaffUser | null;
   onSavePurchase: (purchase: Purchase, updateStock: boolean) => Promise<void>;
-  onDeletePurchase: (id: string) => Promise<void>;
+  onDeletePurchase?: (id: string) => Promise<void>;
   onSaveSupplier: (supplier: Supplier) => Promise<void>;
-  onDeleteSupplier: (id: string) => Promise<void>;
+  onDeleteSupplier?: (id: string) => Promise<void>;
   onUpdateProductStock: (productId: string, quantityDelta: number) => Promise<void>;
 }
 
@@ -525,15 +525,15 @@ export default function PurchasesView({
                             )}
 
                             {/* Delete */}
-                            {canManage && (
+                            {currentUser?.role === 'ADMIN' && onDeletePurchase && (
                               <button
                                 onClick={() => {
-                                  if (confirm(`Are you sure you want to delete purchase entry "${p.purchaseNumber}"?`)) {
+                                  if (confirm(`Are you sure you want to permanently delete purchase entry "${p.purchaseNumber}"?`)) {
                                     onDeletePurchase(p.id);
                                   }
                                 }}
-                                title="Delete Purchase Entry"
-                                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                title="Delete Purchase Entry (Admin Only)"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -586,16 +586,19 @@ export default function PurchasesView({
                         >
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete supplier "${s.name}"?`)) {
-                              onDeleteSupplier(s.id);
-                            }
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {currentUser?.role === 'ADMIN' && onDeleteSupplier && (
+                          <button
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to delete supplier "${s.name}"?`)) {
+                                onDeleteSupplier(s.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer"
+                            title="Delete Supplier (Admin Only)"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

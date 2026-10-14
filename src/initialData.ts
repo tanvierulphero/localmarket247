@@ -117,8 +117,10 @@ export const DEFAULT_SETTINGS: BusinessSettings = {
   signatureName: "MD MAHI UDDIN",
   signatureLabel: "Managing Director",
   logoUrl: "",
+  publicLogoUrl: "",
   watermarkUrl: "",
   faviconUrl: "",
+  challanPrefix: "JM/CH/2026/",
   watermarkOpacity: 0.04,
   showWatermark: 1
 };

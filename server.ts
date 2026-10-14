@@ -83,11 +83,48 @@ io.on('connection', (socket) => {
   console.log('Real-time SQL client connected:', socket.id);
 });
 
+// Ensure schema columns exist in PostgreSQL
+async function ensureSchemaColumns() {
+  try {
+    const adminUser = process.env.SQL_ADMIN_USER || process.env.SQL_USER;
+    const adminPassword = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD;
+    if (adminUser && adminPassword && process.env.SQL_HOST && process.env.SQL_DB_NAME) {
+      const { Pool } = await import('pg');
+      const migrationPool = new Pool({
+        host: process.env.SQL_HOST,
+        user: adminUser,
+        password: adminPassword,
+        database: process.env.SQL_DB_NAME,
+        connectionTimeoutMillis: 5000,
+      });
+      try {
+        await migrationPool.query(`
+          ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "public_logo_url" text DEFAULT '';
+          ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "challan_prefix" text DEFAULT 'JM/CH/2026/';
+          ALTER TABLE "field_dispatches" ALTER COLUMN "dispatch_number" DROP NOT NULL;
+          ALTER TABLE "field_dispatches" ALTER COLUMN "staff_id" DROP NOT NULL;
+          ALTER TABLE "field_dispatches" ALTER COLUMN "customer_id" DROP NOT NULL;
+          ALTER TABLE "field_dispatches" ALTER COLUMN "customer_name" DROP NOT NULL;
+          ALTER TABLE "field_dispatches" ALTER COLUMN "dispatch_date" DROP NOT NULL;
+          ALTER TABLE "field_dispatches" ALTER COLUMN "status" DROP NOT NULL;
+        `);
+      } catch (e) {
+        console.warn('Auto-migration non-fatal notice:', (e as any)?.message || e);
+      } finally {
+        await migrationPool.end().catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.warn('Auto-migration initialization notice:', err);
+  }
+}
+
 // Seed initial data if tables are empty
 let isSeeded = false;
 async function seedInitialDataIfNeeded() {
   if (isSeeded) return;
   try {
+    await ensureSchemaColumns();
     const existingStaff = await db.select().from(staffUsers).limit(1).catch(() => []);
     if (existingStaff.length === 0) {
       console.log('Seeding initial admin staff user into Cloud SQL...');
@@ -477,8 +514,10 @@ app.post('/api/settings', async (req, res) => {
           signatureName: item.signatureName || '',
           signatureLabel: item.signatureLabel || '',
           logoUrl: item.logoUrl || '',
+          publicLogoUrl: item.publicLogoUrl || '',
           watermarkUrl: item.watermarkUrl || '',
           faviconUrl: item.faviconUrl || '',
+          challanPrefix: item.challanPrefix || 'JM/CH/2026/',
           watermarkOpacity: item.watermarkOpacity !== undefined ? item.watermarkOpacity : 0.04,
           showWatermark: item.showWatermark !== undefined ? item.showWatermark : 1,
         },

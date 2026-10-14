@@ -39,7 +39,8 @@ interface FieldDispatchManagerProps {
   staffUsers: StaffUser[];
   settings: BusinessSettings;
   onSaveDispatch: (dispatch: FieldDispatch) => Promise<void>;
-  onDeleteDispatch: (id: string) => Promise<void>;
+  onDeleteDispatch?: (id: string) => Promise<void>;
+  currentUser?: StaffUser | null;
 }
 
 export default function FieldDispatchManager({
@@ -49,6 +50,7 @@ export default function FieldDispatchManager({
   settings,
   onSaveDispatch,
   onDeleteDispatch,
+  currentUser,
 }: FieldDispatchManagerProps) {
   // Navigation & View Tabs
   const [activeTab, setActiveTab] = useState<'all_entries' | 'staff_report' | 'company_report'>('all_entries');
@@ -979,13 +981,15 @@ export default function FieldDispatchManager({
                               <Edit3 className="w-4 h-4" />
                             </button>
 
-                            <button
-                              onClick={() => setDeletingId(item.id)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                              title="Delete Entry"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {currentUser?.role === 'ADMIN' && onDeleteDispatch && (
+                              <button
+                                onClick={() => setDeletingId(item.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Delete Entry (Admin Only)"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

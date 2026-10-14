@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Product, ProductSpec, Document, FieldDispatch } from '../types';
+import { Product, ProductSpec, Document, FieldDispatch, StaffUser } from '../types';
 import { 
   Search, 
   Plus, 
@@ -39,8 +39,9 @@ interface InventoryManagerProps {
   dispatches?: FieldDispatch[];
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
-  onDeleteProduct: (id: string) => void;
+  onDeleteProduct?: (id: string) => void;
   onViewDocument?: (doc: Document) => void;
+  currentUser?: StaffUser | null;
 }
 
 export default function InventoryManager({
@@ -50,7 +51,8 @@ export default function InventoryManager({
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
-  onViewDocument
+  onViewDocument,
+  currentUser
 }: InventoryManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -551,17 +553,19 @@ export default function InventoryManager({
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           
-                          <button
-                            onClick={() => {
-                              if (confirm(`Are you sure you want to delete ${product.name} from the catalog?`)) {
-                                onDeleteProduct(product.id);
-                              }
-                            }}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg hover:text-rose-700 transition-colors border border-rose-200 cursor-pointer"
-                            title="Delete Item"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {onDeleteProduct && (currentUser?.role === 'ADMIN' || !currentUser) && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to permanently delete ${product.name} from the catalog?`)) {
+                                  onDeleteProduct(product.id);
+                                }
+                              }}
+                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg hover:text-rose-700 transition-colors border border-rose-200 cursor-pointer"
+                              title="Delete Item (Admin Only)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

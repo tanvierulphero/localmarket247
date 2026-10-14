@@ -5,6 +5,11 @@
   --font-sans: "Plus Jakarta Sans", sans-serif;
 }
 
+@page {
+  size: A4 portrait;
+  margin: 0mm !important;
+}
+
 @layer utilities {
   @media print {
     /* Hide specific navigation/interactive blocks on all printed views */
@@ -20,10 +25,10 @@
       print-color-adjust: exact !important;
     }
 
-    /* Page setup for A4 with 0 margin so #printable-area precise padding handles page margins */
+    /* Page setup for A4 with 0 margin so browser headers (site title, URL, timestamp) are suppressed */
     @page {
       size: A4 portrait;
-      margin: 10mm !important;
+      margin: 0 !important;
     }
 
     /* IF PRINTING A SPECIFIC DOCUMENT LETTERHEAD (#printable-area exists) */
@@ -31,10 +36,6 @@
       margin: 0 !important;
       padding: 0 !important;
       width: 210mm !important;
-    }
-
-    body:has(#printable-area) @page {
-      margin: 0 !important;
     }
 
     body:has(#printable-area) * {

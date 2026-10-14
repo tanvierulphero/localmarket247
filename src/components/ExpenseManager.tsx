@@ -214,6 +214,10 @@ export default function ExpenseManager({
       setFormError('Please enter a valid expense amount greater than 0.');
       return;
     }
+    if (!paidBy || !paidBy.trim()) {
+      setFormError('কার দ্বারা খরচ হয়েছে তার নাম উল্লেখ করা আবশ্যক (Please enter who incurred/paid the expense).');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -501,7 +505,7 @@ export default function ExpenseManager({
                 <th className="py-3 px-4">Voucher No. / Date</th>
                 <th className="py-3 px-3">Category</th>
                 <th className="py-3 px-3">Description / Title</th>
-                <th className="py-3 px-3">Paid By / Ref</th>
+                <th className="py-3 px-3">কার দ্বারা খরচ / Paid By</th>
                 <th className="py-3 px-3 text-center">Payment Method</th>
                 <th className="py-3 px-4 text-right">Amount (BDT)</th>
                 <th className="py-3 px-3 text-center w-24">Actions</th>
@@ -548,8 +552,9 @@ export default function ExpenseManager({
                     {/* Paid By & Reference */}
                     <td className="py-3 px-3">
                       <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-800 block text-[11px]">
-                          {exp.paidBy || 'Office Cash'}
+                        <span className="font-bold text-slate-900 block text-[11px] flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 inline-block shrink-0"></span>
+                          <span className="truncate">{exp.paidBy || 'Office Cash'}</span>
                         </span>
                         {exp.referenceNo && (
                           <span className="text-[9px] font-mono text-slate-500 bg-slate-100 px-1 py-0.5 rounded inline-block">
@@ -583,17 +588,19 @@ export default function ExpenseManager({
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete expense "${exp.title}" (Tk. ${exp.amount.toLocaleString()})?`)) {
-                              onDeleteExpense(exp.id);
-                            }
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                          title="Delete expense"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {currentUser?.role === 'ADMIN' && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete expense "${exp.title}" (Tk. ${exp.amount.toLocaleString()})?`)) {
+                                onDeleteExpense(exp.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                            title="Delete expense"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -716,14 +723,35 @@ export default function ExpenseManager({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Paid By / Spender</label>
-                  <input
-                    type="text"
-                    value={paidBy}
-                    onChange={(e) => setPaidBy(e.target.value)}
-                    placeholder="e.g. Staff or Manager name"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold focus:bg-white focus:outline-hidden"
-                  />
+                  <label className="font-bold text-slate-700 flex items-center justify-between">
+                    <span>কার দ্বারা খরচ হয়েছে / ব্যয়কারীর নাম *</span>
+                    <span className="text-[10px] text-slate-400 font-normal">কে খরচ করেছে তার নাম আবশ্যক</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <select
+                      value={staffUsers.some(u => u.name === paidBy) ? paidBy : (paidBy === 'MD MAHI UDDIN' ? 'MD MAHI UDDIN' : 'CUSTOM')}
+                      onChange={(e) => {
+                        if (e.target.value !== 'CUSTOM') {
+                          setPaidBy(e.target.value);
+                        }
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold text-slate-800 focus:outline-hidden"
+                    >
+                      <option value="MD MAHI UDDIN">MD MAHI UDDIN (Owner/MD)</option>
+                      {staffUsers.filter(u => u.name !== 'MD MAHI UDDIN').map(u => (
+                        <option key={u.id} value={u.name}>{u.name} ({u.designation || u.role})</option>
+                      ))}
+                      <option value="CUSTOM">অন্য ব্যক্তি / Custom Name...</option>
+                    </select>
+                    <input
+                      type="text"
+                      required
+                      value={paidBy}
+                      onChange={(e) => setPaidBy(e.target.value)}
+                      placeholder="ব্যয়কারীর নাম লিখুন (e.g. Staff / Driver / Tech name)"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-bold text-slate-900 focus:bg-white focus:outline-hidden"
+                    />
+                  </div>
                 </div>
               </div>
 

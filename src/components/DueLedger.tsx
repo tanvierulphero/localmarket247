@@ -2548,7 +2548,7 @@ export default function DueLedger({
                     "{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}"
                   </div>
                   <div className="text-[9px] text-slate-600 font-semibold">
-                    {settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}
+                    {(settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.').replace(/corporate\s*office:?\s*/gi, '').trim()}
                   </div>
                   <div className="text-[9px] text-slate-500 font-medium">
                     Contact: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'} &bull; Email: {settings?.email || 'support@jubayermachineries.com'}
@@ -2639,7 +2639,7 @@ export default function DueLedger({
                   <div className="text-[10px] text-slate-500 font-semibold">
                     <span className="text-slate-400 text-[9px] uppercase font-bold block">Payment Details / Memo:</span>
                     <p className="text-slate-800 bg-slate-50 border border-slate-200 p-2 rounded-lg italic">
-                      {recentReceipt.notes}
+                      {(recentReceipt.notes || '').replace(/corporate\s*office:?\s*/gi, '')}
                     </p>
                   </div>
                 )}
@@ -2711,7 +2711,7 @@ export default function DueLedger({
                     "{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}"
                   </div>
                   <div className="text-[9px] text-slate-600 font-semibold">
-                    {settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}
+                    {(settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.').replace(/corporate\s*office:?\s*/gi, '').trim()}
                   </div>
                 </div>
 
@@ -2971,7 +2971,7 @@ export default function DueLedger({
                         {settings?.name || 'Jubayer Machineries'}
                       </h1>
                       <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
-                      <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.'}</p>
+                      <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{(settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.').replace(/corporate\s*office:?\s*/gi, '').trim()}</p>
                       <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Hotline: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'}</p>
                     </div>
                   </div>
@@ -3168,21 +3168,15 @@ export default function DueLedger({
                 </div>
 
                 {/* Signatures */}
-                <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 text-center text-[9px] sm:text-[10px] font-bold text-slate-500">
+                <div className="grid grid-cols-2 gap-8 sm:gap-16 pt-8 text-center text-[9px] sm:text-[10px] font-bold text-slate-500">
                   <div className="space-y-1">
-                    <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800">
+                    <div className="border-t border-slate-400 pt-1.5 w-32 sm:w-48 mx-auto text-slate-800">
                       Customer Signature
                     </div>
                     <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">Receiver / Client</span>
                   </div>
                   <div className="space-y-1">
-                    <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800">
-                      Accounts Prepared By
-                    </div>
-                    <span className="text-[8px] sm:text-[9px] text-slate-400 italic block">Accountant</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="border-t border-slate-400 pt-1.5 w-24 sm:w-36 mx-auto text-slate-800 font-bold">
+                    <div className="border-t border-slate-400 pt-1.5 w-32 sm:w-48 mx-auto text-slate-800 font-bold">
                       {currentUser?.name || settings?.signatureName || 'MD MAHI UDDIN'}
                     </div>
                     <span className="text-[8px] sm:text-[9px] text-slate-500 font-semibold block">
