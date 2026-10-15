@@ -20,19 +20,33 @@ export default function Logo({ className = "w-full h-full", light = false, forPu
     setHasError(false);
   }, [logoUrl]);
 
+  const cleanUrl = React.useMemo(() => {
+    if (!logoUrl || typeof logoUrl !== 'string') return '';
+    const trimmed = logoUrl.trim();
+    if (!trimmed) return '';
+    // Normalize relative paths without leading slash if they point to uploads
+    if (trimmed.startsWith('uploads/')) {
+      return `/${trimmed}`;
+    }
+    return trimmed;
+  }, [logoUrl]);
+
   // If custom uploaded logo exists and hasn't errored, display it directly
-  if (logoUrl && !hasError) {
+  if (cleanUrl && !hasError) {
     return (
       <img 
-        src={logoUrl} 
+        src={cleanUrl} 
         alt={alt || (forPublic ? "Public Header Logo" : "Company Logo")} 
         className={`${className} object-contain`}
-        onError={() => setHasError(true)}
+        onError={(e) => {
+          console.warn('Logo image failed to load from URL:', cleanUrl, e);
+          setHasError(true);
+        }}
       />
     );
   }
 
-  // No default logo. Returns null if no custom logo uploaded.
+  // No default logo. Returns null if no custom logo uploaded or failed.
   return null;
 }
 

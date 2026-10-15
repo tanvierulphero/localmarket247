@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Product, Customer, Document, BusinessSettings, DocumentType, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from './types';
 import { 
@@ -77,6 +77,7 @@ import {
   apiGetSettings,
   apiSaveSettings,
   apiUploadImage,
+  readFileAsDataUrl,
   apiGetFieldDispatches,
   apiSaveFieldDispatch,
   apiDeleteFieldDispatch,
@@ -136,22 +137,41 @@ export default function App() {
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
   const [brandingPreviewMode, setBrandingPreviewMode] = useState<'public' | 'document'>('public');
 
+  // Explicit input refs for 100% reliable click triggers across all browsers & iframes
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const publicLogoFileInputRef = useRef<HTMLInputElement>(null);
+  const watermarkFileInputRef = useRef<HTMLInputElement>(null);
+  const faviconFileInputRef = useRef<HTMLInputElement>(null);
+
   // Logo & Watermark & Favicon File Upload Handlers (Auto-Save on Upload)
   const handleLogoFileUpload = async (file: File) => {
     setIsUploadingLogo(true);
     try {
+      // 1. Instant zero-lag preview
+      const previewUrl = await readFileAsDataUrl(file, 1000).catch(() => '');
+      if (previewUrl) {
+        setSettingsForm(prev => ({ ...prev, logoUrl: previewUrl }));
+        setSettings(prev => ({ ...prev, logoUrl: previewUrl }));
+      }
+
+      // 2. Server upload and database sync
       const res = await apiUploadImage(file);
-      if (res && res.url) {
-        const updated = { ...settingsForm, logoUrl: res.url };
+      const finalUrl = (res?.url || previewUrl).trim();
+      if (finalUrl) {
+        const updated = { ...settings, ...settingsForm, logoUrl: finalUrl };
         setSettingsForm(updated);
         setSettings(updated);
-        await apiSaveSettings(updated);
+        const saved = await apiSaveSettings(updated);
+        if (saved) {
+          setSettings({ ...saved, logoUrl: finalUrl });
+          setSettingsForm({ ...saved, logoUrl: finalUrl });
+        }
         setSettingsSavedFeedback(true);
         setTimeout(() => setSettingsSavedFeedback(false), 4000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload logo:', err);
-      alert('Failed to upload logo image. Please check file size and try again.');
+      alert('Failed to upload logo image: ' + (err?.message || 'Error uploading file'));
     } finally {
       setIsUploadingLogo(false);
     }
@@ -160,50 +180,94 @@ export default function App() {
   const handlePublicLogoFileUpload = async (file: File) => {
     setIsUploadingPublicLogo(true);
     try {
+      // 1. Immediately read file as dataUrl for zero-lag instant preview
+      const previewUrl = await readFileAsDataUrl(file, 1000).catch(() => '');
+      if (previewUrl) {
+        setSettingsForm(prev => ({ ...prev, publicLogoUrl: previewUrl }));
+        setSettings(prev => ({ ...prev, publicLogoUrl: previewUrl }));
+        try {
+          localStorage.setItem('jm_public_logo_url', previewUrl);
+        } catch {}
+      }
+
+      // 2. Perform robust upload and persist to database
       const res = await apiUploadImage(file);
-      if (res && res.url) {
-        const updated = { ...settingsForm, publicLogoUrl: res.url };
+      const finalUrl = (res?.url || previewUrl).trim();
+      if (finalUrl) {
+        const updated = { ...settings, ...settingsForm, publicLogoUrl: finalUrl };
         setSettingsForm(updated);
         setSettings(updated);
-        await apiSaveSettings(updated);
+        try {
+          localStorage.setItem('jm_public_logo_url', finalUrl);
+        } catch {}
+        const saved = await apiSaveSettings(updated);
+        if (saved) {
+          setSettings({ ...saved, publicLogoUrl: finalUrl });
+          setSettingsForm({ ...saved, publicLogoUrl: finalUrl });
+        }
         setSettingsSavedFeedback(true);
         setTimeout(() => setSettingsSavedFeedback(false), 4000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload public logo:', err);
-      alert('Failed to upload public logo image. Please try again.');
+      alert('পাবলিক লগো আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingPublicLogo(false);
     }
   };
 
   const handleSavePublicLogoOnly = async () => {
-    setSettings(settingsForm);
     try {
-      await apiSaveSettings(settingsForm);
+      const finalUrl = (settingsForm.publicLogoUrl || '').trim();
+      const updated = { ...settings, ...settingsForm, publicLogoUrl: finalUrl };
+      setSettings(updated);
+      setSettingsForm(updated);
+      try {
+        if (finalUrl) {
+          localStorage.setItem('jm_public_logo_url', finalUrl);
+        } else {
+          localStorage.removeItem('jm_public_logo_url');
+        }
+      } catch {}
+      const saved = await apiSaveSettings(updated);
+      if (saved) {
+        setSettings({ ...saved, publicLogoUrl: finalUrl });
+        setSettingsForm({ ...saved, publicLogoUrl: finalUrl });
+      }
       setSettingsSavedFeedback(true);
       setTimeout(() => setSettingsSavedFeedback(false), 4000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save public logo:', err);
-      alert('Error saving public logo settings to database.');
+      alert('পাবলিক লগো সেভ করতে সমস্যা হয়েছে: ' + (err?.message || 'Error saving settings'));
     }
   };
 
   const handleWatermarkFileUpload = async (file: File) => {
     setIsUploadingWatermark(true);
     try {
+      const previewUrl = await readFileAsDataUrl(file, 1000).catch(() => '');
+      if (previewUrl) {
+        setSettingsForm(prev => ({ ...prev, watermarkUrl: previewUrl, showWatermark: 1 }));
+        setSettings(prev => ({ ...prev, watermarkUrl: previewUrl, showWatermark: 1 }));
+      }
+
       const res = await apiUploadImage(file);
-      if (res && res.url) {
-        const updated = { ...settingsForm, watermarkUrl: res.url, showWatermark: 1 };
+      const finalUrl = (res?.url || previewUrl).trim();
+      if (finalUrl) {
+        const updated = { ...settings, ...settingsForm, watermarkUrl: finalUrl, showWatermark: 1 };
         setSettingsForm(updated);
         setSettings(updated);
-        await apiSaveSettings(updated);
+        const saved = await apiSaveSettings(updated);
+        if (saved) {
+          setSettings({ ...saved, watermarkUrl: finalUrl, showWatermark: 1 });
+          setSettingsForm({ ...saved, watermarkUrl: finalUrl, showWatermark: 1 });
+        }
         setSettingsSavedFeedback(true);
         setTimeout(() => setSettingsSavedFeedback(false), 4000);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload watermark:', err);
-      alert('Failed to upload watermark image. Please try again.');
+      alert('Failed to upload watermark image: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingWatermark(false);
     }
@@ -327,8 +391,15 @@ export default function App() {
 
       setStaffUsers(staff && staff.length > 0 ? staff : INITIAL_STAFF_USERS);
       if (setts) {
-        setSettings(setts);
-        setSettingsForm(setts);
+        let effectiveSetts = setts;
+        try {
+          const cachedPublicLogo = localStorage.getItem('jm_public_logo_url');
+          if (cachedPublicLogo && !setts.publicLogoUrl) {
+            effectiveSetts = { ...setts, publicLogoUrl: cachedPublicLogo };
+          }
+        } catch {}
+        setSettings(effectiveSetts);
+        setSettingsForm(effectiveSetts);
       }
     } catch (e) {
       console.error('Initial fetch warning:', e);
@@ -352,7 +423,15 @@ export default function App() {
         } else if (change.entity === 'staff') {
           apiGetStaff().then(setStaffUsers).catch(() => {});
         } else if (change.entity === 'settings') {
-          apiGetSettings().then(s => { setSettings(s); setSettingsForm(s); }).catch(() => {});
+          apiGetSettings().then(s => {
+            let eff = s;
+            try {
+              const cached = localStorage.getItem('jm_public_logo_url');
+              if (cached && !s.publicLogoUrl) eff = { ...s, publicLogoUrl: cached };
+            } catch {}
+            setSettings(eff);
+            setSettingsForm(eff);
+          }).catch(() => {});
         } else if (change.entity === 'dispatches') {
           apiGetFieldDispatches().then(setDispatches).catch(() => {});
         } else if (change.entity === 'suppliers') {
@@ -1853,20 +1932,27 @@ export default function App() {
 
                               {/* Upload Button & File Input */}
                               <div className="flex items-center gap-3">
-                                <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingLogo ? 'opacity-60 pointer-events-none' : ''}`}>
-                                  <Upload className="w-4 h-4 text-blue-700" />
+                                <button
+                                  type="button"
+                                  onClick={() => logoFileInputRef.current?.click()}
+                                  disabled={isUploadingLogo}
+                                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all active:scale-98 ${isUploadingLogo ? 'opacity-60 pointer-events-none' : ''}`}
+                                >
+                                  <Upload className={`w-4 h-4 text-blue-700 ${isUploadingLogo ? 'animate-bounce' : ''}`} />
                                   <span>{isUploadingLogo ? 'Uploading logo...' : 'Upload New Logo (লগো ফাইল সিলেক্ট করুন)'}</span>
-                                  <input
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) handleLogoFileUpload(file);
-                                    }}
-                                    className="hidden"
-                                    disabled={isUploadingLogo}
-                                  />
-                                </label>
+                                </button>
+                                <input
+                                  ref={logoFileInputRef}
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    e.target.value = '';
+                                    if (file) handleLogoFileUpload(file);
+                                  }}
+                                  className="hidden"
+                                  disabled={isUploadingLogo}
+                                />
                               </div>
 
                               {/* Manual Image URL Input */}
@@ -1922,23 +2008,39 @@ export default function App() {
                               <div className="space-y-1">
                                 <span className="text-[10px] text-slate-600 font-bold">কম্পিউটার/মোবাইল থেকে নতুন লগো আপলোড করুন:</span>
                                 <div className="flex items-center gap-3">
-                                  <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-blue-300 hover:border-blue-600 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingPublicLogo ? 'opacity-60 pointer-events-none' : ''}`}>
-                                    <Upload className="w-4 h-4 text-blue-700" />
+                                  <button
+                                    type="button"
+                                    onClick={() => publicLogoFileInputRef.current?.click()}
+                                    disabled={isUploadingPublicLogo}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50/80 hover:bg-blue-100/80 border-2 border-dashed border-blue-400 hover:border-blue-600 rounded-xl text-xs font-bold text-blue-950 cursor-pointer shadow-2xs transition-all active:scale-98 ${isUploadingPublicLogo ? 'opacity-60 pointer-events-none' : ''}`}
+                                  >
+                                    <Upload className={`w-4 h-4 text-blue-700 ${isUploadingPublicLogo ? 'animate-bounce' : ''}`} />
                                     <span>{isUploadingPublicLogo ? 'আপলোড ও সেভ হচ্ছে...' : 'Upload Public Site Logo (লগো ফাইল সিলেক্ট করুন)'}</span>
-                                    <input
-                                      type="file"
-                                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) handlePublicLogoFileUpload(file);
-                                      }}
-                                      className="hidden"
-                                      disabled={isUploadingPublicLogo}
-                                    />
-                                  </label>
+                                  </button>
+                                  <input
+                                    ref={publicLogoFileInputRef}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      e.target.value = '';
+                                      if (file) handlePublicLogoFileUpload(file);
+                                    }}
+                                    className="hidden"
+                                    disabled={isUploadingPublicLogo}
+                                  />
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-0.5">
+                                  <span className="font-semibold text-blue-950 bg-blue-100/70 border border-blue-200 px-2 py-0.5 rounded-md">
+                                    📏 প্রস্তাবিত সাইজ: <strong>300 × 75 px</strong> (অথবা <strong>400 × 100 px</strong>)
+                                  </span>
+                                  <span className="text-slate-400">|</span>
+                                  <span>উচ্চতা: <strong>48px</strong> (অটো প্রস্থ)</span>
+                                  <span className="text-slate-400">|</span>
+                                  <span>ফরম্যাট: <strong>স্বচ্ছ ব্যাকগ্রাউন্ড PNG বা SVG</strong></span>
                                 </div>
                                 <p className="text-[9px] text-slate-400">
-                                  * ফাইল সিলেক্ট করলেই স্বয়ংক্রিয়ভাবে আপলোড ও ডেটাবেজে সেভ হয়ে যাবে। PNG, JPG বা SVG সমর্থিত।
+                                  * ফাইল সিলেক্ট করলেই স্বয়ংক্রিয়ভাবে আপলোড ও ডেটাবেজে সেভ হয়ে যাবে। PNG, JPG, WebP বা SVG সমর্থিত।
                                 </p>
                               </div>
 
@@ -2050,20 +2152,27 @@ export default function App() {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                      <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 border border-slate-300 hover:border-indigo-600 rounded-lg text-[11px] font-bold text-slate-700 hover:text-indigo-900 cursor-pointer transition-all ${isUploadingWatermark ? 'opacity-60 pointer-events-none' : ''}`}>
-                                        <Upload className="w-3.5 h-3.5 text-indigo-700" />
+                                      <button
+                                        type="button"
+                                        onClick={() => watermarkFileInputRef.current?.click()}
+                                        disabled={isUploadingWatermark}
+                                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 border border-slate-300 hover:border-indigo-600 rounded-lg text-[11px] font-bold text-slate-700 hover:text-indigo-900 cursor-pointer transition-all active:scale-98 ${isUploadingWatermark ? 'opacity-60 pointer-events-none' : ''}`}
+                                      >
+                                        <Upload className={`w-3.5 h-3.5 text-indigo-700 ${isUploadingWatermark ? 'animate-bounce' : ''}`} />
                                         <span>{isUploadingWatermark ? 'Uploading...' : 'Upload Watermark Image'}</span>
-                                        <input
-                                          type="file"
-                                          accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                          onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) handleWatermarkFileUpload(file);
-                                          }}
-                                          className="hidden"
-                                          disabled={isUploadingWatermark}
-                                        />
-                                      </label>
+                                      </button>
+                                      <input
+                                        ref={watermarkFileInputRef}
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          e.target.value = '';
+                                          if (file) handleWatermarkFileUpload(file);
+                                        }}
+                                        className="hidden"
+                                        disabled={isUploadingWatermark}
+                                      />
                                     </div>
 
                                     <input
@@ -2114,20 +2223,27 @@ export default function App() {
 
                               {/* Upload Favicon Button */}
                               <div className="flex items-center gap-3">
-                                <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingFavicon ? 'opacity-60 pointer-events-none' : ''}`}>
-                                  <Upload className="w-4 h-4 text-blue-700" />
+                                <button
+                                  type="button"
+                                  onClick={() => faviconFileInputRef.current?.click()}
+                                  disabled={isUploadingFavicon}
+                                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all active:scale-98 ${isUploadingFavicon ? 'opacity-60 pointer-events-none' : ''}`}
+                                >
+                                  <Upload className={`w-4 h-4 text-blue-700 ${isUploadingFavicon ? 'animate-bounce' : ''}`} />
                                   <span>{isUploadingFavicon ? 'Uploading favicon...' : 'Upload Custom Favicon'}</span>
-                                  <input
-                                    type="file"
-                                    accept="image/png,image/x-icon,image/svg+xml,image/jpeg,image/webp"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) handleFaviconFileUpload(file);
-                                    }}
-                                    className="hidden"
-                                    disabled={isUploadingFavicon}
-                                  />
-                                </label>
+                                </button>
+                                <input
+                                  ref={faviconFileInputRef}
+                                  type="file"
+                                  accept="image/png,image/x-icon,image/svg+xml,image/jpeg,image/webp"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    e.target.value = '';
+                                    if (file) handleFaviconFileUpload(file);
+                                  }}
+                                  className="hidden"
+                                  disabled={isUploadingFavicon}
+                                />
                               </div>
 
                               {/* Direct Favicon URL */}

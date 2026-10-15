@@ -178,16 +178,39 @@ export const apiSaveExpense = (expense: Expense): Promise<Expense> =>
 export const apiDeleteExpense = (id: string): Promise<{ success: boolean }> =>
   fetchJson<{ success: boolean }>(`/api/expenses/${id}`, { method: 'DELETE' });
 
-// Helper to read and compress file as compact base64 data URL (max 800px, 70% JPEG quality)
-// Prevents cPanel LiteSpeed HTTP 503 errors caused by oversized POST payloads
-function readFileAsDataUrl(file: File, maxDim: number = 800): Promise<string> {
+// Helper to read file as data URL, preserving vector SVG and PNG transparency
+export function readFileAsDataUrl(file: File, maxDim: number = 1000): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
+      const rawDataUrl = e.target?.result as string;
+      if (!rawDataUrl) {
+        reject(new Error('File reader produced empty result'));
+        return;
+      }
+
+      const isSvg = file.type.includes('svg') || file.name.toLowerCase().endsWith('.svg');
+      // SVGs must never be rasterized onto a canvas — they are crisp vector XML
+      if (isSvg) {
+        resolve(rawDataUrl);
+        return;
+      }
+
+      // If image is already lightweight (under 600KB), return directly to preserve pristine quality
+      if (file.size <= 600 * 1024) {
+        resolve(rawDataUrl);
+        return;
+      }
+
       const img = new Image();
       img.onload = () => {
         let width = img.width;
         let height = img.height;
+
+        if (width <= 0 || height <= 0) {
+          resolve(rawDataUrl);
+          return;
+        }
 
         if (width > maxDim || height > maxDim) {
           if (width > height) {
@@ -204,19 +227,26 @@ function readFileAsDataUrl(file: File, maxDim: number = 800): Promise<string> {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(e.target?.result as string);
+          resolve(rawDataUrl);
           return;
         }
 
         ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+        // Preserve PNG transparency! Never convert PNG with transparency into JPEG!
+        const isPng = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+        const isWebp = file.type === 'image/webp' || file.name.toLowerCase().endsWith('.webp');
+        const mimeType = isPng ? 'image/png' : (isWebp ? 'image/webp' : 'image/jpeg');
+        const quality = isPng ? undefined : 0.88;
+
+        const compressedDataUrl = canvas.toDataURL(mimeType, quality);
         resolve(compressedDataUrl);
       };
       img.onerror = () => {
         // Direct data url fallback if canvas cannot decode
-        resolve(e.target?.result as string);
+        resolve(rawDataUrl);
       };
-      img.src = e.target?.result as string;
+      img.src = rawDataUrl;
     };
     reader.onerror = () => reject(new Error('Failed to read file from disk'));
     reader.readAsDataURL(file);
@@ -228,38 +258,12 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append('file', file);
 
-  // 1. Try modern Node server /api/upload endpoint first
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data && data.url) {
-        return data;
-      }
-    }
-  } catch {
-    // Continue to next fallback
-  }
-
-  // 2. Try cPanel PHP upload endpoint (relative & absolute for subfolder compatibility)
-  const cpanelEndpoints = [
-    'api/upload.php',
-    '/api/upload.php',
-    'api/index.php?endpoint=upload',
-    '/api/index.php?endpoint=upload'
-  ];
-  for (const ep of cpanelEndpoints) {
+  // 1. Try modern Node server /api/upload endpoints first
+  const endpoints = ['/api/upload', 'api/upload', '/api/upload.php', 'api/upload.php'];
+  for (const ep of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const response = await fetch(ep, {
         method: 'POST',
         body: formData,
@@ -268,8 +272,8 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        const data = await response.json();
-        const url = data.url || data.image_url || data.image;
+        const data = await response.json().catch(() => null);
+        const url = data?.url || data?.image_url || data?.image;
         if (url) {
           return { url };
         }
@@ -279,10 +283,10 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
     }
   }
 
-  // 3. Fallback: Instant Client-Side Image Compression & Data URL
+  // 2. High-fidelity client-side fallback (Data URL)
   // Guaranteed to work 100% of the time on all devices without requiring server upload permissions
   try {
-    const dataUrl = await readFileAsDataUrl(file, 600);
+    const dataUrl = await readFileAsDataUrl(file, 1000);
     return { url: dataUrl };
   } catch (err: any) {
     throw new Error('Could not process image file: ' + (err.message || 'File read error'));
