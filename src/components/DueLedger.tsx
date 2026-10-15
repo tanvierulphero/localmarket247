@@ -2963,9 +2963,11 @@ export default function DueLedger({
                 {/* Official Showroom Header */}
                 <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-4 gap-3 sm:gap-0">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-auto shrink-0">
-                      <Logo logoUrl={settings?.logoUrl} className="h-full w-auto text-blue-900" alt={settings?.name} />
-                    </div>
+                    {settings?.logoUrl && (
+                      <div className="h-12 w-auto shrink-0">
+                        <Logo logoUrl={settings?.logoUrl} className="h-full w-auto text-blue-900" alt={settings?.name} />
+                      </div>
+                    )}
                     <div>
                       <h1 className="text-base sm:text-lg font-black text-slate-900 font-display tracking-tight leading-snug">
                         {settings?.name || 'Jubayer Machineries'}

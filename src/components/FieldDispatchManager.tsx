@@ -1605,7 +1605,12 @@ export default function FieldDispatchManager({
               {/* Header */}
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
                 <div className="space-y-1">
-                  <Logo />
+                  {settings.logoUrl && (
+                    <div className="h-10 w-auto mb-1">
+                      <Logo logoUrl={settings.logoUrl} className="h-full w-auto object-contain" alt={settings.name} />
+                    </div>
+                  )}
+                  <h2 className="text-base font-black text-slate-900 font-display">{settings.name}</h2>
                   <p className="text-[11px] font-bold text-slate-500">{settings.slogan}</p>
                   <p className="text-[10px] text-slate-500 max-w-sm">{settings.address}</p>
                   <p className="text-[10px] text-slate-500 font-mono">Hotline: {settings.phone1} | {settings.email}</p>
@@ -1739,7 +1744,12 @@ export default function FieldDispatchManager({
             <div className="overflow-y-auto flex-1 p-8 space-y-6 text-slate-800 bg-white print:overflow-visible print:p-0" id="printable-area">
               <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
                 <div>
-                  <Logo />
+                  {settings.logoUrl && (
+                    <div className="h-10 w-auto mb-1">
+                      <Logo logoUrl={settings.logoUrl} className="h-full w-auto object-contain" alt={settings.name} />
+                    </div>
+                  )}
+                  <h2 className="text-base font-black text-slate-900 font-display">{settings.name}</h2>
                   <p className="text-[11px] font-bold text-slate-500 mt-1">{settings.slogan}</p>
                   <p className="text-[10px] text-slate-500 max-w-sm">{settings.address}</p>
                   <p className="text-[10px] text-slate-500 font-mono">Phone: {settings.phone1} | {settings.email}</p>

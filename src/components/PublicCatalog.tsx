@@ -289,13 +289,13 @@ export default function PublicCatalog({
         <div className="flex items-center gap-4 max-w-7xl mx-auto w-full justify-between">
           <div className="flex flex-wrap items-center gap-3 md:gap-4">
             <span className="bg-blue-800 text-blue-100 font-extrabold px-2.5 py-0.5 rounded text-[10px] tracking-wide border border-blue-700">
-              Technical support by Jubayer Machineries
+              Technical support by {settings?.name || 'Jubayer Machineries'}
             </span>
             <span className="flex items-center gap-1">
-              <Phone className="w-3.5 h-3.5 text-blue-300" /> 01715-994956, 01799-498199
+              <Phone className="w-3.5 h-3.5 text-blue-300" /> {settings?.phone1 || '01715-994956'}{settings?.phone2 ? `, ${settings.phone2}` : ''}
             </span>
             <span className="hidden sm:flex items-center gap-1">
-              <Mail className="w-3.5 h-3.5 text-blue-300" /> jubayermachineries@gmail.com | hitachiairsolutioncenter@gmail.com
+              <Mail className="w-3.5 h-3.5 text-blue-300" /> {settings?.email || 'jubayermachineries@gmail.com'}
             </span>
           </div>
           <button 
@@ -310,21 +310,31 @@ export default function PublicCatalog({
 
       {/* Main Header / Navigation */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Logo & Technical Partner Tag */}
             <div className="flex items-center gap-3">
-              <div className="h-11 w-auto flex-shrink-0">
-                <Logo logoUrl={settings?.publicLogoUrl} className="h-full w-auto text-blue-900" forPublic={true} />
-              </div>
-              <div className="hidden lg:flex flex-col justify-center border-l border-slate-200 pl-3">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
-                  Technical Support
-                </span>
-                <span className="text-xs font-bold text-slate-800 tracking-tight mt-0.5">
-                  Jubayer Machineries
-                </span>
-              </div>
+              {settings?.publicLogoUrl ? (
+                <div className="h-11 sm:h-12 w-auto max-w-[280px] flex-shrink-0 flex items-center">
+                  <Logo logoUrl={settings.publicLogoUrl} className="h-full w-auto max-w-full text-blue-900 object-contain" forPublic={true} />
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <span className="text-xl sm:text-2xl font-black text-blue-950 font-display tracking-tight">
+                    {settings?.name || 'Jubayer Machineries'}
+                  </span>
+                </div>
+              )}
+              {settings?.publicLogoUrl && (
+                <div className="hidden lg:flex flex-col justify-center border-l border-slate-200 pl-3">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
+                    Technical Support
+                  </span>
+                  <span className="text-xs font-bold text-slate-800 tracking-tight mt-0.5">
+                    {settings?.name || 'Jubayer Machineries'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -845,9 +855,11 @@ export default function PublicCatalog({
       <footer className="bg-slate-950 text-slate-400 text-xs py-8 border-t border-slate-900 no-print">
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-auto flex-shrink-0">
-              <Logo logoUrl={settings?.publicLogoUrl} className="h-full w-auto text-white" light={true} forPublic={true} />
-            </div>
+            {settings?.publicLogoUrl && (
+              <div className="h-9 w-auto flex-shrink-0">
+                <Logo logoUrl={settings.publicLogoUrl} className="h-full w-auto text-white" light={true} forPublic={true} />
+              </div>
+            )}
             <div>
               <p className="font-bold text-slate-200">
                 &copy; 2026 Hitachi Air Solution Center &bull; <span className="text-blue-400">Technical support by Jubayer Machineries</span>

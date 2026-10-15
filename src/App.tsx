@@ -134,14 +134,20 @@ export default function App() {
   const [isUploadingPublicLogo, setIsUploadingPublicLogo] = useState(false);
   const [isUploadingWatermark, setIsUploadingWatermark] = useState(false);
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
+  const [brandingPreviewMode, setBrandingPreviewMode] = useState<'public' | 'document'>('public');
 
-  // Logo & Watermark & Favicon File Upload Handlers
+  // Logo & Watermark & Favicon File Upload Handlers (Auto-Save on Upload)
   const handleLogoFileUpload = async (file: File) => {
     setIsUploadingLogo(true);
     try {
       const res = await apiUploadImage(file);
       if (res && res.url) {
-        setSettingsForm(prev => ({ ...prev, logoUrl: res.url }));
+        const updated = { ...settingsForm, logoUrl: res.url };
+        setSettingsForm(updated);
+        setSettings(updated);
+        await apiSaveSettings(updated);
+        setSettingsSavedFeedback(true);
+        setTimeout(() => setSettingsSavedFeedback(false), 4000);
       }
     } catch (err) {
       console.error('Failed to upload logo:', err);
@@ -156,7 +162,12 @@ export default function App() {
     try {
       const res = await apiUploadImage(file);
       if (res && res.url) {
-        setSettingsForm(prev => ({ ...prev, publicLogoUrl: res.url }));
+        const updated = { ...settingsForm, publicLogoUrl: res.url };
+        setSettingsForm(updated);
+        setSettings(updated);
+        await apiSaveSettings(updated);
+        setSettingsSavedFeedback(true);
+        setTimeout(() => setSettingsSavedFeedback(false), 4000);
       }
     } catch (err) {
       console.error('Failed to upload public logo:', err);
@@ -166,12 +177,29 @@ export default function App() {
     }
   };
 
+  const handleSavePublicLogoOnly = async () => {
+    setSettings(settingsForm);
+    try {
+      await apiSaveSettings(settingsForm);
+      setSettingsSavedFeedback(true);
+      setTimeout(() => setSettingsSavedFeedback(false), 4000);
+    } catch (err) {
+      console.error('Failed to save public logo:', err);
+      alert('Error saving public logo settings to database.');
+    }
+  };
+
   const handleWatermarkFileUpload = async (file: File) => {
     setIsUploadingWatermark(true);
     try {
       const res = await apiUploadImage(file);
       if (res && res.url) {
-        setSettingsForm(prev => ({ ...prev, watermarkUrl: res.url, showWatermark: 1 }));
+        const updated = { ...settingsForm, watermarkUrl: res.url, showWatermark: 1 };
+        setSettingsForm(updated);
+        setSettings(updated);
+        await apiSaveSettings(updated);
+        setSettingsSavedFeedback(true);
+        setTimeout(() => setSettingsSavedFeedback(false), 4000);
       }
     } catch (err) {
       console.error('Failed to upload watermark:', err);
@@ -186,7 +214,12 @@ export default function App() {
     try {
       const res = await apiUploadImage(file);
       if (res && res.url) {
-        setSettingsForm(prev => ({ ...prev, faviconUrl: res.url }));
+        const updated = { ...settingsForm, faviconUrl: res.url };
+        setSettingsForm(updated);
+        setSettings(updated);
+        await apiSaveSettings(updated);
+        setSettingsSavedFeedback(true);
+        setTimeout(() => setSettingsSavedFeedback(false), 4000);
       }
     } catch (err) {
       console.error('Failed to upload favicon:', err);
@@ -1198,6 +1231,8 @@ export default function App() {
           staffUsers={staffUsers}
           onLoginSuccess={handleLoginUser}
           onBackToCatalog={() => setCurrentView('catalog')}
+          logoUrl={settings.logoUrl}
+          companyName={settings.name}
         />
       )}
 
@@ -1209,8 +1244,14 @@ export default function App() {
           <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between border-r border-slate-950 flex-shrink-0 z-30 no-print">
             <div>
               {/* Brand Header */}
-              <div className="p-5 border-b border-slate-950 flex items-center justify-center h-16">
-                <Logo className="h-full w-auto text-white" light={true} logoUrl={settings.logoUrl} alt={settings.name} />
+              <div className="p-5 border-b border-slate-950 flex items-center justify-center min-h-[4rem]">
+                {settings.logoUrl ? (
+                  <Logo className="h-full w-auto text-white" light={true} logoUrl={settings.logoUrl} alt={settings.name} />
+                ) : (
+                  <div className="text-center font-black text-white text-sm sm:text-base tracking-wider uppercase">
+                    {settings.name || 'Jubayer Machineries'}
+                  </div>
+                )}
               </div>
 
               {/* Sidebar Tabs Links */}
@@ -1806,25 +1847,15 @@ export default function App() {
                               <div className="flex justify-between items-center">
                                 <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                                   <ImageIcon className="w-3.5 h-3.5 text-blue-700" />
-                                  Company Main Logo
+                                  Company Main Logo (কোম্পানির মূল লগো)
                                 </label>
-                                {settingsForm.logoUrl && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSettingsForm({ ...settingsForm, logoUrl: '' })}
-                                    className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                    Reset to Default Logo
-                                  </button>
-                                )}
                               </div>
 
                               {/* Upload Button & File Input */}
                               <div className="flex items-center gap-3">
                                 <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingLogo ? 'opacity-60 pointer-events-none' : ''}`}>
                                   <Upload className="w-4 h-4 text-blue-700" />
-                                  <span>{isUploadingLogo ? 'Uploading logo...' : 'Upload New Logo'}</span>
+                                  <span>{isUploadingLogo ? 'Uploading logo...' : 'Upload New Logo (লগো ফাইল সিলেক্ট করুন)'}</span>
                                   <input
                                     type="file"
                                     accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -1853,81 +1884,111 @@ export default function App() {
                               {/* Live Logo Preview Box */}
                               <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
                                 <div className="w-24 h-12 flex items-center justify-center bg-slate-100/80 rounded-lg border border-slate-200 p-1 flex-shrink-0">
-                                  <Logo logoUrl={settingsForm.logoUrl} className="max-h-full max-w-full text-blue-900" alt="Logo Preview" />
+                                  {settingsForm.logoUrl ? (
+                                    <Logo logoUrl={settingsForm.logoUrl} className="max-h-full max-w-full text-blue-900" alt="Logo Preview" />
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 font-bold italic text-center">
+                                      কোনো লগো নেই
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-[11px] text-slate-600 space-y-0.5">
                                   <div className="font-bold text-slate-800 flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>{settingsForm.logoUrl ? 'Custom Logo Active' : 'Default Vector Logo Active'}</span>
+                                    <CheckCircle2 className={`w-3.5 h-3.5 ${settingsForm.logoUrl ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                    <span>{settingsForm.logoUrl ? 'কাস্টম লগো সক্রিয় (Custom Logo Active)' : 'কোনো লগো আপলোড করা হয়নি'}</span>
                                   </div>
                                   <p className="text-[10px] text-slate-400">
-                                    Displayed on invoices, quotations, bills, and navigation headers.
+                                    {settingsForm.logoUrl ? 'ইনভয়েস, কোটেশন, বিল ও নেভিগেশন হেডারে প্রদর্শিত হচ্ছে।' : 'লগো দেখতে উপরে আপনার কাঙ্ক্ষিত লগো ফাইল আপলোড করুন।'}
                                   </p>
                                 </div>
                               </div>
                             </div>
 
                             {/* SECTION A2: PUBLIC WEBSITE LOGO (পাবলিক সাইটের লগো) */}
-                            <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 space-y-3">
+                            <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-4 space-y-3.5 shadow-2xs">
                               <div className="flex justify-between items-center">
-                                <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                                  <Globe className="w-3.5 h-3.5 text-blue-700" />
-                                  Public Website Logo (পাবলিক সাইটের লগো)
-                                </label>
-                                {settingsForm.publicLogoUrl && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSettingsForm({ ...settingsForm, publicLogoUrl: '' })}
-                                    className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                    Reset to Default Hitachi Logo
-                                  </button>
-                                )}
+                                <div>
+                                  <label className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                                    <Globe className="w-4 h-4 text-blue-700" />
+                                    <span>Public Website Header Logo (পাবলিক ওয়েবসাইটের মূল হেডার লগো)</span>
+                                  </label>
+                                  <p className="text-[10px] text-slate-500 mt-0.5">
+                                    পাবলিক ওয়েবসাইটের শীর্ষ হেডারে প্রদর্শিত লগো (আপনার ছবিতে মার্ক করা লগো)।
+                                  </p>
+                                </div>
                               </div>
 
                               {/* Upload Button & File Input */}
-                              <div className="flex items-center gap-3">
-                                <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingPublicLogo ? 'opacity-60 pointer-events-none' : ''}`}>
-                                  <Upload className="w-4 h-4 text-blue-700" />
-                                  <span>{isUploadingPublicLogo ? 'Uploading public logo...' : 'Upload Public Site Logo (লগো আপলোড)'}</span>
-                                  <input
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) handlePublicLogoFileUpload(file);
-                                    }}
-                                    className="hidden"
-                                    disabled={isUploadingPublicLogo}
-                                  />
-                                </label>
+                              <div className="space-y-1">
+                                <span className="text-[10px] text-slate-600 font-bold">কম্পিউটার/মোবাইল থেকে নতুন লগো আপলোড করুন:</span>
+                                <div className="flex items-center gap-3">
+                                  <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-blue-300 hover:border-blue-600 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all ${isUploadingPublicLogo ? 'opacity-60 pointer-events-none' : ''}`}>
+                                    <Upload className="w-4 h-4 text-blue-700" />
+                                    <span>{isUploadingPublicLogo ? 'আপলোড ও সেভ হচ্ছে...' : 'Upload Public Site Logo (লগো ফাইল সিলেক্ট করুন)'}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handlePublicLogoFileUpload(file);
+                                      }}
+                                      className="hidden"
+                                      disabled={isUploadingPublicLogo}
+                                    />
+                                  </label>
+                                </div>
+                                <p className="text-[9px] text-slate-400">
+                                  * ফাইল সিলেক্ট করলেই স্বয়ংক্রিয়ভাবে আপলোড ও ডেটাবেজে সেভ হয়ে যাবে। PNG, JPG বা SVG সমর্থিত।
+                                </p>
                               </div>
 
                               {/* Manual Image URL Input */}
                               <div className="space-y-1">
-                                <span className="text-[10px] text-slate-500 font-semibold">Or Direct Image URL (সরাসরি ছবির লিঙ্ক):</span>
-                                <input
-                                  type="text"
-                                  placeholder="e.g. /api/uploads/public_logo.png or https://example.com/logo.png"
-                                  value={settingsForm.publicLogoUrl || ''}
-                                  onChange={(e) => setSettingsForm({ ...settingsForm, publicLogoUrl: e.target.value })}
-                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-mono focus:border-blue-900 focus:outline-hidden"
-                                />
+                                <span className="text-[10px] text-slate-600 font-bold">অথবা সরাসরি ছবির লিঙ্ক (Direct Image URL):</span>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    placeholder="e.g. /uploads/public_logo.png or https://example.com/logo.png"
+                                    value={settingsForm.publicLogoUrl || ''}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, publicLogoUrl: e.target.value })}
+                                    className="flex-1 bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono focus:border-blue-900 focus:outline-hidden"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleSavePublicLogoOnly}
+                                    className="px-3.5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
+                                  >
+                                    <Save className="w-3.5 h-3.5" />
+                                    সেভ করুন
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Live Logo Preview Box */}
-                              <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl">
-                                <div className="w-28 h-12 flex items-center justify-center bg-slate-100/80 rounded-lg border border-slate-200 p-1 flex-shrink-0">
-                                  <Logo logoUrl={settingsForm.publicLogoUrl} forPublic={true} className="max-h-full max-w-full text-blue-900" alt="Public Logo Preview" />
+                              <div className="flex items-center gap-3 p-3 bg-white border border-blue-200 rounded-xl shadow-2xs">
+                                <div className="w-32 h-14 flex items-center justify-center bg-slate-50 rounded-lg border border-slate-200 p-1.5 flex-shrink-0">
+                                  {settingsForm.publicLogoUrl ? (
+                                    <Logo 
+                                      logoUrl={settingsForm.publicLogoUrl} 
+                                      forPublic={true} 
+                                      className="max-h-full max-w-full text-blue-900 object-contain" 
+                                      alt="Public Logo Preview" 
+                                    />
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400 font-bold italic text-center">
+                                      কোনো লগো নেই
+                                    </span>
+                                  )}
                                 </div>
-                                <div className="text-[11px] text-slate-600 space-y-0.5">
-                                  <div className="font-bold text-slate-800 flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>{settingsForm.publicLogoUrl ? 'Custom Public Site Logo Active' : 'Default Hitachi Air Solution Center Vector Logo'}</span>
+                                <div className="text-[11px] text-slate-600 space-y-1">
+                                  <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                                    <CheckCircle2 className={`w-3.5 h-3.5 ${settingsForm.publicLogoUrl ? 'text-emerald-600' : 'text-slate-400'} flex-shrink-0`} />
+                                    <span>
+                                      {settingsForm.publicLogoUrl ? 'কাস্টম পাবলিক লগো সক্রিয় (Custom Logo Active)' : 'কোনো পাবলিক লগো আপলোড করা হয়নি'}
+                                    </span>
                                   </div>
-                                  <p className="text-[10px] text-slate-400">
-                                    Displayed on the public product showcase, catalog landing page, and online quote requests.
+                                  <p className="text-[10px] text-slate-500 leading-snug">
+                                    পাবলিক ওয়েবসাইটের মূল হেডার ও ফুটারে এই কাস্টম লগোটি প্রদর্শিত হবে। কোনো ডিফল্ট লগো থাকবে না।
                                   </p>
                                 </div>
                               </div>
@@ -1986,15 +2047,6 @@ export default function App() {
                                   <div className="space-y-2 bg-white border border-slate-200 p-3 rounded-xl">
                                     <div className="flex justify-between items-center">
                                       <span className="text-[11px] font-bold text-slate-700">Custom Watermark Image (Optional):</span>
-                                      {settingsForm.watermarkUrl && (
-                                        <button
-                                          type="button"
-                                          onClick={() => setSettingsForm({ ...settingsForm, watermarkUrl: '' })}
-                                          className="text-[9px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
-                                        >
-                                          Use Main Logo as Watermark
-                                        </button>
-                                      )}
                                     </div>
 
                                     <div className="flex items-center gap-2">
@@ -2022,7 +2074,7 @@ export default function App() {
                                       className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-[11px] font-mono focus:border-blue-900 focus:outline-hidden"
                                     />
                                     <p className="text-[9px] text-slate-400">
-                                      * If left empty, your main logo is automatically used as the centered watermark.
+                                      * If left empty, your main custom logo is automatically used as the centered watermark.
                                     </p>
                                   </div>
                                 </div>
@@ -2036,16 +2088,6 @@ export default function App() {
                                   <Globe className="w-3.5 h-3.5 text-blue-700" />
                                   Browser Favicon (ব্রাউজার ট্যাব আইকন)
                                 </label>
-                                {settingsForm.faviconUrl && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSettingsForm({ ...settingsForm, faviconUrl: '' })}
-                                    className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                    Reset to Default Favicon
-                                  </button>
-                                )}
                               </div>
 
                               {/* Live Browser Tab Preview */}
@@ -2106,112 +2148,246 @@ export default function App() {
 
                           </div>
 
-                          {/* Right Column: Live Interactive Document Sheet Simulation */}
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                <Eye className="w-3.5 h-3.5 text-blue-800" />
-                                Document Live Sheet Preview
+                          {/* Right Column: Live Interactive Simulation Switcher */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <Eye className="w-4 h-4 text-blue-900" />
+                                <span>লাইভ ভিজ্যুয়াল প্রিভিউ (Live Preview)</span>
                               </span>
-                              <span className="text-[10px] text-slate-400 font-mono">A4 Sheet Simulation</span>
-                            </div>
-
-                            <div className="border border-slate-300 rounded-2xl bg-slate-100 p-3 sm:p-4 flex items-center justify-center shadow-inner">
-                              {/* Simulated A4 Mini Page */}
-                              <div className="w-full max-w-[340px] bg-white rounded-lg shadow-md border border-slate-200 p-4 relative overflow-hidden select-none space-y-3 min-h-[380px] flex flex-col justify-between">
-                                
-                                {/* Background Watermark behind text */}
-                                {(settingsForm.showWatermark !== 0 && settingsForm.showWatermark !== false) && (
-                                  <div 
-                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] pointer-events-none select-none z-0 flex items-center justify-center transition-opacity duration-150"
-                                    style={{ 
-                                      opacity: typeof settingsForm.watermarkOpacity === 'number' ? settingsForm.watermarkOpacity : 0.04 
-                                    }}
-                                  >
-                                    {settingsForm.watermarkUrl ? (
-                                      <img 
-                                        src={settingsForm.watermarkUrl} 
-                                        alt="Watermark Preview" 
-                                        className="w-full max-h-[160px] object-contain grayscale" 
-                                      />
-                                    ) : settingsForm.logoUrl ? (
-                                      <img 
-                                        src={settingsForm.logoUrl} 
-                                        alt="Watermark Preview" 
-                                        className="w-full max-h-[160px] object-contain grayscale" 
-                                      />
-                                    ) : (
-                                      <Logo className="w-full h-auto text-blue-900" />
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Letterhead Header */}
-                                <div className="relative z-10 border-b border-blue-900/30 pb-2 flex justify-between items-center gap-2">
-                                  <div className="h-8 w-auto flex-shrink-0">
-                                    <Logo logoUrl={settingsForm.logoUrl} className="h-full w-auto text-blue-900" alt="Logo" />
-                                  </div>
-                                  <div className="text-right text-[8px] text-slate-500 font-sans leading-tight">
-                                    <span className="font-bold text-slate-800 block text-[9px]">{settingsForm.name || 'Jubayer Machineries'}</span>
-                                    <span>{settingsForm.phone1 || '01715-994956'}</span>
-                                    <span className="block text-blue-800 font-semibold">{settingsForm.website || 'jubayermachineries.com'}</span>
-                                  </div>
-                                </div>
-
-                                {/* Mock Document Content */}
-                                <div className="relative z-10 space-y-2 flex-1 pt-1 text-[9px]">
-                                  <div className="bg-slate-100/90 p-1.5 rounded flex justify-between items-center border-l-2 border-blue-900 font-bold">
-                                    <span className="text-blue-950 font-display uppercase tracking-wider text-[9px]">INVOICE</span>
-                                    <span className="text-slate-600 font-mono text-[8px]">INV-2026-001</span>
-                                  </div>
-
-                                  <div className="text-slate-600 space-y-0.5 text-[8px]">
-                                    <p className="font-bold text-slate-800">Bill To: Apex Holdings Ltd.</p>
-                                    <p>Address: Konabari, Gazipur</p>
-                                  </div>
-
-                                  <div className="border border-slate-200 rounded overflow-hidden">
-                                    <table className="w-full text-left text-[8px]">
-                                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
-                                        <tr>
-                                          <th className="p-1">Item Description</th>
-                                          <th className="p-1 text-right">Amount (BDT)</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="divide-y divide-slate-100 text-slate-600">
-                                        <tr>
-                                          <td className="p-1">Hitachi VRF Inverter 10 HP</td>
-                                          <td className="p-1 text-right font-mono font-bold">Tk. 450,000</td>
-                                        </tr>
-                                        <tr>
-                                          <td className="p-1">Copper Pipe 1/2" (100 RFT)</td>
-                                          <td className="p-1 text-right font-mono font-bold">Tk. 25,000</td>
-                                        </tr>
-                                      </tbody>
-                                    </table>
-                                  </div>
-
-                                  <div className="flex justify-between items-center pt-1 font-bold text-[9px] border-t border-slate-200">
-                                    <span>Total Payable:</span>
-                                    <span className="text-blue-900 font-black font-mono">Tk. 475,000</span>
-                                  </div>
-                                </div>
-
-                                {/* Mock Footer Signatures */}
-                                <div className="relative z-10 pt-2 border-t border-slate-200 flex justify-between text-[7px] text-slate-400">
-                                  <div>
-                                    <p className="border-t border-slate-400 pt-0.5 font-bold text-slate-600">Customer Signature</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="border-t border-blue-900 pt-0.5 font-bold text-blue-900">{settingsForm.signatureName || 'MD ZUBAIR HOSSEN'}</p>
-                                    <p className="text-[6px] text-slate-500">{settingsForm.signatureLabel || 'Authorized Signatory'}</p>
-                                  </div>
-                                </div>
-
+                              <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
+                                <button
+                                  type="button"
+                                  onClick={() => setBrandingPreviewMode('public')}
+                                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${brandingPreviewMode === 'public' ? 'bg-blue-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                  🌐 পাবলিক সাইট হেডার
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setBrandingPreviewMode('document')}
+                                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${brandingPreviewMode === 'document' ? 'bg-blue-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                  📄 ইনভয়েস শিট
+                                </button>
                               </div>
                             </div>
+
+                            {/* 1. PUBLIC WEBSITE HEADER SIMULATION (Matching User's Screenshot) */}
+                            {brandingPreviewMode === 'public' && (
+                              <div className="border border-slate-300 rounded-2xl bg-slate-100 p-3 sm:p-4 flex flex-col gap-3 shadow-inner">
+                                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                                  <span className="flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-blue-800" />
+                                    পাবলিক ওয়েবসাইটের শীর্ষ হেডার সিমুলেশন
+                                  </span>
+                                  <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                                    Live Simulator
+                                  </span>
+                                </div>
+
+                                {/* Mock Browser Window */}
+                                <div className="bg-white rounded-xl border border-slate-300 shadow-md overflow-hidden select-none">
+                                  {/* Top Dark Blue Bar */}
+                                  <div className="bg-blue-900 text-slate-100 text-[9px] font-semibold py-1.5 px-3 flex justify-between items-center">
+                                    <div className="flex items-center gap-2 truncate">
+                                      <span className="bg-blue-800 text-blue-100 font-extrabold px-1.5 py-0.5 rounded text-[8px] border border-blue-700">
+                                        Technical support by {settingsForm.name || 'Jubayer Machineries'}
+                                      </span>
+                                      <span className="hidden sm:inline text-blue-200 text-[8px]">
+                                        {settingsForm.phone1 || '01715-994956'}
+                                      </span>
+                                    </div>
+                                    <span className="bg-blue-800 text-slate-200 font-bold px-2 py-0.5 rounded text-[8px]">
+                                      Admin Dashboard
+                                    </span>
+                                  </div>
+
+                                  {/* White Navigation Bar with the Marked Logo */}
+                                  <div className="p-3 bg-white border-b border-slate-200 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      {/* THE MARKED LOGO IN A HIGHLIGHT BOX */}
+                                      <div className="relative group">
+                                        <div className="h-10 sm:h-11 w-auto min-w-[70px] max-w-[190px] flex-shrink-0 flex items-center justify-center p-1 border-2 border-dashed border-amber-500 bg-amber-50/50 rounded-lg shadow-2xs">
+                                          {settingsForm.publicLogoUrl ? (
+                                            <Logo 
+                                              logoUrl={settingsForm.publicLogoUrl} 
+                                              forPublic={true} 
+                                              className="h-full w-auto max-w-full text-blue-900 object-contain" 
+                                              alt="Public Website Logo"
+                                            />
+                                          ) : (
+                                            <span className="text-[9px] text-amber-800 font-bold italic px-1.5 whitespace-nowrap">
+                                              [ কোনো লগো নেই ]
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="absolute -top-2.5 -right-2 bg-amber-500 text-white text-[7px] font-black uppercase px-1.5 py-0.2 rounded shadow-xs">
+                                          মার্ক করা লগো
+                                        </span>
+                                      </div>
+
+                                      {/* Technical Support Partner text */}
+                                      <div className="hidden sm:flex flex-col justify-center border-l border-slate-200 pl-2">
+                                        <span className="text-[7px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
+                                          Technical Support
+                                        </span>
+                                        <span className="text-[9px] font-bold text-slate-800 tracking-tight mt-0.5">
+                                          {settingsForm.name || 'Jubayer Machineries'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Mock Navigation Links */}
+                                    <div className="hidden md:flex items-center gap-2 text-[9px] font-semibold text-slate-500">
+                                      <span>Products</span>
+                                      <span>Brands</span>
+                                      <span>About</span>
+                                      <span>Contact</span>
+                                    </div>
+
+                                    {/* Action button */}
+                                    <div className="px-2.5 py-1 bg-blue-900 text-white font-bold text-[8px] uppercase tracking-wider rounded-md">
+                                      Get a Quote
+                                    </div>
+                                  </div>
+
+                                  {/* Mock Hero Snippet */}
+                                  <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-blue-950 text-white p-3 text-center space-y-1">
+                                    <span className="text-[7px] bg-blue-800/80 text-blue-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block">
+                                      Industrial Machinery &amp; Spares
+                                    </span>
+                                    <p className="text-[10px] font-bold">Premium Screw Air Compressors &amp; Genuine Spare Parts</p>
+                                    <p className="text-[8px] text-slate-300">Your Problem Solution is Sustainable Partner.</p>
+                                  </div>
+                                </div>
+
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-900 flex items-start gap-2">
+                                  <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <span className="font-bold">হলুদ বর্ডারের ভেতরে প্রদর্শিত অংশটিই হলো আপনার পাবলিক সাইটের হেডার লগো।</span>
+                                    <p className="text-amber-800 text-[9px] mt-0.5">
+                                      বামপাশের "Upload Public Site Logo" বাটনে ক্লিক করে ফাইল আপলোড করলেই তা স্বয়ংক্রিয়ভাবে সেভ হয়ে আপনার মূল পাবলিক ওয়েবসাইটে চলে আসবে।
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 2. DOCUMENT LETTERHEAD SIMULATION */}
+                            {brandingPreviewMode === 'document' && (
+                              <div className="border border-slate-300 rounded-2xl bg-slate-100 p-3 sm:p-4 flex items-center justify-center shadow-inner">
+                                {/* Simulated A4 Mini Page */}
+                                <div className="w-full max-w-[340px] bg-white rounded-lg shadow-md border border-slate-200 p-4 relative overflow-hidden select-none space-y-3 min-h-[380px] flex flex-col justify-between">
+                                  
+                                  {/* Background Watermark behind text */}
+                                  {(settingsForm.showWatermark !== 0 && settingsForm.showWatermark !== false) && (
+                                    <div 
+                                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] pointer-events-none select-none z-0 flex items-center justify-center transition-opacity duration-150"
+                                      style={{ 
+                                        opacity: typeof settingsForm.watermarkOpacity === 'number' ? settingsForm.watermarkOpacity : 0.04 
+                                      }}
+                                    >
+                                      {settingsForm.watermarkUrl ? (
+                                        <img 
+                                          src={settingsForm.watermarkUrl} 
+                                          alt="Watermark Preview" 
+                                          className="w-full max-h-[160px] object-contain grayscale" 
+                                        />
+                                      ) : settingsForm.logoUrl ? (
+                                        <img 
+                                          src={settingsForm.logoUrl} 
+                                          alt="Watermark Preview" 
+                                          className="w-full max-h-[160px] object-contain grayscale" 
+                                        />
+                                      ) : null}
+                                    </div>
+                                  )}
+
+                                  {/* Letterhead Header */}
+                                  <div className="relative z-10 border-b border-blue-900/30 pb-2 flex justify-between items-center gap-2">
+                                    {settingsForm.logoUrl && (
+                                      <div className="h-8 w-auto flex-shrink-0">
+                                        <Logo logoUrl={settingsForm.logoUrl} className="h-full w-auto text-blue-900" alt="Logo" />
+                                      </div>
+                                    )}
+                                    <div className="text-right text-[8px] text-slate-500 font-sans leading-tight ml-auto">
+                                      <span className="font-bold text-slate-800 block text-[9px]">{settingsForm.name || 'Jubayer Machineries'}</span>
+                                      <span>{settingsForm.phone1 || '01715-994956'}</span>
+                                      <span className="block text-blue-800 font-semibold">{settingsForm.website || 'jubayermachineries.com'}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Mock Document Content */}
+                                  <div className="relative z-10 space-y-2 flex-1 pt-1 text-[9px]">
+                                    <div className="bg-slate-100/90 p-1.5 rounded flex justify-between items-center border-l-2 border-blue-900 font-bold">
+                                      <span className="text-blue-950 font-display uppercase tracking-wider text-[9px]">INVOICE</span>
+                                      <span className="text-slate-600 font-mono text-[8px]">INV-2026-001</span>
+                                    </div>
+
+                                    <div className="text-slate-600 space-y-0.5 text-[8px]">
+                                      <p className="font-bold text-slate-800">Bill To: Apex Holdings Ltd.</p>
+                                      <p>Address: Konabari, Gazipur</p>
+                                    </div>
+
+                                    <div className="border border-slate-200 rounded overflow-hidden">
+                                      <table className="w-full text-left text-[8px]">
+                                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-700">
+                                          <tr>
+                                            <th className="p-1">Item Description</th>
+                                            <th className="p-1 text-right">Amount (BDT)</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 text-slate-600">
+                                          <tr>
+                                            <td className="p-1">Hitachi VRF Inverter 10 HP</td>
+                                            <td className="p-1 text-right font-mono font-bold">Tk. 450,000</td>
+                                          </tr>
+                                          <tr>
+                                            <td className="p-1">Copper Pipe 1/2" (100 RFT)</td>
+                                            <td className="p-1 text-right font-mono font-bold">Tk. 25,000</td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-1 font-bold text-[9px] border-t border-slate-200">
+                                      <span>Total Payable:</span>
+                                      <span className="text-blue-900 font-black font-mono">Tk. 475,000</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Mock Footer Signatures */}
+                                  <div className="relative z-10 pt-2 border-t border-slate-200 flex justify-between text-[7px] text-slate-400">
+                                    <div>
+                                      <p className="border-t border-slate-400 pt-0.5 font-bold text-slate-600">Customer Signature</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="border-t border-blue-900 pt-0.5 font-bold text-blue-900">{settingsForm.signatureName || 'MD ZUBAIR HOSSEN'}</p>
+                                      <p className="text-[6px] text-slate-500">{settingsForm.signatureLabel || 'Authorized Signatory'}</p>
+                                    </div>
+                                  </div>
+
+                                </div>
+                              </div>
+                            )}
                           </div>
 
+                        </div>
+
+                        {/* Direct Save Button for Branding Card */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
+                          <p className="text-[11px] text-slate-500">
+                            {settingsForm.publicLogoUrl ? '✓ কাস্টম পাবলিক লগো কনফিগার করা রয়েছে।' : 'তথ্য: কোনো ডিফল্ট লগো নেই। আপনার কাঙ্ক্ষিত লগোটি আপলোড করুন।'}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleSavePublicLogoOnly}
+                            className="w-full sm:w-auto px-6 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-95"
+                          >
+                            <Save className="w-4 h-4" />
+                            Save Branding & Logos (লগো সেভ করুন)
+                          </button>
                         </div>
                       </div>
 

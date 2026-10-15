@@ -10,9 +10,11 @@ interface AdminLoginProps {
   staffUsers: StaffUser[];
   onLoginSuccess: (user: StaffUser) => void;
   onBackToCatalog: () => void;
+  logoUrl?: string;
+  companyName?: string;
 }
 
-export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog }: AdminLoginProps) {
+export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog, logoUrl, companyName }: AdminLoginProps) {
   const [selectedStaffId, setSelectedStaffId] = useState<string>(() => {
     return staffUsers.length > 0 ? staffUsers[0].id : '';
   });
@@ -86,11 +88,13 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
 
         {/* Brand identity header */}
         <div className="text-center space-y-1">
-          <div className="h-14 w-auto flex justify-center mb-2">
-            <Logo className="h-full w-auto text-blue-900" />
-          </div>
+          {logoUrl && (
+            <div className="h-14 w-auto flex justify-center mb-2">
+              <Logo logoUrl={logoUrl} className="h-full w-auto text-blue-900" alt={companyName || "Logo"} />
+            </div>
+          )}
           <span className="text-[11px] font-extrabold uppercase tracking-widest text-blue-900 block font-display">
-            Jubayer Machineries
+            {companyName || 'Jubayer Machineries'}
           </span>
           <h2 className="text-xl font-black font-display text-slate-900 leading-tight">
             Workspace Login

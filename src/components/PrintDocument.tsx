@@ -1015,18 +1015,18 @@ ${rawBase64Logo}
                   alt="Watermark" 
                   className="w-full max-h-[420px] object-contain mx-auto grayscale" 
                 />
-              ) : (
-                <Logo className="w-full h-auto text-blue-900" />
-              )}
+              ) : null}
             </div>
           )}
           <div className="relative z-10 flex flex-col justify-between h-full space-y-6 flex-1">
             {/* Header Block matching uploaded image */}
             <div className="flex items-center justify-between pb-4 mb-2 border-b-2 border-[#1e3a8a]">
               {/* Left Brand Identity */}
-              <div className="flex items-center gap-3 h-14 sm:h-16 md:h-18 w-auto flex-shrink-0">
-                <Logo logoUrl={settings.logoUrl} className="h-full w-auto text-blue-900" alt="Jubayer Machineries" />
-              </div>
+              {settings.logoUrl && (
+                <div className="flex items-center gap-3 h-14 sm:h-16 md:h-18 w-auto flex-shrink-0">
+                  <Logo logoUrl={settings.logoUrl} className="h-full w-auto text-blue-900" alt={settings.name || "Company Logo"} />
+                </div>
+              )}
 
               {/* Right Contact Details - Header Bold text "Jubayer Machineries" then under address */}
               <div className="text-right space-y-1 font-sans flex-shrink-0 leading-normal max-w-[65%]">

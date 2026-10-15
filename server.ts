@@ -488,45 +488,51 @@ app.get('/api/settings', async (_req, res) => {
 app.post('/api/settings', async (req, res) => {
   try {
     const item = req.body;
+    // Fetch existing settings first so partial updates don't clear other fields
+    const existing = await db.select().from(settings).where(eq(settings.id, 'global_settings')).limit(1).catch(() => []);
+    const prev = (existing && existing.length > 0) ? existing[0] : DEFAULT_SETTINGS;
+    const merged = {
+      ...prev,
+      ...item,
+      id: 'global_settings',
+    };
+
     // Sync to SQL file
-    appendSqlToFiles('settings', item);
+    appendSqlToFiles('settings', merged);
 
     try {
-      await (db.insert(settings) as any).values({
-        id: 'global_settings',
-        ...item,
-      }).onConflictDoUpdate({
+      await (db.insert(settings) as any).values(merged).onConflictDoUpdate({
         target: settings.id,
         set: {
-          name: item.name,
-          slogan: item.slogan || '',
-          address: item.address || '',
-          phone1: item.phone1 || '',
-          phone2: item.phone2 || '',
-          email: item.email || '',
-          website: item.website || '',
-          invoicePrefix: item.invoicePrefix || 'INV',
-          quotePrefix: item.quotePrefix || 'QUO',
-          offerPrefix: item.offerPrefix || 'OFF',
-          billPrefix: item.billPrefix || 'BIL',
-          taxRate: item.taxRate || 0,
-          terms: item.terms || '',
-          signatureName: item.signatureName || '',
-          signatureLabel: item.signatureLabel || '',
-          logoUrl: item.logoUrl || '',
-          publicLogoUrl: item.publicLogoUrl || '',
-          watermarkUrl: item.watermarkUrl || '',
-          faviconUrl: item.faviconUrl || '',
-          challanPrefix: item.challanPrefix || 'JM/CH/2026/',
-          watermarkOpacity: item.watermarkOpacity !== undefined ? item.watermarkOpacity : 0.04,
-          showWatermark: item.showWatermark !== undefined ? item.showWatermark : 1,
+          name: merged.name || DEFAULT_SETTINGS.name,
+          slogan: merged.slogan ?? '',
+          address: merged.address ?? '',
+          phone1: merged.phone1 ?? '',
+          phone2: merged.phone2 ?? '',
+          email: merged.email ?? '',
+          website: merged.website ?? '',
+          invoicePrefix: merged.invoicePrefix || 'INV',
+          quotePrefix: merged.quotePrefix || 'QUO',
+          offerPrefix: merged.offerPrefix || 'OFF',
+          billPrefix: merged.billPrefix || 'BIL',
+          taxRate: merged.taxRate ?? 0,
+          terms: merged.terms ?? '',
+          signatureName: merged.signatureName ?? '',
+          signatureLabel: merged.signatureLabel ?? '',
+          logoUrl: merged.logoUrl ?? '',
+          publicLogoUrl: merged.publicLogoUrl ?? '',
+          watermarkUrl: merged.watermarkUrl ?? '',
+          faviconUrl: merged.faviconUrl ?? '',
+          challanPrefix: merged.challanPrefix || 'JM/CH/2026/',
+          watermarkOpacity: merged.watermarkOpacity !== undefined ? merged.watermarkOpacity : 0.04,
+          showWatermark: merged.showWatermark !== undefined ? merged.showWatermark : 1,
         },
       });
     } catch (dbErr) {
       console.warn('Database save warning (written to SQL file):', dbErr);
     }
-    notifyChange('settings', 'save', item);
-    res.json(item);
+    notifyChange('settings', 'save', merged);
+    res.json(merged);
   } catch (err: any) {
     console.error('Failed to save settings:', err);
     res.status(500).json({ error: err.message || 'Failed to save settings' });
