@@ -1,8 +1,10 @@
 <?php
 // ========================================================
 // Primary PHP API Engine for Hitachi Solution Center
-// 100% Pure MySQL Database Engine (PDO / phpMyAdmin)
-// Zero JSON Flat-Files in public_html
+// Supports:
+// 1. 100% Pure MySQL Database Engine (PDO / phpMyAdmin)
+// 2. Seamless Server JSON Storage Fallback (Zero Config)
+// 3. Direct cPanel /uploads routing
 // ========================================================
 
 ob_start();
@@ -16,6 +18,7 @@ if (!function_exists('str_starts_with')) {
     }
 }
 
+// CORS Headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
@@ -32,6 +35,16 @@ if (file_exists(__DIR__ . '/config.php')) {
 
 $pdo = function_exists('getDbConnection') ? getDbConnection() : null;
 
+// Ensure public_logo_url and challan_prefix columns exist in MySQL on cPanel
+if ($pdo) {
+    try {
+        $pdo->query("ALTER TABLE `settings` ADD `public_logo_url` LONGTEXT");
+    } catch (Exception $e) {}
+    try {
+        $pdo->query("ALTER TABLE `settings` ADD `challan_prefix` VARCHAR(100) DEFAULT 'JM/CH/2026/'");
+    } catch (Exception $e) {}
+}
+
 // Parse request URI and determine endpoint and ID
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 $uriPath = parse_url($requestUri, PHP_URL_PATH) ?? '';
@@ -43,25 +56,15 @@ if (empty($endpoint)) {
     $pathSegments = array_values(array_filter(explode('/', $uriPath)));
     $apiIndex = array_search('api', $pathSegments);
     if ($apiIndex !== false) {
-        $afterApi = array_slice($pathSegments, $apiIndex + 1);
-        if (!empty($afterApi) && $afterApi[0] === 'index.php') {
-            $afterApi = array_slice($afterApi, 1);
-        }
-        
-        if (!empty($afterApi)) {
-            $joined = implode('/', $afterApi);
-            if ($joined === 'database/clear' || $joined === 'database_clear') {
-                $endpoint = 'database/clear';
-                $id = null;
-            } elseif ($joined === 'database/seed-demo' || $joined === 'database_seed_demo') {
-                $endpoint = 'database/seed-demo';
-                $id = null;
-            } else {
-                if (count($afterApi) > 1) {
-                    $id = array_pop($afterApi);
-                    $endpoint = implode('/', $afterApi);
+        $seg1 = isset($pathSegments[$apiIndex + 1]) ? $pathSegments[$apiIndex + 1] : '';
+        if ($seg1 !== 'index.php') {
+            $endpoint = $seg1;
+            $seg2 = isset($pathSegments[$apiIndex + 2]) ? $pathSegments[$apiIndex + 2] : null;
+            if ($seg2) {
+                if ($seg1 === 'products' || $seg1 === 'customers' || $seg1 === 'documents' || $seg1 === 'staff' || $seg1 === 'dispatches' || $seg1 === 'suppliers' || $seg1 === 'purchases' || $seg1 === 'returns' || $seg1 === 'expenses') {
+                    $id = $seg2;
                 } else {
-                    $endpoint = $afterApi[0];
+                    $endpoint = $seg1 . '/' . $seg2;
                     $id = null;
                 }
             }
@@ -69,7 +72,7 @@ if (empty($endpoint)) {
     }
 }
 
-// Router: Image Upload Endpoints
+// Router: Image Upload Endpoints (Calls upload.php directly)
 if ($endpoint === 'upload') {
     if (file_exists(__DIR__ . '/upload.php')) {
         require_once __DIR__ . '/upload.php';
@@ -88,113 +91,175 @@ if ($endpoint === 'health' || $endpoint === 'ping') {
                 'connected' => true,
                 'storage' => '100% Pure MySQL Database Engine (PDO)',
                 'mysql_connected' => true,
-                'message' => 'Connected to MySQL database successfully.'
+                'database' => defined('DB_NAME') ? DB_NAME : 'MySQL Active',
+                'timestamp' => date('c')
             ]);
             exit;
         } catch (Exception $e) {
-            http_response_code(500);
+            http_response_code(200);
             echo json_encode([
                 'status' => 'error',
                 'connected' => false,
-                'mysql_connected' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'timestamp' => date('c')
             ]);
             exit;
         }
     } else {
-        http_response_code(500);
-        echo json_encode([
-            'status' => 'error',
-            'connected' => false,
-            'mysql_connected' => false,
-            'message' => 'MySQL connection not established. Please check api/config.php credentials.'
-        ]);
-        exit;
-    }
-}
-
-// Database Clear and Reset Endpoint
-if ($endpoint === 'database/clear' || $endpoint === 'database_clear') {
-    if (!$pdo) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => 'Database not connected.']);
-        exit;
-    }
-
-    try {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
-        $tables = ['products', 'customers', 'documents', 'purchases', 'suppliers', 'field_dispatches', 'sales_returns', 'expenses', 'activity_logs', 'uploaded_files'];
-        foreach ($tables as $t) {
-            @$pdo->exec("TRUNCATE TABLE `$t`;");
-        }
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
-
         http_response_code(200);
         echo json_encode([
-            'success' => true,
-            'message' => 'All database tables have been cleared in MySQL successfully.'
+            'status' => 'ok',
+            'connected' => true,
+            'storage' => 'Server JSON Flat-File Engine Active',
+            'mysql_connected' => false,
+            'timestamp' => date('c')
         ]);
-        exit;
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         exit;
     }
 }
 
-// Helper functions for CamelCase <-> snake_case field mapping
-function camelToSnake($key) {
-    return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $key));
+// JSON Fallback Storage Functions
+$dataDir = __DIR__ . '/data';
+if (!file_exists($dataDir)) {
+    @mkdir($dataDir, 0777, true);
 }
 
-function snakeToCamel($key) {
-    return lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $key))));
+function getJsonStorage($fileKey) {
+    global $dataDir;
+    $filePath = $dataDir . '/' . $fileKey . '.json';
+    if (file_exists($filePath)) {
+        $content = file_get_contents($filePath);
+        return json_decode($content, true) ?? [];
+    }
+    return [];
 }
 
-function mapJsToDb($jsItem, $fieldsList) {
-    $dbItem = [];
-    foreach ($jsItem as $k => $v) {
-        $dbKey = camelToSnake($k);
-        if (in_array($dbKey, $fieldsList)) {
-            if (($dbKey === 'specs' || $dbKey === 'items' || $dbKey === 'permissions') && (is_array($v) || is_object($v))) {
-                $dbItem[$dbKey] = json_encode($v, JSON_UNESCAPED_UNICODE);
-            } else {
-                if (is_bool($v)) {
-                    $dbItem[$dbKey] = $v ? 1 : 0;
-                } else {
-                    $dbItem[$dbKey] = $v;
+function saveJsonStorage($fileKey, $items) {
+    global $dataDir;
+    $filePath = $dataDir . '/' . $fileKey . '.json';
+    @file_put_contents($filePath, json_encode($items, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+}
+
+function processJsonRequest($endpoint, $method, $id, $inputData) {
+    $fileKey = str_replace('-', '_', $endpoint);
+    $items = getJsonStorage($fileKey);
+
+    if ($method === 'GET') {
+        if ($id) {
+            foreach ($items as $item) {
+                if (isset($item['id']) && $item['id'] === $id) {
+                    echo json_encode($item);
+                    return;
                 }
+            }
+            http_response_code(404);
+            echo json_encode(['error' => 'Item not found']);
+            return;
+        }
+
+        if ($fileKey === 'settings') {
+            echo json_encode($items[0] ?? null);
+            return;
+        }
+
+        echo json_encode($items);
+        return;
+    }
+
+    if ($method === 'POST') {
+        if ($fileKey === 'settings') {
+            $inputData['id'] = 'global_settings';
+            saveJsonStorage('settings', [$inputData]);
+            echo json_encode($inputData);
+            return;
+        }
+
+        $idVal = $inputData['id'] ?? null;
+        if (!$idVal) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing item ID']);
+            return;
+        }
+
+        $found = false;
+        foreach ($items as &$item) {
+            if (isset($item['id']) && $item['id'] === $idVal) {
+                $item = array_merge($item, $inputData);
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            array_unshift($items, $inputData);
+        }
+
+        saveJsonStorage($fileKey, $items);
+        echo json_encode($inputData);
+        return;
+    }
+
+    if ($method === 'DELETE') {
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing ID parameter']);
+            return;
+        }
+
+        $filtered = array_filter($items, function($item) use ($id) {
+            return !isset($item['id']) || $item['id'] !== $id;
+        });
+
+        saveJsonStorage($fileKey, array_values($filtered));
+        echo json_encode(['success' => true]);
+        return;
+    }
+}
+
+// Helper: Convert CamelCase to snake_case
+function camelToSnake($input) {
+    return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
+}
+
+// Helper: Convert snake_case to CamelCase
+function snakeToCamel($input) {
+    return lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $input))));
+}
+
+// Helper: Map frontend object keys to MySQL column names
+function mapJsToDb($item, $fieldsList) {
+    $dbItem = [];
+    foreach ($fieldsList as $f) {
+        $camel = snakeToCamel($f);
+        if (array_key_exists($camel, $item)) {
+            $val = $item[$camel];
+            if (is_array($val) || is_object($val)) {
+                $dbItem[$f] = json_encode($val, JSON_UNESCAPED_UNICODE);
+            } else {
+                $dbItem[$f] = $val;
+            }
+        } elseif (array_key_exists($f, $item)) {
+            $val = $item[$f];
+            if (is_array($val) || is_object($val)) {
+                $dbItem[$f] = json_encode($val, JSON_UNESCAPED_UNICODE);
+            } else {
+                $dbItem[$f] = $val;
             }
         }
     }
     return $dbItem;
 }
 
-function mapDbToJs($dbRow) {
+// Helper: Map MySQL record keys to frontend JSON CamelCase
+function mapDbToJs($row) {
+    if (!$row) return null;
     $jsItem = [];
-    if (!$dbRow) return null;
-    $stringFields = ['sku', 'doc_number', 'phone', 'customer_phone', 'supplier_phone', 'company_id', 'supplier_id', 'passcode', 'purchase_number', 'supplier_invoice_no', 'reference_no', 'expense_number', 'return_number', 'dispatch_number', 'slip_number', 'brand', 'name', 'unit', 'category', 'description', 'notes', 'terms', 'address', 'customer_address', 'customer_name', 'customer_company', 'customer_email', 'email', 'image_url', 'logo_url', 'watermark_url'];
-
-    foreach ($dbRow as $k => $v) {
-        $jsKey = snakeToCamel($k);
-        if ($k === 'specs' || $k === 'items' || $k === 'permissions') {
-            if (is_array($v)) {
-                $jsItem[$jsKey] = $v;
-            } else {
-                $jsItem[$jsKey] = json_decode($v ?? '[]', true) ?? [];
-            }
-        } else if (in_array($k, $stringFields)) {
-            $jsItem[$jsKey] = (string)($v ?? '');
+    foreach ($row as $k => $v) {
+        $camel = snakeToCamel($k);
+        if (is_string($v) && (str_starts_with(trim($v), '[') || str_starts_with(trim($v), '{'))) {
+            $decoded = json_decode($v, true);
+            $jsItem[$camel] = ($decoded !== null) ? $decoded : $v;
         } else {
-            if (is_numeric($v) && strlen($v ?? '') < 15) {
-                if (strpos($v, '.') !== false) {
-                    $jsItem[$jsKey] = (double)$v;
-                } else {
-                    $jsItem[$jsKey] = (int)$v;
-                }
-            } else {
-                $jsItem[$jsKey] = $v;
-            }
+            $jsItem[$camel] = $v;
         }
     }
     return $jsItem;
@@ -228,7 +293,7 @@ $tablesMap = [
     ],
     'settings' => [
         'table' => 'settings',
-        'fields' => ['id', 'name', 'slogan', 'address', 'phone1', 'phone2', 'email', 'website', 'invoice_prefix', 'quote_prefix', 'offer_prefix', 'bill_prefix', 'tax_rate', 'terms', 'signature_name', 'signature_label', 'logo_url', 'watermark_url', 'favicon_url', 'watermark_opacity', 'show_watermark']
+        'fields' => ['id', 'name', 'slogan', 'address', 'phone1', 'phone2', 'email', 'website', 'invoice_prefix', 'quote_prefix', 'offer_prefix', 'bill_prefix', 'tax_rate', 'terms', 'signature_name', 'signature_label', 'logo_url', 'public_logo_url', 'watermark_url', 'favicon_url', 'challan_prefix', 'watermark_opacity', 'show_watermark']
     ],
     'dispatches' => [
         'table' => 'field_dispatches',
@@ -244,11 +309,12 @@ $tablesMap = [
     ]
 ];
 
+$method = $_SERVER['REQUEST_METHOD'];
+$inputData = json_decode(file_get_contents('php://input'), true) ?? [];
+
+// If PDO is not connected, use the JSON storage engine fallback
 if (!$pdo) {
-    http_response_code(500);
-    echo json_encode([
-        'error' => 'Database connection failed. Please check api/config.php and verify MySQL credentials in cPanel.'
-    ]);
+    processJsonRequest($endpoint, $method, $id, $inputData);
     exit;
 }
 
@@ -261,8 +327,6 @@ if (!isset($tablesMap[$endpoint])) {
 $meta = $tablesMap[$endpoint];
 $tableName = $meta['table'];
 $fieldsList = $meta['fields'];
-$method = $_SERVER['REQUEST_METHOD'];
-$inputData = json_decode(file_get_contents('php://input'), true) ?? [];
 
 // 1. GET Requests
 if ($method === 'GET') {
@@ -321,7 +385,7 @@ if ($method === 'POST') {
 
         $dbItem = mapJsToDb($inputData, $fieldsList);
 
-        // If product image is changed, delete old image from uploads/products/
+        // If product image is changed, delete old image from uploads/
         if ($tableName === 'products') {
             try {
                 $oldStmt = $pdo->prepare("SELECT `image_url` FROM `products` WHERE `id` = :id");
@@ -330,10 +394,11 @@ if ($method === 'POST') {
                 if ($oldRow) {
                     $oldImg = $oldRow['image_url'] ?? '';
                     $newImg = $dbItem['image_url'] ?? '';
-                    if (!empty($oldImg) && $oldImg !== $newImg && str_starts_with($oldImg, 'uploads/products/')) {
-                        $oldPath = realpath(__DIR__ . '/../' . $oldImg);
-                        $productsDir = realpath(__DIR__ . '/../uploads/products');
-                        if ($oldPath && $productsDir && str_starts_with($oldPath, $productsDir) && file_exists($oldPath)) {
+                    if (!empty($oldImg) && $oldImg !== $newImg && (str_starts_with($oldImg, 'uploads/') || str_starts_with($oldImg, '/uploads/'))) {
+                        $cleanImgPath = ltrim($oldImg, '/');
+                        $oldPath = realpath(__DIR__ . '/../' . $cleanImgPath);
+                        $uploadDir = realpath(__DIR__ . '/../uploads');
+                        if ($oldPath && $uploadDir && str_starts_with($oldPath, $uploadDir) && file_exists($oldPath)) {
                             @unlink($oldPath);
                         }
                     }
@@ -381,7 +446,6 @@ if ($method === 'DELETE') {
             exit;
         }
 
-        // Image Cleanup for deleted products
         if ($tableName === 'products') {
             try {
                 $oldStmt = $pdo->prepare("SELECT `image_url` FROM `products` WHERE `id` = :id");
@@ -389,10 +453,11 @@ if ($method === 'DELETE') {
                 $oldRow = $oldStmt->fetch();
                 if ($oldRow) {
                     $img = $oldRow['image_url'] ?? '';
-                    if (!empty($img) && str_starts_with($img, 'uploads/products/')) {
-                        $imgPath = realpath(__DIR__ . '/../' . $img);
-                        $productsDir = realpath(__DIR__ . '/../uploads/products');
-                        if ($imgPath && $productsDir && str_starts_with($imgPath, $productsDir) && file_exists($imgPath)) {
+                    if (!empty($img) && (str_starts_with($img, 'uploads/') || str_starts_with($img, '/uploads/'))) {
+                        $cleanImgPath = ltrim($img, '/');
+                        $imgPath = realpath(__DIR__ . '/../' . $cleanImgPath);
+                        $uploadDir = realpath(__DIR__ . '/../uploads');
+                        if ($imgPath && $uploadDir && str_starts_with($imgPath, $uploadDir) && file_exists($imgPath)) {
                             @unlink($imgPath);
                         }
                     }

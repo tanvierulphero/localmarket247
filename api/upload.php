@@ -1,16 +1,21 @@
 <?php
-// ========================================================
-// cPanel Secure Image & Document Upload API
-// Path: api/upload.php
-// Target Directory: uploads/products/ (Max 5MB, JPG/PNG/WEBP/PDF)
-// ========================================================
+// =========================================================================
+// cPanel Secure Image & File Upload Handler for Hitachi Solution Center
+// Directly saves uploaded files into the cPanel /uploads directory
+// Supports: FormData (file/image) and Server-side JSON Base64 decode
+// =========================================================================
 
+ob_start();
+@ini_set('display_errors', '0');
+error_reporting(0);
+
+// CORS Headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Content-Type: application/json; charset=utf-8');
 
-// Handle CORS Pre-flight Options
+// Preflight CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -18,45 +23,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Method Not Allowed. Use POST.'
-    ]);
+    echo json_encode(['success' => false, 'error' => 'Method Not Allowed. Use POST.']);
     exit;
 }
 
-// 1. Setup secure uploads/products/ folder
-$uploadRoot = __DIR__ . '/../uploads';
-$productsDir = $uploadRoot . '/products';
+// 1. Resolve and create /uploads directory on cPanel disk
+$possibleUploadDirs = [
+    __DIR__ . '/../uploads/',
+    dirname(__DIR__) . '/uploads/',
+    __DIR__ . '/uploads/',
+    (!empty($_SERVER['DOCUMENT_ROOT']) ? rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/' : '')
+];
 
-if (!file_exists($uploadRoot)) {
-    @mkdir($uploadRoot, 0755, true);
-}
-if (!file_exists($productsDir)) {
-    @mkdir($productsDir, 0755, true);
-}
-
-// Write a protective .htaccess file inside uploads/ to block PHP execution
-$htaccessContent = "# Block PHP execution in upload directory\n" .
-                   "<FilesMatch \"\\.(php|php5|php7|php8|phtml|pl|py|jsp|asp|sh|cgi)$\">\n" .
-                   "    ForceType text/plain\n" .
-                   "    Deny from all\n" .
-                   "</FilesMatch>\n";
-
-@file_put_contents($uploadRoot . '/.htaccess', $htaccessContent);
-@file_put_contents($productsDir . '/.htaccess', $htaccessContent);
-
-// Check directory write permissions
-if (!is_writable($productsDir)) {
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Upload directory is not writable on server. Please check /uploads/products/ permissions.'
-    ]);
-    exit;
+$uploadDir = null;
+foreach ($possibleUploadDirs as $dir) {
+    if (empty($dir)) continue;
+    if (!file_exists($dir)) {
+        @mkdir($dir, 0777, true);
+        @chmod($dir, 0777);
+    }
+    if (file_exists($dir) && is_writable($dir)) {
+        $uploadDir = $dir;
+        break;
+    }
 }
 
-// 2. Locate uploaded file key ('file' or 'image')
+// If still not writable, attempt default fallback
+if (!$uploadDir) {
+    $uploadDir = __DIR__ . '/../uploads/';
+    @mkdir($uploadDir, 0777, true);
+    @chmod($uploadDir, 0777);
+}
+
+// Ensure .htaccess inside uploads directory blocks direct PHP execution while serving images
+$htaccessFile = rtrim($uploadDir, '/') . '/.htaccess';
+if (!file_exists($htaccessFile)) {
+    $htaccessContent = "# Protect upload directory\n" .
+                       "<FilesMatch \"\\.(php|php5|php7|php8|phtml|pl|py|jsp|asp|sh|cgi)$\">\n" .
+                       "    ForceType text/plain\n" .
+                       "    Deny from all\n" .
+                       "</FilesMatch>\n";
+    @file_put_contents($htaccessFile, $htaccessContent);
+}
+
+// Allowed extensions
+$allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
+
+// A. Handle Multipart FormData Upload
 $fileField = null;
 if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
     $fileField = $_FILES['file'];
@@ -64,103 +77,131 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
     $fileField = $_FILES['image'];
 }
 
-if (!$fileField) {
-    $errorMsg = 'No file uploaded or upload error occurred.';
-    $errCode = isset($_FILES['file']['error']) ? $_FILES['file']['error'] : (isset($_FILES['image']['error']) ? $_FILES['image']['error'] : null);
-    if ($errCode !== null) {
-        switch ($errCode) {
-            case UPLOAD_ERR_INI_SIZE:
-            case UPLOAD_ERR_FORM_SIZE:
-                $errorMsg = 'File size exceeds maximum upload limit.';
-                break;
-            case UPLOAD_ERR_PARTIAL:
-                $errorMsg = 'File was only partially uploaded.';
-                break;
-            case UPLOAD_ERR_NO_FILE:
-                $errorMsg = 'No file was selected for upload.';
-                break;
-        }
+if ($fileField) {
+    $fileName = $fileField['name'];
+    $fileTmpPath = $fileField['tmp_name'];
+    $fileSize = $fileField['size'];
+
+    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    if ($fileExt === 'jpeg') $fileExt = 'jpg';
+
+    if (!in_array($fileExt, $allowedExtensions)) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => "Invalid file extension '.$fileExt'. Allowed: JPG, PNG, WEBP, GIF, SVG"
+        ]);
+        exit;
+    }
+
+    if ($fileSize > 20 * 1024 * 1024) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'error' => 'File size exceeds maximum 20MB limit'
+        ]);
+        exit;
+    }
+
+    // Generate unique filename
+    $uniquePrefix = (strpos($fileName, 'logo') !== false || strpos($fileName, 'header') !== false) ? 'logo_' : 'img_';
+    $newFileName = $uniquePrefix . time() . '_' . substr(md5(uniqid(mt_rand(), true)), 0, 8) . '.' . $fileExt;
+    $destPath = rtrim($uploadDir, '/') . '/' . $newFileName;
+
+    if (move_uploaded_file($fileTmpPath, $destPath)) {
+        @chmod($destPath, 0644);
+        $fileUrl = '/uploads/' . $newFileName;
+        echo json_encode([
+            'success' => true,
+            'url' => $fileUrl,
+            'image_url' => $fileUrl,
+            'relative_url' => 'uploads/' . $newFileName,
+            'filename' => $newFileName,
+            'server' => 'cpanel'
+        ]);
+        exit;
+    } else {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Failed to save uploaded file into cPanel /uploads folder. Please verify folder permissions (755 or 777).'
+        ]);
+        exit;
+    }
+}
+
+// B. Check for detailed PHP upload error codes if $_FILES exists
+$errCode = isset($_FILES['file']['error']) ? $_FILES['file']['error'] : (isset($_FILES['image']['error']) ? $_FILES['image']['error'] : null);
+if ($errCode !== null && $errCode !== UPLOAD_ERR_NO_FILE) {
+    $msg = 'PHP upload error code: ' . $errCode;
+    if ($errCode === UPLOAD_ERR_INI_SIZE || $errCode === UPLOAD_ERR_FORM_SIZE) {
+        $msg = 'File size exceeds server upload_max_filesize limit in php.ini.';
+    } elseif ($errCode === UPLOAD_ERR_PARTIAL) {
+        $msg = 'File was only partially uploaded.';
+    } elseif ($errCode === UPLOAD_ERR_NO_TMP_DIR) {
+        $msg = 'Missing temporary folder on server.';
+    } elseif ($errCode === UPLOAD_ERR_CANT_WRITE) {
+        $msg = 'Failed to write file to disk on server.';
     }
     http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => $errorMsg
-    ]);
+    echo json_encode(['success' => false, 'error' => $msg]);
     exit;
 }
 
-$fileTmpPath = $fileField['tmp_name'];
-$originalName = $fileField['name'];
-$fileSize = $fileField['size'];
+// C. Handle JSON Base64 Payload (Direct server-side write to cPanel disk)
+$inputRaw = file_get_contents('php://input');
+$inputData = json_decode($inputRaw, true);
 
-// A. Size Validation: Max 5MB
-$maxSizeBytes = 5 * 1024 * 1024;
-if ($fileSize > $maxSizeBytes) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => 'File size exceeds maximum 5MB limit.'
-    ]);
-    exit;
+if (isset($inputData['base64'])) {
+    $base64Data = $inputData['base64'];
+    $fileExt = 'png';
+    $origName = $inputData['filename'] ?? '';
+
+    if (preg_match('/^data:image\/([a-zA-Z0-9\+\-]+);base64,/', $base64Data, $match)) {
+        $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
+        $rawExt = strtolower($match[1]);
+        if ($rawExt === 'jpeg') $fileExt = 'jpg';
+        elseif ($rawExt === 'svg+xml') $fileExt = 'svg';
+        elseif (in_array($rawExt, $allowedExtensions)) $fileExt = $rawExt;
+    } elseif (!empty($origName)) {
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        if (in_array($ext, $allowedExtensions)) {
+            $fileExt = ($ext === 'jpeg') ? 'jpg' : $ext;
+        }
+    }
+
+    $binaryData = base64_decode($base64Data);
+    if ($binaryData === false) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid base64 encoding']);
+        exit;
+    }
+
+    $uniquePrefix = (strpos($origName, 'logo') !== false) ? 'logo_' : 'img_';
+    $newFileName = $uniquePrefix . time() . '_' . substr(md5(uniqid(mt_rand(), true)), 0, 8) . '.' . $fileExt;
+    $destPath = rtrim($uploadDir, '/') . '/' . $newFileName;
+
+    if (file_put_contents($destPath, $binaryData)) {
+        @chmod($destPath, 0644);
+        $fileUrl = '/uploads/' . $newFileName;
+        echo json_encode([
+            'success' => true,
+            'url' => $fileUrl,
+            'image_url' => $fileUrl,
+            'relative_url' => 'uploads/' . $newFileName,
+            'filename' => $newFileName,
+            'server' => 'cpanel'
+        ]);
+        exit;
+    } else {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Failed to write file to cPanel /uploads directory. Please check permissions.'
+        ]);
+        exit;
+    }
 }
 
-// B. File Extension Validation
-$fileExtension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-$allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
-if (!in_array($fileExtension, $allowedExtensions)) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Invalid file extension. Allowed: JPG, PNG, WEBP, GIF, SVG.'
-    ]);
-    exit;
-}
-
-// C. Server-side MIME-type Verification
-$actualMimeType = '';
-if (function_exists('finfo_open')) {
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $actualMimeType = finfo_file($finfo, $fileTmpPath);
-    finfo_close($finfo);
-} elseif (function_exists('mime_content_type')) {
-    $actualMimeType = mime_content_type($fileTmpPath);
-} else {
-    $actualMimeType = $fileField['type'];
-}
-
-$allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/jpg'];
-if (!in_array(strtolower($actualMimeType), $allowedMimeTypes)) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Invalid file MIME type.'
-    ]);
-    exit;
-}
-
-// D. Generate secure unique filename
-$randomBytes = bin2hex(random_bytes(12));
-$ext = ($fileExtension === 'jpeg') ? 'jpg' : $fileExtension;
-$newFileName = $randomBytes . '.' . $ext;
-$destPath = $productsDir . '/' . $newFileName;
-
-// E. Move file to target folder
-if (move_uploaded_file($fileTmpPath, $destPath)) {
-    @chmod($destPath, 0644);
-    $relativePath = 'uploads/products/' . $newFileName;
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Image uploaded successfully',
-        'url' => $relativePath,
-        'image_url' => $relativePath
-    ]);
-    exit;
-} else {
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Failed to save uploaded file on server.'
-    ]);
-    exit;
-}
+http_response_code(400);
+echo json_encode(['success' => false, 'error' => 'No image file or base64 payload provided in upload request.']);

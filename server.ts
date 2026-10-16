@@ -46,31 +46,68 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(express.json({ limit: '25mb' }));
 
 // Upload image handler for Node server
-const handleUpload = (req: express.Request, res: express.Response) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No image file uploaded' });
+const handleUploadRequest = (req: express.Request, res: express.Response) => {
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+  const uploadedFile = files?.file?.[0] || files?.image?.[0] || req.file;
+
+  if (uploadedFile) {
+    const fileUrl = `/uploads/${uploadedFile.filename}`;
+    return res.json({ url: fileUrl, image_url: fileUrl, success: true });
   }
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ url: fileUrl, success: true });
+
+  // Handle Base64 JSON payload
+  if (req.body && req.body.base64) {
+    try {
+      let base64Data = req.body.base64;
+      let ext = 'png';
+      const origName = req.body.filename || '';
+      const match = base64Data.match(/^data:image\/([a-zA-Z0-9\+\-]+);base64,/);
+      if (match) {
+        base64Data = base64Data.substring(base64Data.indexOf(',') + 1);
+        const rawExt = match[1].toLowerCase();
+        if (rawExt === 'jpeg') ext = 'jpg';
+        else if (['jpg', 'png', 'webp', 'gif', 'svg'].includes(rawExt)) ext = rawExt;
+      } else if (origName) {
+        const e = path.extname(origName).replace('.', '').toLowerCase();
+        if (['jpg', 'png', 'webp', 'gif', 'svg'].includes(e)) ext = e;
+      }
+
+      const buffer = Buffer.from(base64Data, 'base64');
+      const filename = `logo_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      const filePath = path.join(uploadsDir, filename);
+      fs.writeFileSync(filePath, buffer);
+      const fileUrl = `/uploads/${filename}`;
+      return res.json({ url: fileUrl, image_url: fileUrl, success: true });
+    } catch (e: any) {
+      return res.status(500).json({ error: 'Failed to save base64 image: ' + e.message });
+    }
+  }
+
+  return res.status(400).json({ error: 'No image file uploaded' });
 };
 
+const multerMiddleware = upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'image', maxCount: 1 }
+]);
+
 app.post('/api/upload', (req, res, next) => {
-  upload.single('file')(req, res, (err) => {
+  multerMiddleware(req, res, (err) => {
     if (err) {
       console.error('Multer upload error:', err);
       return res.status(400).json({ error: err.message || 'File upload error' });
     }
-    handleUpload(req, res);
+    handleUploadRequest(req, res);
   });
 });
 
 app.post('/api/upload.php', (req, res, next) => {
-  upload.single('file')(req, res, (err) => {
+  multerMiddleware(req, res, (err) => {
     if (err) {
       console.error('Multer upload error:', err);
       return res.status(400).json({ error: err.message || 'File upload error' });
     }
-    handleUpload(req, res);
+    handleUploadRequest(req, res);
   });
 });
 

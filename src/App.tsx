@@ -143,35 +143,31 @@ export default function App() {
   const watermarkFileInputRef = useRef<HTMLInputElement>(null);
   const faviconFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Logo & Watermark & Favicon File Upload Handlers (Auto-Save on Upload)
+  // Logo & Watermark & Favicon File Upload Handlers (Uploads strictly to cPanel Server)
   const handleLogoFileUpload = async (file: File) => {
     setIsUploadingLogo(true);
     try {
-      // 1. Instant zero-lag preview
-      const previewUrl = await readFileAsDataUrl(file, 1000).catch(() => '');
-      if (previewUrl) {
-        setSettingsForm(prev => ({ ...prev, logoUrl: previewUrl }));
-        setSettings(prev => ({ ...prev, logoUrl: previewUrl }));
+      // 1. Upload exclusively to server
+      const res = await apiUploadImage(file);
+      const serverUrl = (res?.url || '').trim();
+      if (!serverUrl) {
+        throw new Error('সার্ভার থেকে কোনো বৈধ ফাইলের পাথ পাওয়া যায়নি।');
       }
 
-      // 2. Server upload and database sync
-      const res = await apiUploadImage(file);
-      const finalUrl = (res?.url || previewUrl).trim();
-      if (finalUrl) {
-        const updated = { ...settings, ...settingsForm, logoUrl: finalUrl };
-        setSettingsForm(updated);
-        setSettings(updated);
-        const saved = await apiSaveSettings(updated);
-        if (saved) {
-          setSettings({ ...saved, logoUrl: finalUrl });
-          setSettingsForm({ ...saved, logoUrl: finalUrl });
-        }
-        setSettingsSavedFeedback(true);
-        setTimeout(() => setSettingsSavedFeedback(false), 4000);
+      // 2. Persist to database/settings
+      const updated = { ...settings, ...settingsForm, logoUrl: serverUrl };
+      setSettingsForm(updated);
+      setSettings(updated);
+      const saved = await apiSaveSettings(updated);
+      if (saved) {
+        setSettings({ ...saved, logoUrl: serverUrl });
+        setSettingsForm({ ...saved, logoUrl: serverUrl });
       }
+      setSettingsSavedFeedback(true);
+      setTimeout(() => setSettingsSavedFeedback(false), 4000);
     } catch (err: any) {
-      console.error('Failed to upload logo:', err);
-      alert('Failed to upload logo image: ' + (err?.message || 'Error uploading file'));
+      console.error('Failed to upload logo to cPanel:', err);
+      alert('কোম্পানি লগো আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingLogo(false);
     }
@@ -180,37 +176,27 @@ export default function App() {
   const handlePublicLogoFileUpload = async (file: File) => {
     setIsUploadingPublicLogo(true);
     try {
-      // 1. Immediately read file as dataUrl for zero-lag instant preview
-      const previewUrl = await readFileAsDataUrl(file, 1000).catch(() => '');
-      if (previewUrl) {
-        setSettingsForm(prev => ({ ...prev, publicLogoUrl: previewUrl }));
-        setSettings(prev => ({ ...prev, publicLogoUrl: previewUrl }));
-        try {
-          localStorage.setItem('jm_public_logo_url', previewUrl);
-        } catch {}
+      // 1. Upload exclusively to cPanel server disk (no localhost/localStorage fallback)
+      const res = await apiUploadImage(file);
+      const serverUrl = (res?.url || '').trim();
+      if (!serverUrl) {
+        throw new Error('cPanel সার্ভার থেকে কোনো ফাইলের পাথ পাওয়া যায়নি।');
       }
 
-      // 2. Perform robust upload and persist to database
-      const res = await apiUploadImage(file);
-      const finalUrl = (res?.url || previewUrl).trim();
-      if (finalUrl) {
-        const updated = { ...settings, ...settingsForm, publicLogoUrl: finalUrl };
-        setSettingsForm(updated);
-        setSettings(updated);
-        try {
-          localStorage.setItem('jm_public_logo_url', finalUrl);
-        } catch {}
-        const saved = await apiSaveSettings(updated);
-        if (saved) {
-          setSettings({ ...saved, publicLogoUrl: finalUrl });
-          setSettingsForm({ ...saved, publicLogoUrl: finalUrl });
-        }
-        setSettingsSavedFeedback(true);
-        setTimeout(() => setSettingsSavedFeedback(false), 4000);
+      // 2. Persist server URL to database
+      const updated = { ...settings, ...settingsForm, publicLogoUrl: serverUrl };
+      setSettingsForm(updated);
+      setSettings(updated);
+      const saved = await apiSaveSettings(updated);
+      if (saved) {
+        setSettings({ ...saved, publicLogoUrl: serverUrl });
+        setSettingsForm({ ...saved, publicLogoUrl: serverUrl });
       }
+      setSettingsSavedFeedback(true);
+      setTimeout(() => setSettingsSavedFeedback(false), 4000);
     } catch (err: any) {
-      console.error('Failed to upload public logo:', err);
-      alert('পাবলিক লগো আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
+      console.error('Failed to upload public logo to cPanel:', err);
+      alert('cPanel এ লগো আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingPublicLogo(false);
     }
@@ -222,13 +208,6 @@ export default function App() {
       const updated = { ...settings, ...settingsForm, publicLogoUrl: finalUrl };
       setSettings(updated);
       setSettingsForm(updated);
-      try {
-        if (finalUrl) {
-          localStorage.setItem('jm_public_logo_url', finalUrl);
-        } else {
-          localStorage.removeItem('jm_public_logo_url');
-        }
-      } catch {}
       const saved = await apiSaveSettings(updated);
       if (saved) {
         setSettings({ ...saved, publicLogoUrl: finalUrl });
@@ -245,33 +224,30 @@ export default function App() {
   const handleWatermarkFileUpload = async (file: File) => {
     setIsUploadingWatermark(true);
     try {
-      const previewUrl = await readFileAsDataUrl(file, 1000).catch(() => '');
-      if (previewUrl) {
-        setSettingsForm(prev => ({ ...prev, watermarkUrl: previewUrl, showWatermark: 1 }));
-        setSettings(prev => ({ ...prev, watermarkUrl: previewUrl, showWatermark: 1 }));
+      const res = await apiUploadImage(file);
+      const serverUrl = (res?.url || '').trim();
+      if (!serverUrl) {
+        throw new Error('সার্ভার থেকে কোনো বৈধ ফাইলের পাথ পাওয়া যায়নি।');
       }
 
-      const res = await apiUploadImage(file);
-      const finalUrl = (res?.url || previewUrl).trim();
-      if (finalUrl) {
-        const updated = { ...settings, ...settingsForm, watermarkUrl: finalUrl, showWatermark: 1 };
-        setSettingsForm(updated);
-        setSettings(updated);
-        const saved = await apiSaveSettings(updated);
-        if (saved) {
-          setSettings({ ...saved, watermarkUrl: finalUrl, showWatermark: 1 });
-          setSettingsForm({ ...saved, watermarkUrl: finalUrl, showWatermark: 1 });
-        }
-        setSettingsSavedFeedback(true);
-        setTimeout(() => setSettingsSavedFeedback(false), 4000);
+      const updated = { ...settings, ...settingsForm, watermarkUrl: serverUrl, showWatermark: 1 };
+      setSettingsForm(updated);
+      setSettings(updated);
+      const saved = await apiSaveSettings(updated);
+      if (saved) {
+        setSettings({ ...saved, watermarkUrl: serverUrl, showWatermark: 1 });
+        setSettingsForm({ ...saved, watermarkUrl: serverUrl, showWatermark: 1 });
       }
+      setSettingsSavedFeedback(true);
+      setTimeout(() => setSettingsSavedFeedback(false), 4000);
     } catch (err: any) {
-      console.error('Failed to upload watermark:', err);
-      alert('Failed to upload watermark image: ' + (err?.message || 'Upload error'));
+      console.error('Failed to upload watermark to cPanel:', err);
+      alert('ওয়াটারমার্ক আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingWatermark(false);
     }
   };
+
 
   const handleFaviconFileUpload = async (file: File) => {
     setIsUploadingFavicon(true);
@@ -391,15 +367,8 @@ export default function App() {
 
       setStaffUsers(staff && staff.length > 0 ? staff : INITIAL_STAFF_USERS);
       if (setts) {
-        let effectiveSetts = setts;
-        try {
-          const cachedPublicLogo = localStorage.getItem('jm_public_logo_url');
-          if (cachedPublicLogo && !setts.publicLogoUrl) {
-            effectiveSetts = { ...setts, publicLogoUrl: cachedPublicLogo };
-          }
-        } catch {}
-        setSettings(effectiveSetts);
-        setSettingsForm(effectiveSetts);
+        setSettings(setts);
+        setSettingsForm(setts);
       }
     } catch (e) {
       console.error('Initial fetch warning:', e);
@@ -424,13 +393,10 @@ export default function App() {
           apiGetStaff().then(setStaffUsers).catch(() => {});
         } else if (change.entity === 'settings') {
           apiGetSettings().then(s => {
-            let eff = s;
-            try {
-              const cached = localStorage.getItem('jm_public_logo_url');
-              if (cached && !s.publicLogoUrl) eff = { ...s, publicLogoUrl: cached };
-            } catch {}
-            setSettings(eff);
-            setSettingsForm(eff);
+            if (s) {
+              setSettings(s);
+              setSettingsForm(s);
+            }
           }).catch(() => {});
         } else if (change.entity === 'dispatches') {
           apiGetFieldDispatches().then(setDispatches).catch(() => {});
@@ -2039,8 +2005,8 @@ export default function App() {
                                   <span className="text-slate-400">|</span>
                                   <span>ফরম্যাট: <strong>স্বচ্ছ ব্যাকগ্রাউন্ড PNG বা SVG</strong></span>
                                 </div>
-                                <p className="text-[9px] text-slate-400">
-                                  * ফাইল সিলেক্ট করলেই স্বয়ংক্রিয়ভাবে আপলোড ও ডেটাবেজে সেভ হয়ে যাবে। PNG, JPG, WebP বা SVG সমর্থিত।
+                                <p className="text-[9px] text-blue-900 font-semibold bg-blue-100/60 p-1.5 rounded-lg border border-blue-200">
+                                  ⚡ ফাইল সিলেক্ট করলেই স্বয়ংক্রিয়ভাবে সরাসরি আপনার cPanel সার্ভারের <code>/uploads/</code> ফোল্ডারে আপলোড ও ডেটাবেজে সেভ হয়ে যাবে।
                                 </p>
                               </div>
 

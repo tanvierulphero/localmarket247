@@ -253,17 +253,39 @@ export function readFileAsDataUrl(file: File, maxDim: number = 1000): Promise<st
   });
 }
 
-// Image Upload API with Server & Client Fallback
-export async function apiUploadImage(file: File): Promise<{ url: string }> {
+// Helper to convert file to Base64 for server-side cPanel decode
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Failed to read file from disk for cPanel upload'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Image Upload API - Uploads exclusively to cPanel Server (/uploads directory)
+// Pure server-side persistence: File is physically uploaded and stored on the cPanel server.
+export async function apiUploadImage(file: File): Promise<{ url: string; relative_url?: string }> {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('image', file);
 
-  // 1. Try modern Node server /api/upload endpoints first
-  const endpoints = ['/api/upload', 'api/upload', '/api/upload.php', 'api/upload.php'];
+  // 1. Try standard FormData POST to cPanel & Node upload endpoints
+  const endpoints = [
+    'api/upload.php',
+    '/api/upload.php',
+    'api/upload',
+    '/api/upload',
+    'api/index.php?endpoint=upload',
+    '/api/index.php?endpoint=upload'
+  ];
+
+  let lastServerError = '';
+
   for (const ep of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       const response = await fetch(ep, {
         method: 'POST',
         body: formData,
@@ -275,22 +297,78 @@ export async function apiUploadImage(file: File): Promise<{ url: string }> {
         const data = await response.json().catch(() => null);
         const url = data?.url || data?.image_url || data?.image;
         if (url) {
-          return { url };
+          return { url, relative_url: data?.relative_url };
+        }
+      } else {
+        const errData = await response.json().catch(() => null);
+        if (errData?.error || errData?.message) {
+          lastServerError = errData.error || errData.message;
         }
       }
-    } catch {
-      // Continue to next endpoint
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        lastServerError = e?.message || lastServerError;
+      }
     }
   }
 
-  // 2. High-fidelity client-side fallback (Data URL)
-  // Guaranteed to work 100% of the time on all devices without requiring server upload permissions
+  // 2. If FormData was rejected by cPanel post limits or proxy, send Base64 JSON payload
+  // The cPanel PHP server will decode this directly on the server and write the physical file to /uploads/
   try {
-    const dataUrl = await readFileAsDataUrl(file, 1000);
-    return { url: dataUrl };
-  } catch (err: any) {
-    throw new Error('Could not process image file: ' + (err.message || 'File read error'));
+    const base64Data = await fileToBase64(file);
+    const jsonPayload = JSON.stringify({
+      base64: base64Data,
+      filename: file.name,
+    });
+
+    const jsonEndpoints = [
+      'api/upload.php',
+      '/api/upload.php',
+      'api/index.php?endpoint=upload',
+      '/api/index.php?endpoint=upload'
+    ];
+
+    for (const ep of jsonEndpoints) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const response = await fetch(ep, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonPayload,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json().catch(() => null);
+          const url = data?.url || data?.image_url || data?.image;
+          if (url) {
+            return { url, relative_url: data?.relative_url };
+          }
+        } else {
+          const errData = await response.json().catch(() => null);
+          if (errData?.error || errData?.message) {
+            lastServerError = errData.error || errData.message;
+          }
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') {
+          lastServerError = err?.message || lastServerError;
+        }
+      }
+    }
+  } catch (base64Err: any) {
+    lastServerError = base64Err?.message || lastServerError;
   }
+
+  // Exclusively upload to server - no local storage or client data url fallback
+  throw new Error(
+    lastServerError || 
+    'cPanel সার্ভারে ফাইল আপলোড করা যায়নি। দয়া করে নিশ্চিত করুন cPanel-এ /uploads ফোল্ডার রয়েছে এবং 755 বা 777 রাইট পারমিশন সক্রিয় আছে।'
+  );
 }
 
 export function isCpanelDeployment(): boolean {
