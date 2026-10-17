@@ -127,7 +127,7 @@ export default function PublicCatalogManager({
     category: 'Inverter Split AC',
     brand: 'Hitachi',
     price: '',
-    callForPrice: false,
+    callForPrice: true,
     badge: 'Featured',
     description: '',
     specs: [
@@ -172,7 +172,7 @@ export default function PublicCatalogManager({
       category: 'Inverter Split AC',
       brand: 'Hitachi',
       price: '',
-      callForPrice: false,
+      callForPrice: true,
       badge: '',
       description: '',
       specs: [

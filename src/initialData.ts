@@ -148,7 +148,7 @@ export const INITIAL_CATALOG_PRODUCTS: CatalogProduct[] = [
     category: 'Screw Air Compressor',
     brand: 'Hitachi',
     price: 1250000,
-    callForPrice: false,
+    callForPrice: true,
     badge: 'Best Seller',
     description: 'High-performance oil-flooded rotary screw air compressor engineered for 24/7 continuous industrial production with low noise, superior energy efficiency, and intelligent digital microprocessor monitoring.',
     specs: [
@@ -170,7 +170,7 @@ export const INITIAL_CATALOG_PRODUCTS: CatalogProduct[] = [
     category: 'Screw Air Compressor',
     brand: 'Hitachi',
     price: 1850000,
-    callForPrice: false,
+    callForPrice: true,
     badge: 'Energy Saver (VSD)',
     description: 'Hitachi Next Series VSD inverter rotary screw air compressor. Saves up to 35% electrical power by dynamically matching motor speed to actual factory compressed air demand.',
     specs: [
@@ -191,7 +191,7 @@ export const INITIAL_CATALOG_PRODUCTS: CatalogProduct[] = [
     category: 'Air Dryer',
     brand: 'Hitachi',
     price: 260000,
-    callForPrice: false,
+    callForPrice: true,
     badge: 'Featured',
     description: 'Industrial refrigerated compressed air dryer engineered to eliminate moisture, condensate, and water droplets from compressed air lines to safeguard factory machinery and pneumatic tools.',
     specs: [
@@ -212,7 +212,7 @@ export const INITIAL_CATALOG_PRODUCTS: CatalogProduct[] = [
     category: 'Line Filter',
     brand: 'Hitachi',
     price: 45000,
-    callForPrice: false,
+    callForPrice: true,
     badge: 'High Filtration',
     description: 'High-efficiency industrial in-line compressed air filter housings with multi-layer microglass filter cartridges. Removes solid particulates, scale, rust, and residual oil aerosols.',
     specs: [
@@ -232,7 +232,7 @@ export const INITIAL_CATALOG_PRODUCTS: CatalogProduct[] = [
     category: 'Spare Parts',
     brand: 'Hitachi',
     price: 58000,
-    callForPrice: false,
+    callForPrice: true,
     badge: '100% Genuine OEM',
     description: 'Original OEM spin-on and flange separator elements, intake air filters, and oil filters designed specifically for Hitachi OSP and DSP series screw air compressors.',
     specs: [
@@ -252,7 +252,7 @@ export const INITIAL_CATALOG_PRODUCTS: CatalogProduct[] = [
     category: 'Compressor Lubricant',
     brand: 'Hitachi',
     price: 38500,
-    callForPrice: false,
+    callForPrice: true,
     badge: 'Japanese OEM',
     description: 'Genuine factory-formulated synthetic screw compressor oil. Delivers superior anti-oxidation, minimal varnish formation, and 2-year / 6,000-hour extended drain interval.',
     specs: [

@@ -115,7 +115,7 @@ export default function PublicCatalog({
 
   // Generate 1-click WhatsApp link for a specific product
   const getProductWhatsAppUrl = (product: CatalogProduct) => {
-    const priceText = product.callForPrice ? 'Price on Request / Negotiable' : `৳ ${Number(product.price).toLocaleString()}`;
+    const priceText = 'Price on Request / Negotiable';
     const text = `Hello ${settings?.name || 'Hitachi Air Solution Center'}! I am interested in:\n\n*${product.name}*\n• Brand: ${product.brand}\n• Category: ${product.category}\n• Price: ${priceText}\n\nPlease share more details and availability. Thank you!`;
     return `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(text)}`;
   };
@@ -636,22 +636,12 @@ export default function PublicCatalog({
                       {product.name}
                     </h3>
 
-                    {/* Price */}
-                    <div className="mt-3 flex items-baseline gap-2">
-                      {product.callForPrice ? (
-                        <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-900 text-xs font-black border border-blue-200">
-                          Call for Price / Negotiable
-                        </span>
-                      ) : (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-xl font-black text-slate-900">
-                            ৳ {Number(product.price).toLocaleString()}
-                          </span>
-                          <span className="text-[11px] font-bold text-slate-400">
-                            / Set
-                          </span>
-                        </div>
-                      )}
+                    {/* Price - Call for Price / Negotiable */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="px-3 py-1.5 rounded-xl bg-blue-50 text-blue-900 text-xs font-extrabold border border-blue-200/80 inline-flex items-center gap-1.5 shadow-2xs">
+                        <Phone className="w-3.5 h-3.5 text-blue-600" />
+                        Call for Price / Negotiable
+                      </span>
                     </div>
 
                     {/* Specs Pills */}
@@ -1057,14 +1047,11 @@ export default function PublicCatalog({
                     {selectedProduct.name}
                   </h4>
 
-                  <div className="text-xl font-black text-slate-900 pt-1">
-                    {selectedProduct.callForPrice ? (
-                      <span className="text-blue-700 text-sm font-bold bg-blue-50 px-3 py-1 rounded-md border border-blue-200">
-                        Call for Price / Negotiable
-                      </span>
-                    ) : (
-                      <>৳ {Number(selectedProduct.price).toLocaleString()}</>
-                    )}
+                  <div className="pt-2">
+                    <span className="text-blue-900 text-xs font-extrabold bg-blue-50 px-3.5 py-1.5 rounded-xl border border-blue-200/80 inline-flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-blue-600" />
+                      Call for Price / Negotiable
+                    </span>
                   </div>
 
                   {selectedProduct.description && (
