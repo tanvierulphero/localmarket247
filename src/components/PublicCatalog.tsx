@@ -11,6 +11,7 @@ import {
   Award, 
   ShieldCheck, 
   Settings2, 
+  LogIn,
   Sparkles, 
   Loader2, 
   FileText, 
@@ -336,9 +337,10 @@ export default function PublicCatalog({
             <button 
               onClick={onAdminClick}
               className="flex items-center gap-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer border border-slate-700 ml-1"
+              title="Staff & Management Login"
             >
-              <Settings2 className="w-3 h-3 text-slate-400" />
-              <span>Admin Portal</span>
+              <LogIn className="w-3.5 h-3.5 text-blue-400" />
+              <span>Login</span>
             </button>
           </div>
         </div>
