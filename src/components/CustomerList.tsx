@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Customer, Document, FieldDispatch, BusinessSettings, DocumentType } from '../types';
+import { getDocFinancials } from './DueLedger';
 import { 
   Users, 
   Search, 
@@ -42,6 +43,8 @@ interface CustomerListProps {
   onDeleteCustomer?: (id: string) => Promise<void>;
   onViewDocument: (doc: Document) => void;
   onCreateDocumentForCustomer?: (customer: Customer, type: DocumentType) => void;
+  onUpdateDocument?: (doc: Document) => void;
+  onBatchUpdateDocuments?: (docs: Document[]) => void;
 }
 
 export default function CustomerList({
@@ -52,7 +55,9 @@ export default function CustomerList({
   onSaveCustomer,
   onDeleteCustomer,
   onViewDocument,
-  onCreateDocumentForCustomer
+  onCreateDocumentForCustomer,
+  onUpdateDocument,
+  onBatchUpdateDocuments
 }: CustomerListProps) {
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,6 +82,15 @@ export default function CustomerList({
 
   // Statement / Ledger Modal State
   const [selectedCustomerForLedger, setSelectedCustomerForLedger] = useState<Customer | null>(null);
+
+  // Collect Due / Receive Payment Modal State
+  const [collectingCustomer, setCollectingCustomer] = useState<Customer | null>(null);
+  const [customerPayAmount, setCustomerPayAmount] = useState<number>(0);
+  const [customerPayMethod, setCustomerPayMethod] = useState<'Cash' | 'Bank Transfer' | 'bKash/Nagad' | 'Cheque'>('Cash');
+  const [customerPayDate, setCustomerPayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [customerPayNotes, setCustomerPayNotes] = useState('');
+  const [customerPayRefNo, setCustomerPayRefNo] = useState('');
+  const [collectionFeedback, setCollectionFeedback] = useState<string | null>(null);
 
   // Delete Confirmation Modal State
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
@@ -135,27 +149,20 @@ export default function CustomerList({
           lastDate = d.date;
         }
 
-        const docTotal = Number(d.total || 0);
+        const fin = getDocFinancials(d);
 
         if (d.type === 'INVOICE' || d.type === 'BILL') {
           invoicesCount++;
-          totalInvoiced += docTotal;
-          
-          if (d.paidAmount !== undefined && d.paidAmount !== null) {
-            totalPaid += Number(d.paidAmount || 0);
-          } else if (d.status === 'Paid') {
-            totalPaid += docTotal;
-          }
-
-          if (d.dueAmount !== undefined && d.dueAmount !== null) {
-            totalDue += Number(d.dueAmount || 0);
-          } else if (d.status !== 'Paid') {
-            totalDue += (docTotal - Number(d.paidAmount || 0));
-          }
+          totalInvoiced += fin.total;
+          totalPaid += fin.paid;
+          totalDue += fin.due;
         } else if (d.type === 'QUOTATION' || d.type === 'OFFER_LETTER') {
           quotesCount++;
         } else if (d.type === 'CHALLAN') {
           challansCount++;
+          if (fin.paid > 0) {
+            totalPaid += fin.paid;
+          }
         }
       });
 
@@ -344,6 +351,102 @@ export default function CustomerList({
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  // Open Collect Customer Due Modal
+  const handleOpenCollectCustomerDue = (cust: Customer) => {
+    const fin = customerFinancials.get(cust.id);
+    const due = fin?.totalDue || 0;
+    setCollectingCustomer(cust);
+    setCustomerPayAmount(due > 0 ? due : 0);
+    setCustomerPayMethod('Cash');
+    setCustomerPayDate(new Date().toISOString().split('T')[0]);
+    setCustomerPayNotes('');
+    setCustomerPayRefNo('');
+  };
+
+  // Customer Due / Payment Submission
+  const handleCustomerPaymentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collectingCustomer || customerPayAmount <= 0) return;
+
+    const targetCustId = String(collectingCustomer.id);
+    const targetPhone = String(collectingCustomer.phone || '').trim().replace(/[^0-9]/g, '');
+    const targetComp = String(collectingCustomer.company || '').trim().toLowerCase();
+
+    const custDocs = (documents || []).filter(d => {
+      if (!d) return false;
+      if (d.customerId) return String(d.customerId) === targetCustId;
+      const dPhone = String(d.customerPhone || '').trim().replace(/[^0-9]/g, '');
+      if (targetPhone && targetPhone.length >= 10 && dPhone === targetPhone) return true;
+      const dComp = String(d.customerCompany || '').trim().toLowerCase();
+      if (targetComp && targetComp.length > 2 && dComp === targetComp) return true;
+      return false;
+    });
+
+    const unpaidDocs = custDocs
+      .filter(d => (d.type === 'INVOICE' || d.type === 'BILL') && getDocFinancials(d).due > 0 && d.status !== 'Paid')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let remainingPayment = customerPayAmount;
+    const updatedDocs: Document[] = [];
+    const receiptNo = `MR-${customerPayDate.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    for (const doc of unpaidDocs) {
+      if (remainingPayment <= 0) break;
+      const fin = getDocFinancials(doc);
+      if (fin.due <= 0) continue;
+
+      const payForDoc = Math.min(fin.due, remainingPayment);
+      remainingPayment -= payForDoc;
+
+      const newDue = Math.max(0, fin.due - payForDoc);
+      const newPaid = fin.paid + payForDoc;
+
+      const updatedDoc: Document = {
+        ...doc,
+        total: fin.total,
+        dueAmount: newDue,
+        paidAmount: newPaid,
+        status: newDue === 0 ? 'Paid' : 'Partially Paid',
+        notes: (doc.notes || '') + `\n[Payment Received: Tk. ${payForDoc.toLocaleString()} on ${customerPayDate} via ${customerPayMethod} - ${customerPayNotes.trim() || 'Customer Due Collection'}${customerPayRefNo ? ` - RefNo: ${customerPayRefNo}` : ''} - Ref: ${receiptNo}]`
+      };
+      updatedDocs.push(updatedDoc);
+    }
+
+    if (remainingPayment > 0 && custDocs.length > 0) {
+      const targetDoc = [...custDocs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      if (targetDoc) {
+        const idx = updatedDocs.findIndex(d => d.id === targetDoc.id);
+        const baseDoc = idx !== -1 ? updatedDocs[idx] : targetDoc;
+        const fin = getDocFinancials(baseDoc);
+        const newPaid = fin.paid + remainingPayment;
+        const finalizedDoc: Document = {
+          ...baseDoc,
+          total: fin.total,
+          paidAmount: newPaid,
+          dueAmount: 0,
+          status: 'Paid',
+          notes: (baseDoc.notes || '') + `\n[Payment Received: Tk. ${remainingPayment.toLocaleString()} on ${customerPayDate} via ${customerPayMethod} - ${customerPayNotes.trim() || 'Advance / Installment Collection'}${customerPayRefNo ? ` - RefNo: ${customerPayRefNo}` : ''} - Ref: ${receiptNo}]`
+        };
+        if (idx !== -1) {
+          updatedDocs[idx] = finalizedDoc;
+        } else {
+          updatedDocs.push(finalizedDoc);
+        }
+        remainingPayment = 0;
+      }
+    }
+
+    if (onBatchUpdateDocuments && updatedDocs.length > 0) {
+      onBatchUpdateDocuments(updatedDocs);
+    } else if (onUpdateDocument) {
+      updatedDocs.forEach(d => onUpdateDocument(d));
+    }
+
+    setCollectionFeedback(`✓ Payment of Tk. ${customerPayAmount.toLocaleString()} collected successfully for ${collectingCustomer.company || collectingCustomer.name}!`);
+    setTimeout(() => setCollectionFeedback(null), 4000);
+    setCollectingCustomer(null);
   };
 
   // Export Customer Directory to CSV
@@ -1319,8 +1422,9 @@ export default function CustomerList({
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {selectedCustomerDocs.map(doc => {
-                          const docPaid = doc.paidAmount !== undefined ? doc.paidAmount : (doc.status === 'Paid' ? doc.total : 0);
-                          const docDue = doc.dueAmount !== undefined ? doc.dueAmount : (doc.total - docPaid);
+                          const fin = getDocFinancials(doc);
+                          const docPaid = fin.paid;
+                          const docDue = fin.due;
 
                           return (
                             <tr key={doc.id} className="hover:bg-slate-50 transition-colors">

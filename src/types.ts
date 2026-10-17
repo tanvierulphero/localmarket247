@@ -18,6 +18,23 @@ export interface Product {
   imageUrl: string;
 }
 
+// Dedicated Custom Public Showcase Catalog Product (Completely separated from Inventory)
+export interface CatalogProduct {
+  id: string;
+  name: string;
+  category: string;
+  brand: string;
+  price: number;
+  callForPrice?: boolean; // If true, display "Call for Price / Negotiable"
+  badge?: string;         // e.g. "Featured", "Hot Deal", "Best Seller", "New Arrival"
+  description: string;
+  specs: ProductSpec[];
+  imageUrl: string;
+  status: 'active' | 'hidden';
+  displayOrder?: number;
+  createdAt?: string;
+}
+
 export interface Customer {
   id: string;
   companyId?: string; // e.g. COMP-1001
@@ -113,7 +130,8 @@ export type PermissionKey =
   | 'view_expenses'
   | 'manage_expenses'
   | 'view_owner_draw'
-  | 'manage_owner_draw';
+  | 'manage_owner_draw'
+  | 'manage_public_catalog';
 
 export interface Supplier {
   id: string;
@@ -304,4 +322,9 @@ export interface BusinessSettings {
   challanPrefix?: string;
   watermarkOpacity?: number; // e.g. 0.04 to 0.20
   showWatermark?: boolean | number;
+  // 1-Click Social Media & Instant Contact Links for Public Website
+  whatsapp?: string;     // e.g. 01715-994956 or +8801715994956
+  messengerUrl?: string; // e.g. https://m.me/yourpage or page URL
+  facebookUrl?: string;  // e.g. https://facebook.com/yourpage
+  telegramUrl?: string;  // e.g. https://t.me/yourusername
 }

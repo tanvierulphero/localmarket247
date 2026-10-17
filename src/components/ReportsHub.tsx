@@ -351,7 +351,7 @@ export default function ReportsHub({
   // CLIENT-SIDE DOWNLOAD DYNAMIC CSV GENERATOR
   const downloadCSV = (reportType: 'sales' | 'customers' | 'products' | 'returns' | 'income_expenses') => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    let filename = `hitachisolutioncenter-${reportType}-Report.csv`;
+    let filename = `hitachiairsolutioncenter-${reportType}-Report.csv`;
 
     if (reportType === 'income_expenses') {
       csvContent += "Financial Metric / Category,Amount (BDT),Notes\n";

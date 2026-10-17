@@ -1,12 +1,35 @@
-import { useState, useMemo } from 'react';
-import { Product, Customer, Document, BusinessSettings } from '../types';
-import { Search, SlidersHorizontal, Check, ArrowRight, Phone, Mail, MapPin, Award, ShieldCheck, Settings2, Sparkles, Loader2, FileText, Shuffle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { CatalogProduct, Customer, Document, BusinessSettings } from '../types';
+import { 
+  Search, 
+  SlidersHorizontal, 
+  Check, 
+  ArrowRight, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  Award, 
+  ShieldCheck, 
+  Settings2, 
+  Sparkles, 
+  Loader2, 
+  FileText, 
+  ExternalLink,
+  MessageCircle,
+  Send,
+  X,
+  Tag,
+  Zap,
+  CheckCircle2,
+  ChevronRight,
+  Info
+} from 'lucide-react';
 import { apiSaveDocument, apiSaveCustomer } from '../lib/api';
 import { generateNextDocNumber } from '../lib/documentNumber';
 import Logo from './Logo';
 
 interface PublicCatalogProps {
-  products: Product[];
+  catalogProducts: CatalogProduct[];
   onAdminClick: () => void;
   onSaveDocument?: (doc: Document) => Promise<void>;
   onSaveCustomer?: (c: Customer) => Promise<void>;
@@ -16,7 +39,7 @@ interface PublicCatalogProps {
 }
 
 export default function PublicCatalog({ 
-  products, 
+  catalogProducts = [], 
   onAdminClick,
   onSaveDocument,
   onSaveCustomer,
@@ -27,8 +50,8 @@ export default function PublicCatalog({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedBrand, setSelectedBrand] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [randomSeed, setRandomSeed] = useState<number>(0);
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+  const [activeModalTab, setActiveModalTab] = useState<'contact' | 'quote'>('contact');
   
   // Quote request form states
   const [quoteRequest, setQuoteRequest] = useState({
@@ -52,89 +75,69 @@ export default function PublicCatalog({
   const [isContactSubmitted, setIsContactSubmitted] = useState(false);
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
-  // Categories list extracted from products
+  // Filter only active catalog products for the public showcase
+  const activeProducts = useMemo(() => {
+    return (catalogProducts || []).filter(p => p.status !== 'hidden');
+  }, [catalogProducts]);
+
+  // Categories list extracted from active showcase products
   const categories = useMemo(() => {
-    const list = new Set(products.map(p => p.category));
+    const list = new Set(activeProducts.map(p => p.category).filter(Boolean));
     return ['All', ...Array.from(list)];
-  }, [products]);
+  }, [activeProducts]);
 
-  // Brands list extracted from products
+  // Brands list extracted from active showcase products
   const brands = useMemo(() => {
-    const list = new Set(products.map(p => p.brand));
+    const list = new Set(activeProducts.map(p => p.brand).filter(Boolean));
     return ['All', ...Array.from(list)];
-  }, [products]);
+  }, [activeProducts]);
 
-  // Shuffle handler to generate a fresh random 20 product selection
-  const handleShuffleRandomProducts = () => {
-    setRandomSeed(prev => prev + 1);
-  };
-
-  // Pre-compute 20 randomly sampled products from full catalog for "All Categories" view
-  const random20Products = useMemo(() => {
-    if (products.length <= 20) {
-      return products;
-    }
-    // Fisher-Yates shuffle on array copy
-    const pool = [...products];
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    return pool.slice(0, 20);
-  }, [products, randomSeed]);
-
-  // Filtering products:
-  // - In "All Categories" view: randomly show 20 products
-  // - When a specific category is selected: show ALL products of that category!
+  // Filtered products list
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
+    return activeProducts.filter(product => {
+      const matchCategory = selectedCategory === 'All' || product.category === selectedCategory;
+      const matchBrand = selectedBrand === 'All' || product.brand === selectedBrand;
+      const matchSearch = 
+        !query ||
+        product.name.toLowerCase().includes(query) || 
+        product.brand.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query) ||
+        (product.description && product.description.toLowerCase().includes(query)) ||
+        (product.specs && product.specs.some(s => s.label.toLowerCase().includes(query) || s.value.toLowerCase().includes(query)));
+      return matchCategory && matchBrand && matchSearch;
+    }).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  }, [activeProducts, selectedCategory, selectedBrand, searchQuery]);
 
-    // 1. If actively searching, match across products so visitor can find any item
-    if (query.length > 0) {
-      return products.filter(product => {
-        const matchCategory = selectedCategory === 'All' || product.category === selectedCategory;
-        const matchBrand = selectedBrand === 'All' || product.brand === selectedBrand;
-        const matchSearch = product.name.toLowerCase().includes(query) || 
-                            product.sku.toLowerCase().includes(query) ||
-                            product.brand.toLowerCase().includes(query) ||
-                            product.category.toLowerCase().includes(query);
-        return matchCategory && matchBrand && matchSearch;
-      });
-    }
+  // WhatsApp helper
+  const rawWa = (settings?.whatsapp || settings?.phone1 || '01715-994956').replace(/[^0-9]/g, '');
+  const cleanWaNumber = rawWa.startsWith('88') ? rawWa : (rawWa ? `88${rawWa}` : '8801715994956');
 
-    // 2. If a specific category is selected, show ALL products of that category!
-    if (selectedCategory !== 'All') {
-      return products.filter(product => {
-        const matchCategory = product.category === selectedCategory;
-        const matchBrand = selectedBrand === 'All' || product.brand === selectedBrand;
-        return matchCategory && matchBrand;
-      });
-    }
+  // Generate 1-click WhatsApp link for a specific product
+  const getProductWhatsAppUrl = (product: CatalogProduct) => {
+    const priceText = product.callForPrice ? 'Price on Request / Negotiable' : `৳ ${Number(product.price).toLocaleString()}`;
+    const text = `Hello ${settings?.name || 'Hitachi Air Solution Center'}! I am interested in:\n\n*${product.name}*\n• Brand: ${product.brand}\n• Category: ${product.category}\n• Price: ${priceText}\n\nPlease share more details and availability. Thank you!`;
+    return `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(text)}`;
+  };
 
-    // 3. In "All Categories" view (selectedCategory === 'All'):
-    // Show randomly 20 products
-    if (selectedBrand === 'All') {
-      return random20Products;
-    } else {
-      // If a brand filter is also selected in All Categories
-      const brandFiltered = products.filter(p => p.brand === selectedBrand);
-      if (brandFiltered.length <= 20) {
-        return brandFiltered;
-      }
-      const pool = [...brandFiltered];
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      return pool.slice(0, 20);
-    }
-  }, [products, selectedCategory, selectedBrand, searchQuery, random20Products]);
+  // General WhatsApp contact link
+  const generalWhatsAppUrl = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(`Hello hitachiairsolutioncenter (Technical support by ${settings?.name || 'Jubayer Machineries'})! I visited your website and would like to inquire about your Screw Air Compressors and genuine spare parts.`)}`;
+
+  // Messenger URL
+  const rawMessenger = (settings?.messengerUrl || '').trim();
+  const messengerUrl = rawMessenger.startsWith('http') 
+    ? rawMessenger 
+    : (rawMessenger ? `https://m.me/${rawMessenger.replace('@', '')}` : 'https://m.me/hitachiairsolutioncenter');
+
+  // Phone Call URL
+  const hotlinePhone = (settings?.phone1 || '01715-994956').trim();
+  const phoneCallUrl = `tel:${hotlinePhone.replace(/[^0-9+]/g, '')}`;
 
   // Handle Quote Submission
   const handleQuoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quoteRequest.name?.trim() || !quoteRequest.phone?.trim()) {
-      alert("Please provide your name and contact phone number so we can reach you.");
+      alert("Please enter your name and phone number.");
       return;
     }
     if (!selectedProduct) return;
@@ -142,7 +145,6 @@ export default function PublicCatalog({
     setIsSubmittingQuote(true);
 
     try {
-      // 1. Match or Create Customer
       const cleanPhone = String(quoteRequest.phone || '').trim();
       const existingCustomer = (customers || []).find(c => 
         (c.phone && cleanPhone && String(c.phone).replace(/[^0-9]/g, '') === cleanPhone.replace(/[^0-9]/g, '')) ||
@@ -158,15 +160,14 @@ export default function PublicCatalog({
         phone: cleanPhone,
         email: quoteRequest.email.trim() || existingCustomer?.email || '',
         address: existingCustomer?.address || '',
-        notes: `Website Quote Inquiry for ${selectedProduct.name} (SKU: ${selectedProduct.sku})${quoteRequest.message ? ' - Message: ' + quoteRequest.message : ''}`,
+        notes: `Website Quote Inquiry for Showcase Product: ${selectedProduct.name} (${selectedProduct.brand})${quoteRequest.message ? ' - Message: ' + quoteRequest.message : ''}`,
         createdAt: existingCustomer?.createdAt || new Date().toISOString()
       };
 
-      // 2. Generate Quotation Document
       const generatedDocNumber = generateNextDocNumber('QUOTATION', documents, settings);
       const todayStr = new Date().toISOString().split('T')[0];
       const qty = Math.max(1, Number(quoteRequest.quantity) || 1);
-      const unitPrice = selectedProduct.price || 0;
+      const unitPrice = selectedProduct.callForPrice ? 0 : (selectedProduct.price || 0);
       const totalAmount = unitPrice * qty;
 
       const newQuotation: Document = {
@@ -182,18 +183,17 @@ export default function PublicCatalog({
         customerAddress: customerObj.address,
         subject: `Quotation Proposal for ${selectedProduct.name} (${selectedProduct.brand})`,
         salutation: `Dear ${customerObj.name},`,
-        openingParagraph: `Thank you for your quotation inquiry submitted via our online website. We are pleased to provide our official price proposal for the following item:`,
-        closingParagraph: `This quotation is valid for 15 days. For immediate delivery, field inspection, or order confirmation, please contact our technical sales desk.`,
+        openingParagraph: `Thank you for your inquiry via our official product showcase website. We are pleased to provide our formal price quotation for the following equipment:`,
+        closingParagraph: `This quotation proposal is valid for 15 days. For technical site inspection, delivery schedule, or order confirmation, please reach our sales desk directly.`,
         items: [
           {
             id: `item-${Date.now()}`,
-            productId: selectedProduct.id,
             name: selectedProduct.name,
             brand: selectedProduct.brand,
             quantity: qty,
             price: unitPrice,
             total: totalAmount,
-            unit: selectedProduct.unit || 'PCS',
+            unit: 'Set',
             warrantyMonths: 12
           }
         ],
@@ -205,13 +205,12 @@ export default function PublicCatalog({
         paidAmount: 0,
         dueAmount: totalAmount,
         status: 'Draft',
-        terms: settings?.terms || '1. Delivery within 1-3 business days.\n2. Genuine industrial quality spares.\n3. Standard warranty applies.',
-        notes: quoteRequest.message ? `Visitor inquiry notes: ${quoteRequest.message}` : `Online Quotation Request for ${selectedProduct.name}`,
+        terms: settings?.terms || '1. Delivery within 1-3 business days upon confirmed work order.\n2. Genuine industrial quality guarantee.\n3. Brand warranty applicable.',
+        notes: quoteRequest.message ? `Visitor inquiry notes: ${quoteRequest.message}` : `Online Showcase Inquiry for ${selectedProduct.name}`,
         signatureName: settings?.signatureName || 'MD MAHI UDDIN',
-        signatureLabel: settings?.signatureLabel || 'Managing Director & Owner'
+        signatureLabel: settings?.signatureLabel || 'Managing Director'
       };
 
-      // 3. Save to database / backend & notify admin panel
       if (onSaveCustomer) {
         await onSaveCustomer(customerObj);
       } else {
@@ -230,7 +229,6 @@ export default function PublicCatalog({
       setTimeout(() => {
         setIsQuoteSubmitted(false);
         setQuoteRequest({ name: '', company: '', phone: '', email: '', quantity: 1, message: '' });
-        setSelectedProduct(null);
       }, 5000);
     } catch (err: any) {
       console.error('Failed to submit quote request:', err);
@@ -240,11 +238,11 @@ export default function PublicCatalog({
     }
   };
 
-  // Handle Contact Submission
+  // Handle General Contact Form Submission
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactMessage.name?.trim() || !contactMessage.phone?.trim()) {
-      alert("Please enter your name and phone number.");
+      alert("Please provide your name and phone number.");
       return;
     }
 
@@ -260,7 +258,7 @@ export default function PublicCatalog({
         phone: cleanPhone,
         email: contactMessage.email.trim(),
         address: '',
-        notes: `Website Contact Inquiry: ${contactMessage.message || 'General customer inquiry via contact desk'}`,
+        notes: `Website General Contact Message: ${contactMessage.message || 'General inquiry from public contact form'}`,
         createdAt: new Date().toISOString()
       };
 
@@ -283,148 +281,245 @@ export default function PublicCatalog({
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen flex flex-col">
-      {/* Top Notification Bar */}
-      <div className="bg-blue-900 text-slate-100 text-[11px] md:text-xs font-semibold py-2 px-4 flex justify-between items-center no-print">
-        <div className="flex items-center gap-4 max-w-7xl mx-auto w-full justify-between">
-          <div className="flex flex-wrap items-center gap-3 md:gap-4">
-            <span className="bg-blue-800 text-blue-100 font-extrabold px-2.5 py-0.5 rounded text-[10px] tracking-wide border border-blue-700">
-              Technical support by {settings?.name || 'Jubayer Machineries'}
+    <div className="bg-slate-50 min-h-screen flex flex-col font-sans">
+      {/* 1. TOP ANNOUNCEMENT & CONTACT STRIP */}
+      <div className="bg-slate-900 text-slate-200 text-xs py-2.5 px-4 border-b border-slate-800 no-print">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-[11px] sm:text-xs">
+            <span className="flex items-center gap-1.5 font-bold text-white">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>hitachiairsolutioncenter</span>
+              <span className="text-slate-400 font-medium hidden sm:inline">&bull; Technical support by {settings?.name || 'Jubayer Machineries'}</span>
             </span>
-            <span className="flex items-center gap-1">
-              <Phone className="w-3.5 h-3.5 text-blue-300" /> {settings?.phone1 || '01715-994956'}{settings?.phone2 ? `, ${settings.phone2}` : ''}
-            </span>
-            <span className="hidden sm:flex items-center gap-1">
-              <Mail className="w-3.5 h-3.5 text-blue-300" /> {settings?.email || 'jubayermachineries@gmail.com'}
-            </span>
+            <a 
+              href={phoneCallUrl} 
+              className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5 text-blue-400" />
+              <span>{hotlinePhone}</span>
+            </a>
+            {settings?.email && (
+              <a 
+                href={`mailto:${settings.email}`} 
+                className="hidden md:flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5 text-blue-400" />
+                <span>{settings.email}</span>
+              </a>
+            )}
           </div>
-          <button 
-            onClick={onAdminClick}
-            className="flex items-center gap-1 text-slate-100 hover:text-white bg-blue-800 hover:bg-blue-700 font-bold px-3 py-1 rounded transition-colors text-[11px] cursor-pointer flex-shrink-0"
-          >
-            <Settings2 className="w-3 h-3" />
-            Admin Dashboard
-          </button>
+
+          <div className="flex items-center gap-3">
+            {/* Quick 1-Click Social Bar in Header */}
+            <a
+              href={generalWhatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition-all shadow-2xs"
+              title="Chat on WhatsApp"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+
+            <a
+              href={messengerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition-all shadow-2xs"
+              title="Contact on Facebook Messenger"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Messenger</span>
+            </a>
+
+            <button 
+              onClick={onAdminClick}
+              className="flex items-center gap-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer border border-slate-700 ml-1"
+            >
+              <Settings2 className="w-3 h-3 text-slate-400" />
+              <span>Admin Portal</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main Header / Navigation */}
+      {/* 2. MAIN HEADER NAVIGATION */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs no-print">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Logo & Technical Partner Tag */}
-            <div className="flex items-center gap-3">
-              {settings?.publicLogoUrl ? (
-                <div className="h-11 sm:h-12 w-auto max-w-[280px] flex-shrink-0 flex items-center">
-                  <Logo logoUrl={settings.publicLogoUrl} className="h-full w-auto max-w-full text-blue-900 object-contain" forPublic={true} />
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <span className="text-xl sm:text-2xl font-black text-blue-950 font-display tracking-tight">
-                    {settings?.name || 'Jubayer Machineries'}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {settings?.publicLogoUrl ? (
+              <div className="h-10 sm:h-12 w-auto max-w-[260px] flex items-center">
+                <Logo logoUrl={settings.publicLogoUrl} className="h-full w-auto object-contain" forPublic={true} />
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-display">
+                  hitachiairsolutioncenter
+                </span>
+                <span className="text-[11px] font-bold text-blue-800 tracking-wide">
+                  Technical support by {settings?.name || 'Jubayer Machineries'}
+                </span>
+                {settings?.slogan && (
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    {settings.slogan}
                   </span>
-                </div>
-              )}
-              {settings?.publicLogoUrl && (
-                <div className="hidden lg:flex flex-col justify-center border-l border-slate-200 pl-3">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest leading-none">
-                    Technical Support
-                  </span>
-                  <span className="text-xs font-bold text-slate-800 tracking-tight mt-0.5">
-                    {settings?.name || 'Jubayer Machineries'}
-                  </span>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
-            <a href="#products-showcase" className="hover:text-blue-900 transition-colors">Products</a>
-            <a href="#supported-brands" className="hover:text-blue-900 transition-colors">Brands Supported</a>
-            <a href="#about-us" className="hover:text-blue-900 transition-colors">About Us</a>
-            <a href="#contact" className="hover:text-blue-900 transition-colors">Contact</a>
+          <nav className="hidden md:flex items-center gap-6 text-xs uppercase font-extrabold tracking-wider text-slate-600">
+            <a href="#showcase-catalog" className="hover:text-blue-600 transition-colors">Showcase Catalog</a>
+            <a href="#engineering-solutions" className="hover:text-blue-600 transition-colors">Solutions & Services</a>
+            <a href="#why-choose-us" className="hover:text-blue-600 transition-colors">Why Choose Us</a>
+            <a href="#contact" className="hover:text-blue-600 transition-colors">Contact Us</a>
           </nav>
 
-          <a 
-            href="#contact"
-            className="px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all shadow-xs cursor-pointer"
-          >
-            Get a Quote
-          </a>
+          <div className="flex items-center gap-2.5">
+            <a 
+              href={generalWhatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Direct Chat
+            </a>
+            <a 
+              href="#contact"
+              className="px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              Request Quote
+            </a>
+          </div>
         </div>
       </header>
 
-      {/* Hero Banner Section */}
-      <section className="bg-gradient-to-r from-blue-950 via-blue-900 to-slate-900 text-white py-8 md:py-12 px-4 relative overflow-hidden no-print">
-        {/* Subtle geometric gear mesh in the background */}
-        <div className="absolute inset-0 opacity-5 pointer-events-none flex items-center justify-center">
-          <svg className="w-[500px] h-[500px] text-white animate-spin-slow" viewBox="0 0 100 100" fill="currentColor">
-            <path d="M50,15A35,35 0 1,0 85,50A35,35 0 0,0 50,15 M50,30 A20,20 0 1,1 30,50 A20,20 0 0,1 50,30" />
-            <path d="M50,5 L46,15 L54,15 Z M50,95 L46,85 L54,85 Z M5,50 L15,46 L15,54 Z M95,50 L85,46 L85,54 Z" />
-          </svg>
-        </div>
+      {/* 3. HERO BANNER WITH HITACHI SHOWCASE ACCENTS */}
+      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white py-12 md:py-16 px-4 relative overflow-hidden no-print">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.15),transparent_70%)] pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
-          <div className="lg:col-span-7 space-y-3.5">
-            <div className="inline-flex items-center gap-1.5 bg-blue-800/60 border border-blue-700 text-blue-100 text-[10px] md:text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
-              <Sparkles className="w-3 h-3 text-blue-300" />
-              Industrial Machinery & Spares Supplier in Gazipur
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+          <div className="lg:col-span-7 space-y-4">
+            <div className="inline-flex items-center gap-2 bg-blue-900/60 border border-blue-700/60 text-blue-200 text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full backdrop-blur-xs">
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              Industrial Screw Air Compressors &amp; Genuine Spare Parts
             </div>
-            
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-black font-display tracking-tight leading-snug">
-              Premium Screw Air Compressors & <span className="text-blue-300">Genuine Spare Parts</span>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-display tracking-tight leading-tight text-white">
+              Hitachi Air Solution Center
+              <span className="block text-lg sm:text-xl lg:text-2xl font-bold text-blue-400 mt-1 font-sans">
+                Technical Support by Jubayer Machineries
+              </span>
             </h1>
-            
-            <p className="text-slate-300 text-xs md:text-sm leading-relaxed max-w-xl">
-              We specialize in supply, commission, and repair services of all major brands of industrial screw air compressors, refrigerated dryers, and replacement filtration systems. Your Problem Solution is Sustainable Partner.
+
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
+              Specialized showcase catalog for Hitachi, Atlas Copco, Kaeser, Ingersoll Rand, and all brand screw air compressors, refrigerated air dryers, precision line filters, and 100% genuine replacement spare parts.
             </p>
 
-            <div className="flex flex-wrap gap-3 pt-1">
-              <a 
-                href="#products-showcase" 
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-all hover:translate-x-0.5 flex items-center gap-1.5 cursor-pointer"
+            <div className="bg-blue-900/40 border border-blue-700/50 rounded-xl p-3 text-xs text-blue-200 max-w-xl font-medium">
+              &ldquo;We supply all brand screw air compressor genuine spare parts&rdquo; &bull; Your Problem Solution is Sustainable Partner.
+            </div>
+
+            {/* Quick 1-Click Social Media CTAs in Hero */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <a
+                href={generalWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center gap-2 cursor-pointer"
               >
-                Browse Catalog
-                <ArrowRight className="w-3.5 h-3.5" />
+                <MessageCircle className="w-4 h-4" />
+                Chat on WhatsApp
               </a>
-              <a 
-                href="#contact" 
-                className="px-4 py-2 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+
+              <a
+                href={messengerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer"
               >
-                Contact Sales Office
+                <Send className="w-4 h-4" />
+                Facebook Messenger
               </a>
+
+              <a
+                href={phoneCallUrl}
+                className="px-5 py-3 bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-black uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Phone className="w-4 h-4 text-emerald-400" />
+                Call Hotline
+              </a>
+            </div>
+
+            <div className="pt-2 flex items-center gap-6 text-xs text-slate-400 font-semibold">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                100% Genuine Original Equipment
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-blue-400" />
+                Certified Technical Support
+              </div>
             </div>
           </div>
 
-          {/* Slogan cards / visual points */}
-          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-3.5 rounded-xl space-y-1.5">
-              <Award className="w-5 h-5 text-blue-300" />
-              <h3 className="font-bold text-white text-xs sm:text-sm">Genuine Sourced</h3>
-              <p className="text-[11px] text-slate-300 leading-snug">Direct sourcing for 100% genuine spares from world-leading brands.</p>
+          {/* Hero Feature Highlights Card */}
+          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-4 rounded-2xl">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold mb-3">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-white text-sm">Screw Air Compressors</h3>
+              <p className="text-xs text-slate-400 mt-1 leading-snug">
+                Heavy-duty fixed speed and VSD inverter rotary screw compressors for 24/7 industrial factory air demand.
+              </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-3.5 rounded-xl space-y-1.5">
-              <ShieldCheck className="w-5 h-5 text-blue-300" />
-              <h3 className="font-bold text-white text-xs sm:text-sm">Expert Engineering</h3>
-              <p className="text-[11px] text-slate-300 leading-snug">Professional setup, troubleshooting, and maintenance services.</p>
+
+            <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-4 rounded-2xl">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold mb-3">
+                <Tag className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-white text-sm">100% Genuine Spares</h3>
+              <p className="text-xs text-slate-400 mt-1 leading-snug">
+                Air filters, oil filters, air/oil separators, and New Hiscrew Oil 2000 Japanese synthetic lubricants.
+              </p>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs border border-white/10 p-3 rounded-xl space-y-1 sm:col-span-2">
-              <h4 className="text-[10px] font-bold text-rose-300 uppercase tracking-widest">Our Promise</h4>
-              <p className="text-[11px] text-slate-200 leading-snug">"We supply all brand screw air compressor genuine spare parts with guaranteed post-sales support across Bangladesh."</p>
+
+            <div className="sm:col-span-2 bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-800/40 p-4 rounded-2xl flex items-center justify-between gap-4">
+              <div>
+                <h4 className="font-black text-white text-sm">Need Engineering Advice or a Quote?</h4>
+                <p className="text-xs text-blue-200 mt-0.5">Our experienced technical engineering team is ready to assist.</p>
+              </div>
+              <a
+                href={generalWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 flex-shrink-0 shadow-sm"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                Contact Us
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Showcase / Filters and Catalog */}
-      <main id="products-showcase" className="max-w-7xl mx-auto px-4 md:px-6 py-12 flex-1 w-full no-print">
-        <div className="border-b border-slate-200 pb-6 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      {/* 4. MAIN CUSTOM PRODUCT SHOWCASE CATALOG */}
+      <main id="showcase-catalog" className="max-w-7xl mx-auto px-4 sm:px-6 py-12 flex-1 w-full no-print">
+        {/* Title & Search bar */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6 mb-8">
           <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold font-display text-slate-900 tracking-tight">
-              Our Industrial Machinery Catalog
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-black uppercase tracking-wider mb-2">
+              <Sparkles className="w-3 h-3 text-blue-600" />
+              Public Product Showcase
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-display">
+              Our Showcase Collection
             </h2>
-            <p className="text-xs md:text-sm text-slate-500 mt-1">
-              Explore available heavy machines, refrigeration air dryers, filtration equipment, and mechanical spare parts.
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
+              Select any equipment to explore specifications and connect directly with our engineering team via 1-click WhatsApp or Messenger.
             </p>
           </div>
 
@@ -433,616 +528,696 @@ export default function PublicCatalog({
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search SKU, brand or name..." 
+              placeholder="Search products, models, or brands..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:border-blue-950 focus:ring-1 focus:ring-blue-950 transition-all shadow-2xs"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all shadow-2xs"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="flex flex-wrap items-center gap-3 mb-8 bg-slate-100 p-3 rounded-xl border border-slate-200">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider px-2">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filters:
-          </div>
-          
-          {/* Category Pills */}
-          <div className="flex flex-wrap gap-1.5">
+        {/* Category Pills & Filters */}
+        <div className="space-y-3 mb-8">
+          <div className="flex flex-wrap items-center gap-2">
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => {
-                  setSelectedCategory(cat);
-                  if (cat === 'All') {
-                    handleShuffleRandomProducts();
-                  }
-                }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                   selectedCategory === cat 
                     ? 'bg-blue-900 text-white shadow-xs' 
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
-                {cat === 'All' ? 'All Categories' : cat}
+                {cat === 'All' ? 'All Products' : cat}
               </button>
             ))}
           </div>
 
-          <div className="h-5 w-[1px] bg-slate-300 mx-1 hidden lg:block"></div>
-
-          {/* Brand Pills */}
-          <div className="flex flex-wrap gap-1.5">
-            {brands.map(brand => (
-              <button
-                key={brand}
-                onClick={() => setSelectedBrand(brand)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                  selectedBrand === brand 
-                    ? 'bg-rose-600 text-white shadow-xs' 
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200'
-                }`}
-              >
-                {brand === 'All' ? 'All Brands' : brand}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* View Status & Category Summary Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white p-3.5 px-4 rounded-xl border border-slate-200 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <span className={`w-2.5 h-2.5 rounded-full ${
-              searchQuery.trim().length > 0
-                ? 'bg-emerald-500'
-                : selectedCategory === 'All' 
-                  ? 'bg-amber-500 animate-pulse' 
-                  : 'bg-blue-600'
-            }`}></span>
-            
-            <div className="text-xs">
-              {searchQuery.trim().length > 0 ? (
-                <span className="text-slate-700 font-medium">
-                  Search results for <span className="text-blue-900 font-bold">"{searchQuery}"</span> &bull; Found{' '}
-                  <span className="font-extrabold text-blue-950 font-mono">
-                    {filteredProducts.length}
-                  </span>{' '}
-                  product{filteredProducts.length === 1 ? '' : 's'}
-                </span>
-              ) : selectedCategory === 'All' ? (
-                <span className="text-slate-700 font-medium">
-                  <strong className="text-slate-900 font-bold">All Categories View:</strong> Showing{' '}
-                  <span className="font-extrabold text-blue-900 font-mono">
-                    {filteredProducts.length}
-                  </span>{' '}
-                  randomly selected products {products.length > 20 && `(out of ${products.length} total)`}
-                  {products.length > 20 && (
-                    <span className="text-slate-400 text-[11px] ml-1.5 hidden md:inline">
-                      &bull; Select any specific category above to view all products in that category
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span className="text-slate-700 font-medium">
-                  <strong className="text-slate-900 font-bold">Category: {selectedCategory}</strong> &bull; Showing{' '}
-                  <span className="font-extrabold text-blue-900 font-mono">
-                    all {filteredProducts.length}
-                  </span>{' '}
-                  products
-                </span>
-              )}
+          {brands.length > 2 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] pl-1">
+                Brand Filter:
+              </span>
+              {brands.map(brand => (
+                <button
+                  key={brand}
+                  onClick={() => setSelectedBrand(brand)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    selectedBrand === brand 
+                      ? 'bg-slate-900 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {brand === 'All' ? 'All Brands' : brand}
+                </button>
+              ))}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {selectedCategory === 'All' && products.length > 20 && !searchQuery.trim() && (
-              <button
-                onClick={handleShuffleRandomProducts}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold rounded-lg border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95"
-                title="Shuffle and view 20 different random products"
-              >
-                <Shuffle className="w-3.5 h-3.5 text-blue-700" />
-                <span>Shuffle 20 Products</span>
-              </button>
-            )}
-
-            {selectedCategory !== 'All' && (
-              <button
-                onClick={() => {
-                  setSelectedCategory('All');
-                  handleShuffleRandomProducts();
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 transition-all cursor-pointer"
-              >
-                Back to All (20 Random)
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Catalog Grid */}
-        {filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map(product => (
+        {/* Products Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProducts.map(product => {
+            const waUrl = getProductWhatsAppUrl(product);
+
+            return (
               <div 
                 key={product.id}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-slate-300 transition-all flex flex-col justify-between group"
+                className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"
               >
                 <div>
-                  {/* Image Block */}
-                  <div className="relative h-48 bg-slate-100 overflow-hidden">
-                    <img 
-                      src={product.imageUrl} 
-                      alt={product.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 left-3 bg-blue-900 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                  {/* Image container */}
+                  <div className="relative aspect-video w-full bg-slate-100 overflow-hidden border-b border-slate-100">
+                    {product.imageUrl ? (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                        <Tag className="w-8 h-8 opacity-40 mb-1" />
+                        <span className="text-xs font-bold">Image Preview</span>
+                      </div>
+                    )}
+
+                    {product.badge && (
+                      <span className="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg shadow-sm">
+                        {product.badge}
+                      </span>
+                    )}
+
+                    <div className="absolute top-3 right-3 bg-slate-900/70 backdrop-blur-xs text-white text-[10px] font-extrabold px-2.5 py-1 rounded-lg">
                       {product.brand}
                     </div>
                   </div>
 
-                  {/* Body Details */}
-                  <div className="p-5 space-y-3">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      {product.category} &bull; Model {product.sku}
+                  {/* Body Content */}
+                  <div className="p-5">
+                    <div className="text-[11px] font-extrabold text-blue-600 uppercase tracking-wider mb-1">
+                      {product.category}
                     </div>
-                    
-                    <h3 className="font-bold text-slate-900 group-hover:text-blue-900 transition-colors text-base leading-snug line-clamp-2 h-11">
+
+                    <h3 
+                      onClick={() => setSelectedProduct(product)}
+                      className="font-black text-slate-900 text-base line-clamp-2 leading-snug cursor-pointer hover:text-blue-600 transition-colors"
+                      title={product.name}
+                    >
                       {product.name}
                     </h3>
-                    
-                    <p className="text-xs text-slate-500 line-clamp-2 h-8 leading-relaxed">
-                      {product.description}
-                    </p>
 
-                    {/* Specifications List */}
+                    {/* Price */}
+                    <div className="mt-3 flex items-baseline gap-2">
+                      {product.callForPrice ? (
+                        <span className="px-3 py-1 rounded-lg bg-blue-50 text-blue-900 text-xs font-black border border-blue-200">
+                          Call for Price / Negotiable
+                        </span>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xl font-black text-slate-900">
+                            ৳ {Number(product.price).toLocaleString()}
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-400">
+                            / Set
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Specs Pills */}
                     {product.specs && product.specs.length > 0 && (
-                      <div className="border-t border-slate-100 pt-3 mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
-                        {product.specs.slice(0, 4).map((spec, i) => (
-                          <div key={i} className="text-slate-500 truncate">
-                            <span className="font-bold text-slate-700">{spec.label}:</span> {spec.value}
+                      <div className="mt-3.5 space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        {product.specs.slice(0, 3).map((spec, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs text-slate-600">
+                            <span className="text-[11px] font-bold text-slate-400">{spec.label}:</span>
+                            <span className="text-[11px] font-bold text-slate-800">{spec.value}</span>
                           </div>
                         ))}
                       </div>
                     )}
+
+                    {product.description && (
+                      <p className="mt-3 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        {product.description}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Footer and Price */}
-                <div className="px-5 pb-5 pt-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none mb-1">
-                      Pricing Info
-                    </span>
-                    <span className="text-xs font-extrabold text-blue-950 italic">
-                      Contact for Price
-                    </span>
+                {/* 1-CLICK SOCIAL MEDIA CONTACT ACTIONS ON CARD */}
+                <div className="p-4 pt-2 border-t border-slate-100 bg-slate-50/60 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* 1-Click WhatsApp Button */}
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-2xs hover:shadow-emerald-500/25 cursor-pointer"
+                      title="Inquire about this product on WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </a>
+
+                    {/* 1-Click Messenger Button */}
+                    <a
+                      href={messengerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-2xs hover:shadow-blue-500/25 cursor-pointer"
+                      title="Contact on Facebook Messenger"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Messenger</span>
+                    </a>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedProduct(product)}
-                    className="px-3.5 py-2 bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    Details & Quote
-                  </button>
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <a
+                      href={phoneCallUrl}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      <Phone className="w-3 h-3 text-emerald-600" /> Direct Call
+                    </a>
+
+                    <button
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setActiveModalTab('contact');
+                      }}
+                      className="text-[11px] font-black text-blue-700 hover:text-blue-900 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      View Details <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-slate-200 py-16 px-4 text-center max-w-md mx-auto">
-            <SlidersHorizontal className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-900 font-display">No Products Match Filters</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Try updating your search query or setting the category and brand filters back to "All".
-            </p>
-            <button 
-              onClick={() => { 
-                setSelectedCategory('All'); 
-                setSelectedBrand('All'); 
-                setSearchQuery(''); 
-                handleShuffleRandomProducts();
-              }}
-              className="mt-4 px-4 py-2 bg-blue-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg cursor-pointer"
-            >
-              Reset Filters
-            </button>
-          </div>
-        )}
+            );
+          })}
+
+          {filteredProducts.length === 0 && (
+            <div className="col-span-full py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300">
+              <Sparkles className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <h4 className="text-base font-black text-slate-700">No products found</h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Try adjusting your search query or choosing another category.
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedCategory('All');
+                  setSelectedBrand('All');
+                  setSearchQuery('');
+                }}
+                className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          )}
+        </div>
       </main>
 
-      {/* Brands Bottom Section */}
-      <section id="supported-brands" className="bg-white border-t border-b border-slate-200 py-12 px-4 no-print">
-        <div className="max-w-7xl mx-auto text-center space-y-6">
-          <h2 className="text-xs font-bold text-rose-600 uppercase tracking-widest">Premium Brands We Support</h2>
-          <p className="text-sm text-slate-500 max-w-xl mx-auto">
-            We provide parts, overhaul services, and brand-new machinery of all major global compressed air giants.
-          </p>
-          
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 opacity-85">
-            <div className="flex flex-col items-center">
-              <span className="text-sm font-black font-display text-blue-900 tracking-tight">HITACHI</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">Japan</span>
+      {/* 5. ENGINEERING SOLUTIONS & WHY CHOOSE US */}
+      <section id="engineering-solutions" className="bg-white py-14 border-t border-slate-200 no-print">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-display">
+              Our Engineering Services & Solutions
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-2">
+              Beyond equipment sales — we are your reliable long-term engineering partner for technical planning, installation, and preventive maintenance.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3 className="font-extrabold text-slate-900 text-base">Screw Air Compressor Engineering</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Turnkey installation, piping design, pressure regulation, and commissioning of fixed speed and VSD inverter rotary screw compressor systems.
+              </p>
             </div>
-            <div className="flex flex-col items-center">
-              <span className="text-sm font-black font-display text-blue-800 tracking-tight">Atlas Copco</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">Sweden</span>
+
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="font-extrabold text-slate-900 text-base">100% Genuine Spare Parts & Oil</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Factory OEM air/oil separator elements, intake filters, micro line filters, and Hitachi New Hiscrew Oil 2000 Japanese synthetic lubricants.
+              </p>
             </div>
-            <div className="flex flex-col items-center">
-              <span className="text-sm font-black font-display text-teal-800 tracking-tight">KAESER</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">Germany</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-sm font-black font-display text-slate-800 tracking-tight">BOGE</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">Germany</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-sm font-black font-display text-rose-800 tracking-tight">ELGi</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">India</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-sm font-black font-display text-indigo-950 tracking-tight">Ingersoll Rand</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase">USA</span>
+
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shadow-xs">
+                <Award className="w-5 h-5" />
+              </div>
+              <h3 className="font-extrabold text-slate-900 text-base">Annual Maintenance Contracts (AMC)</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Comprehensive scheduled maintenance, screw airend overhauling, cooler cleaning, vibration diagnostics, and 24/7 breakdown technical support.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about-us" className="py-16 px-4 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center no-print border-b border-slate-200">
-        <div className="space-y-4">
-          <span className="text-xs font-bold text-blue-900 uppercase tracking-widest block">About Hitachi Air Solution Center</span>
-          <h2 className="text-2xl md:text-3xl font-extrabold font-display text-slate-900 tracking-tight leading-tight">
-            Reliable Partner in Industrial Compressed Air Solutions
-          </h2>
-          <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-            Based in Gazipur City, the heart of Bangladesh's manufacturing hubs, we supply screw air compressors, refrigerated dryers, line filters, and genuine spare parts. We maintain a showroom of standard components to ensure your mills run without interruption.
-          </p>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-              <Check className="w-4 h-4 text-emerald-600" /> Fully integrated supply and troubleshooting setup.
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-              <Check className="w-4 h-4 text-emerald-600" /> Authorized parts sourcing matching strict machinery specs.
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-              <Check className="w-4 h-4 text-emerald-600" /> Technical on-site maintenance inside Gazipur, Dhaka, & Narsingdi.
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-8 space-y-6">
-          <h3 className="font-bold text-slate-900 font-display text-lg">Our Vision Slogan</h3>
-          <p className="text-sm italic text-blue-950 font-sans leading-relaxed">
-            "Your Problem Solution is Sustainable Partner. We believe in building trust through authentic parts and professional engineer support to maximize machinery lifetime."
-          </p>
-          <div className="border-t border-blue-200 pt-4 flex justify-between items-center text-xs">
-            <div>
-              <p className="font-bold text-slate-900">MD MAHI UDDIN</p>
-              <p className="text-slate-500">Managing Director</p>
-            </div>
-            <span className="bg-blue-900 text-white font-bold text-[10px] px-2 py-1 rounded">EST. 2018</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Contact & Quotation Office Section */}
-      <section id="contact" className="py-16 px-4 bg-slate-900 text-white no-print">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Left Details */}
-          <div className="lg:col-span-5 space-y-6">
-            <div>
-              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest block mb-1">Corporate Presence</span>
-              <h2 className="text-2xl md:text-3xl font-extrabold font-display leading-tight">
-                Our Head Office & Showroom
-              </h2>
-            </div>
-
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              Drop by our showroom in Bason Sharok, Gazipur to inspect compressors in person, or reach out to our service team via phone or email for immediate diagnostics.
+      {/* 6. CONTACT & QUICK INQUIRY SECTION */}
+      <section id="contact" className="bg-slate-900 text-white py-14 px-4 no-print border-t border-slate-800">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-5 space-y-4">
+            <span className="text-blue-400 text-xs font-black uppercase tracking-wider">
+              Get In Touch
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black font-display text-white tracking-tight">
+              Our Office & Showroom
+            </h2>
+            <p className="text-slate-300 text-xs leading-relaxed">
+              Connect with our technical consultants for product demonstrations, customized VRF project estimates, or emergency servicing.
             </p>
 
-            <div className="space-y-4 text-xs md:text-sm">
-              <div className="flex gap-3">
-                <MapPin className="w-5 h-5 text-rose-500 flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white">Office Address</h4>
-                  <p className="text-slate-300 text-xs mt-1 leading-relaxed">
-                    Showroom & Office: Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City, Bangladesh.
-                  </p>
-                </div>
+            <div className="space-y-3 pt-2 text-xs">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                <span className="text-slate-200">
+                  {settings?.address || 'Haji Siddique Complex, Mollah Market, Bason Sarak, Gazipur City.'}
+                </span>
               </div>
 
-              <div className="flex gap-3">
-                <Phone className="w-5 h-5 text-rose-500 flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white">Direct Hotlines</h4>
-                  <p className="text-slate-300 text-xs mt-1">
-                    01715-994956<br />01799-498199
-                  </p>
-                </div>
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span className="text-slate-200">{hotlinePhone}{settings?.phone2 ? `, ${settings.phone2}` : ''}</span>
               </div>
 
-              <div className="flex gap-3">
-                <Mail className="w-5 h-5 text-rose-500 flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-white">Official Email</h4>
-                  <p className="text-slate-300 text-xs mt-1 leading-relaxed">
-                    jubayermachineries@gmail.com<br />
-                    hitachiairsolutioncenter@gmail.com
-                  </p>
+              {settings?.email && (
+                <div className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  <span className="text-slate-200">{settings.email}</span>
                 </div>
-              </div>
+              )}
+            </div>
+
+            {/* Direct Social Links */}
+            <div className="pt-4 flex flex-wrap items-center gap-3">
+              <a
+                href={generalWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp Chat
+              </a>
+
+              <a
+                href={messengerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                <Send className="w-4 h-4" />
+                Facebook Messenger
+              </a>
+
+              {settings?.telegramUrl && (
+                <a
+                  href={settings.telegramUrl.startsWith('http') ? settings.telegramUrl : `https://t.me/${settings.telegramUrl.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider transition-all"
+                >
+                  <Send className="w-4 h-4" />
+                  Telegram
+                </a>
+              )}
             </div>
           </div>
 
-          {/* Right Form */}
-          <div className="lg:col-span-7 bg-slate-850 border border-slate-800 p-6 md:p-8 rounded-2xl shadow-lg">
-            <h3 className="font-bold text-lg font-display text-white mb-4">Send an Instant Inquiry</h3>
-            
-            {isContactSubmitted ? (
-              <div className="bg-emerald-500/10 border border-emerald-500 text-emerald-400 p-6 rounded-xl text-center space-y-2">
-                <Check className="w-10 h-10 text-emerald-400 mx-auto" />
-                <h4 className="font-bold text-base text-white">Inquiry Submitted Successfully</h4>
-                <p className="text-xs text-slate-300">
-                  Thank you for contacting Hitachi Air Solution Center. Our sales team will reach out to you via your phone number within 1 hour.
-                </p>
+          {/* Quick Message Form */}
+          <div className="lg:col-span-7 bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-slate-700">
+            <h3 className="text-base font-black text-white mb-1">
+              Send Us a Direct Message
+            </h3>
+            <p className="text-xs text-slate-400 mb-4">
+              Submit your inquiry and contact information. Our representative will get back to you promptly.
+            </p>
+
+            <form onSubmit={handleContactSubmit} className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Your Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactMessage.name}
+                    onChange={(e) => setContactMessage(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g. Engr. Tanvir Ahmed"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Phone Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactMessage.phone}
+                    onChange={(e) => setContactMessage(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="e.g. 01715-XXXXXX"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-blue-500"
+                  />
+                </div>
               </div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="font-bold text-slate-300">Your Full Name <span className="text-rose-500">*</span></label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="e.g. Engr. Atiqur Rahman" 
-                      value={contactMessage.name}
-                      onChange={(e) => setContactMessage({...contactMessage, name: e.target.value})}
-                      className="w-full bg-slate-800 border border-slate-700 focus:outline-hidden focus:border-rose-500 rounded-lg p-2.5 text-white"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="font-bold text-slate-300">Phone Number <span className="text-rose-500">*</span></label>
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="e.g. 01712-XXXXXX" 
-                      value={contactMessage.phone}
-                      onChange={(e) => setContactMessage({...contactMessage, phone: e.target.value})}
-                      className="w-full bg-slate-800 border border-slate-700 focus:outline-hidden focus:border-rose-500 rounded-lg p-2.5 text-white"
-                    />
-                  </div>
-                </div>
 
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-300">Email Address</label>
-                  <input 
-                    type="email" 
-                    placeholder="e.g. atiq@factory.com" 
-                    value={contactMessage.email}
-                    onChange={(e) => setContactMessage({...contactMessage, email: e.target.value})}
-                    className="w-full bg-slate-800 border border-slate-700 focus:outline-hidden focus:border-rose-500 rounded-lg p-2.5 text-white"
-                  />
-                </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">Email (Optional)</label>
+                <input
+                  type="email"
+                  value={contactMessage.email}
+                  onChange={(e) => setContactMessage(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="name@company.com"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-blue-500"
+                />
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-300">Requirement details or Spare Parts SNo.</label>
-                  <textarea 
-                    rows={4}
-                    placeholder="Describe which compressor model spare part or overhaul service you require..." 
-                    value={contactMessage.message}
-                    onChange={(e) => setContactMessage({...contactMessage, message: e.target.value})}
-                    className="w-full bg-slate-800 border border-slate-700 focus:outline-hidden focus:border-rose-500 rounded-lg p-2.5 text-white"
-                  />
-                </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1">Your Message / Requirements</label>
+                <textarea
+                  rows={3}
+                  value={contactMessage.message}
+                  onChange={(e) => setContactMessage(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Describe your HVAC inquiry, required capacity, or project details..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-blue-500 font-sans"
+                />
+              </div>
 
-                <button 
-                  type="submit"
-                  className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors cursor-pointer"
-                >
-                  Submit Inquiry
-                </button>
-              </form>
-            )}
+              {isContactSubmitted && (
+                <div className="p-3 bg-emerald-900/60 border border-emerald-500/50 rounded-xl text-emerald-200 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  Thank you! Your message has been submitted. Our sales and engineering team will reach out shortly.
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmittingContact}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-extrabold uppercase tracking-wider text-xs transition-all shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {isSubmittingContact ? 'Sending Message...' : 'Send Message'}
+              </button>
+            </form>
           </div>
         </div>
       </section>
 
-      {/* Footer copyright */}
-      <footer className="bg-slate-950 text-slate-400 text-xs py-8 border-t border-slate-900 no-print">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
-          <div className="flex items-center gap-3">
-            {settings?.publicLogoUrl && (
-              <div className="h-9 w-auto flex-shrink-0">
-                <Logo logoUrl={settings.publicLogoUrl} className="h-full w-auto text-white" light={true} forPublic={true} />
-              </div>
-            )}
-            <div>
-              <p className="font-bold text-slate-200">
-                &copy; 2026 Hitachi Air Solution Center &bull; <span className="text-blue-400">Technical support by Jubayer Machineries</span>
-              </p>
-              <p className="text-[11px] text-slate-500 mt-0.5">All Rights Reserved &bull; Gazipur Industrial Zone, Bangladesh</p>
+      {/* 7. FOOTER */}
+      <footer className="bg-slate-950 text-slate-400 text-xs py-8 px-4 border-t border-slate-900 no-print">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+            <div className="font-extrabold text-white text-sm">
+              hitachiairsolutioncenter
+              <span className="text-slate-400 font-semibold block text-[11px] mt-0.5">
+                Technical support by {settings?.name || 'Jubayer Machineries'}
+              </span>
             </div>
+            <p className="text-[11px] text-slate-500 mt-1">
+              {settings?.slogan || 'Your Problem Solution is Sustainable Partner'}
+            </p>
+
+          <div className="text-[11px] text-slate-500">
+            © {new Date().getFullYear()} {settings?.name || 'Hitachi Air Solution Center'}. All rights reserved.
           </div>
-          <p className="italic text-xs font-medium text-slate-400">"Your Problem Solution is Sustainable Partner."</p>
+
+          <div className="flex items-center gap-4 text-xs font-bold">
+            <a href={generalWhatsAppUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+              WhatsApp
+            </a>
+            <a href={messengerUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+              Messenger
+            </a>
+            <button onClick={onAdminClick} className="text-slate-400 hover:text-white transition-colors cursor-pointer">
+              Admin Login
+            </button>
+          </div>
         </div>
       </footer>
 
-      {/* PRODUCT SPECIFICATION & QUICK INQUIRY MODAL */}
+      {/* 8. FLOATING 1-CLICK QUICK CONTACT SPEED DIAL (Fixed bottom corner) */}
+      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2.5 no-print">
+        {/* WhatsApp Floating Action Button */}
+        <a
+          href={generalWhatsAppUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-2xl hover:scale-105 transition-all group"
+          title="Chat directly on WhatsApp"
+        >
+          <MessageCircle className="w-5 h-5 animate-bounce" />
+          <span className="hidden sm:inline font-bold">WhatsApp Chat</span>
+        </a>
+
+        {/* Messenger Floating Action Button */}
+        <a
+          href={messengerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all"
+          title="Facebook Messenger"
+        >
+          <Send className="w-5 h-5" />
+        </a>
+      </div>
+
+      {/* 9. PRODUCT DETAILS & 1-CLICK SOCIAL CONTACT MODAL */}
       {selectedProduct && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="bg-blue-900 text-white p-5 flex justify-between items-center">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest block mb-0.5">
-                  Product Specifications
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">
+                  {selectedProduct.category}
                 </span>
-                <h3 className="font-bold font-display text-base leading-none">
+                <h3 className="font-extrabold text-base sm:text-lg line-clamp-1 text-white">
                   {selectedProduct.name}
                 </h3>
               </div>
-              <button 
-                onClick={() => { setSelectedProduct(null); setIsQuoteSubmitted(false); }}
-                className="text-white/80 hover:text-white font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer"
+              <button
+                onClick={() => {
+                  setSelectedProduct(null);
+                  setIsQuoteSubmitted(false);
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                Close &times;
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Scrollable Body */}
-            <div className="p-6 overflow-y-auto space-y-6 text-xs flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Specs list */}
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-bold text-slate-900 mb-1.5 text-xs">Technical Details</h4>
-                    <div className="border border-slate-100 rounded-lg overflow-hidden divide-y divide-slate-100">
-                      <div className="flex justify-between p-2.5 bg-slate-50">
-                        <span className="text-slate-500 font-semibold">SKU Code</span>
-                        <span className="font-bold text-slate-800">{selectedProduct.sku}</span>
-                      </div>
-                      <div className="flex justify-between p-2.5">
-                        <span className="text-slate-500 font-semibold">Category</span>
-                        <span className="font-bold text-slate-800">{selectedProduct.category}</span>
-                      </div>
-                      <div className="flex justify-between p-2.5 bg-slate-50">
-                        <span className="text-slate-500 font-semibold">Brand Origin</span>
-                        <span className="font-bold text-slate-800">{selectedProduct.brand}</span>
-                      </div>
-                      <div className="flex justify-between p-2.5">
-                        <span className="text-slate-500 font-semibold">Unit Type</span>
-                        <span className="font-bold text-slate-800">{selectedProduct.unit}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedProduct.specs && selectedProduct.specs.length > 0 && (
-                    <div>
-                      <h4 className="font-bold text-slate-900 mb-1.5 text-xs">Manufacturer Specs</h4>
-                      <div className="border border-slate-100 rounded-lg overflow-hidden divide-y divide-slate-100">
-                        {selectedProduct.specs.map((spec, i) => (
-                          <div key={i} className="flex justify-between p-2.5 hover:bg-slate-50 transition-colors">
-                            <span className="text-slate-500 font-semibold">{spec.label}</span>
-                            <span className="font-bold text-slate-800 text-right">{spec.value}</span>
-                          </div>
-                        ))}
-                      </div>
+            {/* Modal Body */}
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5">
+              {/* Product Visual & Price */}
+              <div className="flex flex-col sm:flex-row gap-5 items-start">
+                <div className="w-full sm:w-52 aspect-video sm:aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0">
+                  {selectedProduct.imageUrl ? (
+                    <img 
+                      src={selectedProduct.imageUrl} 
+                      alt={selectedProduct.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold">
+                      No Image
                     </div>
                   )}
                 </div>
 
-                {/* Right form inside detail modal */}
-                <div className="bg-slate-50 p-5 rounded-xl border border-slate-200">
-                  <h4 className="font-bold text-slate-900 mb-3 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
-                    Request Official Quotation
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[11px] font-black uppercase tracking-wider">
+                      {selectedProduct.brand}
+                    </span>
+                    {selectedProduct.badge && (
+                      <span className="px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[11px] font-black uppercase tracking-wider">
+                        {selectedProduct.badge}
+                      </span>
+                    )}
+                  </div>
+
+                  <h4 className="font-extrabold text-slate-900 text-base leading-snug">
+                    {selectedProduct.name}
                   </h4>
 
-                  {isQuoteSubmitted ? (
-                    <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-5 rounded-xl text-center space-y-3 h-full flex flex-col justify-center py-6">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
-                        <Check className="w-6 h-6" />
-                      </div>
-                      <h5 className="font-extrabold text-slate-900 text-sm">Quotation Created Successfully!</h5>
-                      {generatedQuoteNumber && (
-                        <div className="inline-block bg-white px-3 py-1.5 rounded-lg border border-emerald-300 font-mono font-black text-blue-900 text-xs shadow-2xs">
-                          Quotation Ref: {generatedQuoteNumber}
-                        </div>
-                      )}
-                      <p className="text-[11px] text-slate-600 leading-normal">
-                        Your official quotation for <strong>{selectedProduct.name}</strong> has been logged in our system. MD MAHI UDDIN's sales desk is preparing your formal proposal and will reach out to you directly.
-                      </p>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleQuoteSubmit} className="space-y-3">
-                      <div className="space-y-1">
-                        <label className="font-bold text-slate-600">Your Name <span className="text-rose-600">*</span></label>
-                        <input 
-                          type="text" 
-                          required
-                          placeholder="e.g. Engr. Yusuf" 
-                          value={quoteRequest.name}
-                          onChange={(e) => setQuoteRequest({...quoteRequest, name: e.target.value})}
-                          className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800"
-                        />
-                      </div>
+                  <div className="text-xl font-black text-slate-900 pt-1">
+                    {selectedProduct.callForPrice ? (
+                      <span className="text-blue-700 text-sm font-bold bg-blue-50 px-3 py-1 rounded-md border border-blue-200">
+                        Call for Price / Negotiable
+                      </span>
+                    ) : (
+                      <>৳ {Number(selectedProduct.price).toLocaleString()}</>
+                    )}
+                  </div>
 
-                      <div className="space-y-1">
-                        <label className="font-bold text-slate-600">Company / Factory Name</label>
-                        <input 
-                          type="text" 
-                          placeholder="e.g. Hamza Fabrics Ltd." 
-                          value={quoteRequest.company}
-                          onChange={(e) => setQuoteRequest({...quoteRequest, company: e.target.value})}
-                          className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <label className="font-bold text-slate-600">Phone / Contact <span className="text-rose-600">*</span></label>
-                          <input 
-                            type="tel" 
-                            required
-                            placeholder="e.g. 01712-XXXXXX" 
-                            value={quoteRequest.phone}
-                            onChange={(e) => setQuoteRequest({...quoteRequest, phone: e.target.value})}
-                            className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="font-bold text-slate-600">Quantity</label>
-                          <input 
-                            type="number" 
-                            min="1"
-                            placeholder="1" 
-                            value={quoteRequest.quantity}
-                            onChange={(e) => setQuoteRequest({...quoteRequest, quantity: Number(e.target.value) || 1})}
-                            className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800 font-bold font-mono"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-bold text-slate-600">Email Address (Optional)</label>
-                        <input 
-                          type="email" 
-                          placeholder="e.g. purchase@company.com" 
-                          value={quoteRequest.email}
-                          onChange={(e) => setQuoteRequest({...quoteRequest, email: e.target.value})}
-                          className="w-full bg-white border border-slate-200 focus:outline-hidden focus:border-blue-900 rounded-md p-2 text-slate-800"
-                        />
-                      </div>
-
-                      <button 
-                        type="submit"
-                        disabled={isSubmittingQuote}
-                        className="w-full py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
-                      >
-                        {isSubmittingQuote ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Generating Quotation...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="w-4 h-4 text-blue-300" />
-                            <span>Request Official Quotation</span>
-                          </>
-                        )}
-                      </button>
-                    </form>
+                  {selectedProduct.description && (
+                    <p className="text-xs text-slate-600 leading-relaxed pt-1">
+                      {selectedProduct.description}
+                    </p>
                   )}
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-bold text-slate-900 mb-1.5">Extended Description</h4>
-                <p className="text-slate-600 leading-relaxed font-sans">{selectedProduct.description}</p>
+              {/* Specifications Table */}
+              {selectedProduct.specs && selectedProduct.specs.length > 0 && (
+                <div>
+                  <h5 className="text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
+                    Technical Specifications:
+                  </h5>
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-200 text-xs">
+                    {selectedProduct.specs.map((spec, i) => (
+                      <div key={i} className="flex items-center justify-between px-3.5 py-2">
+                        <span className="font-bold text-slate-500">{spec.label}</span>
+                        <span className="font-extrabold text-slate-900">{spec.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 1-CLICK INSTANT SOCIAL CONTACT PANEL IN MODAL */}
+              <div className="bg-gradient-to-r from-emerald-50 via-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    1-Click Instant Connect
+                  </div>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                    Direct Response
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <a
+                    href={getProductWhatsAppUrl(selectedProduct)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-extrabold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Chat on WhatsApp
+                  </a>
+
+                  <a
+                    href={messengerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-extrabold text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+                  >
+                    <Send className="w-4 h-4" />
+                    Facebook Messenger
+                  </a>
+                </div>
+
+                <div className="text-center">
+                  <a
+                    href={phoneCallUrl}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900"
+                  >
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                    Direct Hotline: <strong className="text-slate-900">{hotlinePhone}</strong>
+                  </a>
+                </div>
+              </div>
+
+              {/* Tabs for Quote Request */}
+              <div className="border-t border-slate-200 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalTab(activeModalTab === 'quote' ? 'contact' : 'quote')}
+                    className="text-xs font-extrabold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    {activeModalTab === 'quote' ? 'Hide Form' : 'Need an official quotation proposal? Click here to request'}
+                  </button>
+                </div>
+
+                {activeModalTab === 'quote' && (
+                  <form onSubmit={handleQuoteSubmit} className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Your Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={quoteRequest.name}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Your full name"
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Phone Number *</label>
+                        <input
+                          type="text"
+                          required
+                          value={quoteRequest.phone}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="017XXXXXXXX"
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Company / Organization</label>
+                        <input
+                          type="text"
+                          value={quoteRequest.company}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, company: e.target.value }))}
+                          placeholder="Company or facility name"
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Quantity</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={quoteRequest.quantity}
+                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, quantity: Number(e.target.value) || 1 }))}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {isQuoteSubmitted && (
+                      <div className="p-3 bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg font-bold flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Quotation request received! Quotation Ref: {generatedQuoteNumber}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isSubmittingQuote}
+                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {isSubmittingQuote ? 'Submitting...' : 'Submit Quotation Request'}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </div>

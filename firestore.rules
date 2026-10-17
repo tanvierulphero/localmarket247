@@ -13,6 +13,16 @@ service cloud.firestore {
     }
 
     // Validation blueprints for entities
+    function isValidCatalogProduct(cp) {
+      return cp.keys().hasAll(['id', 'name', 'category', 'brand', 'price', 'status'])
+        && cp.id is string && cp.id.size() <= 128
+        && cp.name is string && cp.name.size() <= 200
+        && cp.category is string && cp.category.size() <= 100
+        && cp.brand is string && cp.brand.size() <= 100
+        && cp.price is number && cp.price >= 0
+        && cp.status is string && cp.status.size() <= 50;
+    }
+
     function isValidProduct(p) {
       return p.keys().hasAll(['id', 'name', 'sku', 'category', 'brand', 'price', 'stock', 'unit'])
         && p.keys().hasOnly(['id', 'name', 'sku', 'category', 'brand', 'price', 'stock', 'unit', 'description', 'specs', 'imageUrl'])
@@ -67,6 +77,11 @@ service cloud.firestore {
     }
 
     // Collection Rules with strict schema boundaries
+    match /catalogProducts/{productId} {
+      allow read: if true;
+      allow write: if isValidId(productId) && (request.method == 'delete' || isValidCatalogProduct(request.resource.data));
+    }
+
     match /products/{productId} {
       allow read: if true;
       allow write: if isValidId(productId) && (request.method == 'delete' || isValidProduct(request.resource.data));

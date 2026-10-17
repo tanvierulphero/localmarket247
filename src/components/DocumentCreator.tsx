@@ -552,10 +552,10 @@ export default function DocumentCreator({
                     <Coins className="w-4 h-4 text-emerald-600" />
                     <div>
                       <span className="font-bold text-xs text-slate-800 block">
-                        Mark as Paid / টাকা পরিশোধিত (ঐচ্ছিক)
+                        Mark as Paid (Optional)
                       </span>
                       <span className="text-[10px] text-slate-500 block">
-                        চালান ডেলিভারির সময় নগদ বা চেক পেমেন্ট পাওয়া গেলে Paid হিসেবে চিহ্নিত করুন (ঐচ্ছিক)
+                        Mark as Paid if cash or cheque payment is collected upon challan delivery
                       </span>
                     </div>
                   </div>
@@ -603,7 +603,7 @@ export default function DocumentCreator({
                       );
                       return (
                         <option key={ch.id} value={ch.id} disabled={alreadyInvoiced} className={alreadyInvoiced ? 'text-slate-400 bg-slate-100' : ''}>
-                          [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; Date: {ch.date} &bull; ({ch.items.length} items){alreadyInvoiced ? ' [Already Invoiced / ইনভয়েস সম্পন্ন]' : ''}
+                          [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; Date: {ch.date} &bull; ({ch.items.length} items){alreadyInvoiced ? ' [Already Invoiced]' : ''}
                         </option>
                       );
                     })}
@@ -921,7 +921,7 @@ export default function DocumentCreator({
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
                     <Search className="w-3.5 h-3.5 text-blue-700" />
-                    Search Product by Part Number / SKU (পার্টস নাম্বার দিয়ে সার্চ ও সিলেক্ট করুন)
+                    Search Product by Part Number / SKU
                   </label>
                   <span className="text-[10px] font-bold text-slate-500">
                     {products.length} products in inventory
@@ -1251,7 +1251,7 @@ export default function DocumentCreator({
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
                         <CreditCard className="w-3.5 h-3.5 text-blue-700" />
-                        Partial Pay / Paid Amount (জমা টাকা)
+                        Partial Pay / Paid Amount
                       </label>
                       <span className="text-[10px] font-bold text-slate-500">
                         Total: Tk. {total.toLocaleString()}
@@ -1283,7 +1283,7 @@ export default function DocumentCreator({
                         onClick={() => setPaidAmount(total)}
                         className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold rounded-md transition-colors cursor-pointer"
                       >
-                        Full Paid (সম্পূর্ণ পরিশোধ)
+                        Full Paid
                       </button>
                       <button
                         type="button"
@@ -1297,7 +1297,7 @@ export default function DocumentCreator({
                         onClick={() => setPaidAmount(0)}
                         className="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 text-[10px] font-bold rounded-md transition-colors cursor-pointer"
                       >
-                        Full Due / Credit (বাকি)
+                        Full Due / Credit
                       </button>
                     </div>
 
@@ -1305,7 +1305,7 @@ export default function DocumentCreator({
                     <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center justify-between shadow-2xs">
                       <div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                          Outstanding Due (অবশিষ্ট বকেয়া)
+                          Outstanding Due
                         </span>
                         <span className={`text-base font-black font-mono ${calculatedDue > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
                           Tk. {calculatedDue.toLocaleString()}
@@ -1355,7 +1355,7 @@ export default function DocumentCreator({
             <div className="space-y-3 pt-2 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  Authorized Signatory (স্বাক্ষরকারী):
+                  Authorized Signatory:
                 </span>
                 {currentUser && (
                   <span className="text-[9.5px] font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1">
@@ -1367,7 +1367,7 @@ export default function DocumentCreator({
 
               {/* Quick Select Signatory Account */}
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-700">Quick Select Signatory (অ্যাকাউন্ট অনুযায়ী নির্বাচন)</label>
+                <label className="text-[11px] font-bold text-slate-700">Quick Select Signatory</label>
                 <select
                   value={staffUsers?.find(s => s.name === signatureName)?.id || (currentUser?.name === signatureName ? currentUser?.id : 'custom')}
                   onChange={(e) => {
@@ -1396,7 +1396,7 @@ export default function DocumentCreator({
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Authorized Signature Name (অনুমোদনকারীর নাম)</label>
+                <label className="font-bold text-slate-700">Authorized Signature Name</label>
                 <input
                   type="text"
                   value={signatureName}
@@ -1407,7 +1407,7 @@ export default function DocumentCreator({
 
               {/* Signature designation */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Designation / Role Title (পদবি)</label>
+                <label className="font-bold text-slate-700">Designation / Role Title</label>
                 <input
                   type="text"
                   value={signatureLabel}

@@ -40,8 +40,8 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER || 'ftp.localmarket247.top' }}
-          username: ${{ secrets.FTP_USERNAME || 'hitachisolutioncenter@localmarket247.top' }}
-          password: ${{ secrets.FTP_PASSWORD || 'hitachisolutioncenter' }}
+          username: ${{ secrets.FTP_USERNAME || 'hitachiairsolutioncenter@localmarket247.top' }}
+          password: ${{ secrets.FTP_PASSWORD || 'hitachiairsolutioncenter' }}
           server-dir: ${{ secrets.FTP_TARGET_DIR || './' }}
           local-dir: ./deploy_dist/
           state-name: .ftp-deploy-sync-state.json

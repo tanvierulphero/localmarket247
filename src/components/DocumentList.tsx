@@ -129,11 +129,11 @@ export default function DocumentList({
     let newStatus: DocumentStatus;
 
     if (paymentMode === 'FULL') {
-      newPaid = fin.total;
+      newPaid = Math.max(fin.total, fin.paid + numAmount);
       newDue = 0;
       newStatus = 'Paid';
     } else {
-      newPaid = Math.min(fin.total, fin.paid + numAmount);
+      newPaid = fin.paid + numAmount;
       newDue = Math.max(0, fin.total - newPaid);
       newStatus = newDue === 0 ? 'Paid' : (paymentModalDoc.type === 'CHALLAN' ? 'Active' : 'Partially Paid');
     }
@@ -472,7 +472,7 @@ export default function DocumentList({
                         doc.status === 'Paid' ? (
                           <div className="text-[10px] text-emerald-600 font-black flex items-center justify-end gap-1 mt-0.5">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>Paid (ঐচ্ছিক)</span>
+                            <span>Paid (Optional)</span>
                           </div>
                         ) : null
                       ) : (doc.type === 'INVOICE' || doc.type === 'BILL') ? (() => {
@@ -539,10 +539,10 @@ export default function DocumentList({
                                   ? 'bg-blue-50 hover:bg-emerald-50 text-blue-900 hover:text-emerald-800 border-blue-200 hover:border-emerald-300'
                                   : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white border-emerald-700'
                               }`}
-                              title={doc.type === 'CHALLAN' ? 'Challan এ টাকা পরিশোধ হলে Paid হিসেবে রেকর্ড করুন (ঐচ্ছিক)' : 'টাকা পরিশোধ হলে Paid এর ব্যবস্থা করুন'}
+                              title={doc.type === 'CHALLAN' ? 'Click to record payment if collected for this challan (optional)' : 'Click to settle or record payment'}
                             >
                               <Coins className={`w-3.5 h-3.5 ${doc.type === 'CHALLAN' ? 'text-blue-700' : 'text-emerald-100'}`} />
-                              <span>{doc.type === 'CHALLAN' ? 'Paid (ঐচ্ছিক)' : 'Mark Paid'}</span>
+                              <span>{doc.type === 'CHALLAN' ? 'Paid (Optional)' : 'Mark Paid'}</span>
                             </button>
                           )
                         )}
@@ -566,7 +566,7 @@ export default function DocumentList({
                               <button
                                 onClick={() => onViewDocument(linkedInvoice)}
                                 className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg hover:text-emerald-950 transition-colors border border-emerald-300 cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                title={`ইনভয়েস ইতিমধ্যে তৈরি সম্পন্ন: ${linkedInvoice.docNumber} (ক্লিক করে দেখুন)`}
+                                title={`Invoice already created: ${linkedInvoice.docNumber} (click to view)`}
                               >
                                 <FileText className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>Invoiced ({linkedInvoice.docNumber.split('/').pop() || 'INV'})</span>
@@ -617,7 +617,7 @@ export default function DocumentList({
                               <button
                                 onClick={() => onViewDocument(linked)}
                                 className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg hover:text-blue-900 transition-colors border border-blue-200 cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-                                title={`চালান ইতিমধ্যে তৈরি সম্পন্ন: ${linked.docNumber} (ক্লিক করে দেখুন)`}
+                                title={`Challan already issued: ${linked.docNumber} (click to view)`}
                               >
                                 <Truck className="w-3.5 h-3.5 text-blue-600" />
                                 <span>Challan ({linked.docNumber.split('/').pop() || 'CH'})</span>
@@ -720,8 +720,8 @@ export default function DocumentList({
                   <div>
                     <h3 className="font-extrabold text-sm sm:text-base leading-tight font-display">
                       {paymentModalDoc.type === 'CHALLAN' 
-                        ? 'Challan Payment (চালান টাকা পরিশোধ - ঐচ্ছিক)' 
-                        : 'Invoice Payment Settlement (টাকা পরিশোধ)'}
+                        ? 'Challan Payment (Optional Settlement)' 
+                        : 'Invoice Payment Settlement'}
                     </h3>
                     <div className="flex items-center gap-2 text-[11px] text-slate-300 mt-0.5">
                       <span className="font-mono font-bold text-emerald-400">{paymentModalDoc.docNumber}</span>
@@ -730,7 +730,7 @@ export default function DocumentList({
                         {paymentModalDoc.type === 'INVOICE' 
                           ? 'Sales Invoice' 
                           : paymentModalDoc.type === 'CHALLAN' 
-                          ? 'Delivery Challan (ঐচ্ছিক পেমেন্ট)' 
+                          ? 'Delivery Challan (Optional Payment)' 
                           : 'Supplier Bill'}
                       </span>
                     </div>
@@ -750,7 +750,7 @@ export default function DocumentList({
                 {paymentModalDoc.type === 'CHALLAN' && (
                   <div className="bg-blue-50 border border-blue-200 text-blue-900 px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 font-medium">
                     <Truck className="w-4 h-4 text-blue-700 flex-shrink-0" />
-                    <span>💡 চালানে টাকা পরিশোধ বাধ্যতামূলক নয়, সম্পূর্ণ ঐচ্ছিক। ডেলিভারির সময় নগদ বা চেক পাওয়া গেলে তবেই Paid হিসেবে চিহ্নিত করুন।</span>
+                    <span>💡 Payment is not mandatory on delivery challans, it is completely optional. Record as Paid if payment is collected upon delivery.</span>
                   </div>
                 )}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
@@ -795,7 +795,7 @@ export default function DocumentList({
                     className="w-full py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shadow-2xs group"
                   >
                     <Zap className="w-4 h-4 text-emerald-600 fill-emerald-600 group-hover:scale-110 transition-transform" />
-                    <span>⚡ Instant 100% Cash Paid (নগদে সম্পূর্ণ ৳{fin.due.toLocaleString()} পরিশোধ)</span>
+                    <span>⚡ Instant 100% Cash Paid (Full ৳{fin.due.toLocaleString()} Settlement)</span>
                   </button>
                 )}
 
@@ -804,7 +804,7 @@ export default function DocumentList({
                   {/* Settlement Mode Selection */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                      Settlement Mode (পরিশোধের ধরণ)
+                      Settlement Mode
                     </label>
                     <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl">
                       <button
@@ -819,7 +819,7 @@ export default function DocumentList({
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        Full Paid (সম্পূর্ণ)
+                        Full Paid
                       </button>
 
                       <button
@@ -834,7 +834,7 @@ export default function DocumentList({
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        Partial (আংশিক)
+                        Partial
                       </button>
 
                       <button
@@ -846,7 +846,7 @@ export default function DocumentList({
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        Revert (বকেয়া)
+                        Revert to Due
                       </button>
                     </div>
                   </div>
@@ -857,7 +857,7 @@ export default function DocumentList({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                            Received Amount (টাকার পরিমাণ - ৳)
+                            Received Amount (৳)
                           </label>
                           <input
                             type="number"
@@ -878,17 +878,17 @@ export default function DocumentList({
 
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                            Payment Method (পদ্ধতি)
+                            Payment Method
                           </label>
                           <select
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value as any)}
                             className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-bold text-slate-800 focus:bg-white focus:outline-hidden text-xs cursor-pointer"
                           >
-                            <option value="Cash">Cash (নগদ)</option>
-                            <option value="Bank Transfer">Bank Transfer (ব্যাংক ট্রান্সফার)</option>
-                            <option value="bKash/Nagad">bKash / Nagad (মোবাইল ব্যাংকিং)</option>
-                            <option value="Cheque">Cheque (চেক)</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="bKash/Nagad">bKash / Nagad</option>
+                            <option value="Cheque">Cheque</option>
                           </select>
                         </div>
                       </div>
@@ -897,7 +897,7 @@ export default function DocumentList({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
                           <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                            Payment Date (পরিশোধের তারিখ)
+                            Payment Date
                           </label>
                           <input
                             type="date"
@@ -925,7 +925,7 @@ export default function DocumentList({
                       {/* Notes / Remarks */}
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                          Notes / Description (মন্তব্য)
+                          Notes / Description
                         </label>
                         <input
                           type="text"
@@ -938,7 +938,7 @@ export default function DocumentList({
                     </>
                   ) : (
                     <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-xs space-y-1">
-                      <strong className="block font-bold">Revert to Unpaid (বকেয়া করুন):</strong>
+                      <strong className="block font-bold">Revert to Unpaid:</strong>
                       <p className="text-[11px] leading-relaxed">
                         This will reset the recorded payment on this invoice to ৳0 and mark the workflow status as Unpaid / Outstanding.
                       </p>
@@ -967,7 +967,7 @@ export default function DocumentList({
                         {paymentMode === 'UNPAID' 
                           ? 'Confirm Revert to Unpaid' 
                           : paymentMode === 'FULL' 
-                            ? 'Confirm & Mark as Fully Paid (পরিশোধ নিশ্চিত করুন)' 
+                            ? 'Confirm & Mark as Fully Paid' 
                             : 'Save Partial Payment'}
                       </span>
                     </button>

@@ -1,4 +1,4 @@
-import { Product, Customer, Document, StaffUser, BusinessSettings, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from '../types';
+import { Product, CatalogProduct, Customer, Document, StaffUser, BusinessSettings, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from '../types';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   // Dynamic base-path resolution for 100% cPanel subdirectory / subfolder compatibility
@@ -66,7 +66,36 @@ function normalizeProduct(p: any): Product {
   };
 }
 
-// Products API
+// Helper to normalize catalog product keys
+function normalizeCatalogProduct(p: any): CatalogProduct {
+  if (!p) return p;
+  return {
+    ...p,
+    imageUrl: p.imageUrl || p.image_url || '',
+    callForPrice: Boolean(p.callForPrice || p.call_for_price),
+    displayOrder: Number(p.displayOrder ?? p.display_order) || 0,
+    specs: Array.isArray(p.specs) ? p.specs : (typeof p.specs === 'string' ? JSON.parse(p.specs || '[]') : []),
+  };
+}
+
+// Public Showcase Catalog Products API (Completely independent of Inventory)
+export const apiGetCatalogProducts = async (): Promise<CatalogProduct[]> => {
+  const data = await fetchJson<CatalogProduct[]>('/api/catalog-products');
+  return Array.isArray(data) ? data.map(normalizeCatalogProduct) : [];
+};
+
+export const apiSaveCatalogProduct = async (product: CatalogProduct): Promise<CatalogProduct> => {
+  const data = await fetchJson<CatalogProduct>('/api/catalog-products', {
+    method: 'POST',
+    body: JSON.stringify(product),
+  });
+  return normalizeCatalogProduct(data);
+};
+
+export const apiDeleteCatalogProduct = (id: string): Promise<{ success: boolean }> =>
+  fetchJson<{ success: boolean }>(`/api/catalog-products/${id}`, { method: 'DELETE' });
+
+// Products API (Internal ERP / Inventory Stock)
 export const apiGetProducts = async (): Promise<Product[]> => {
   const data = await fetchJson<Product[]>('/api/products');
   return Array.isArray(data) ? data.map(normalizeProduct) : [];
@@ -366,8 +395,7 @@ export async function apiUploadImage(file: File): Promise<{ url: string; relativ
 
   // Exclusively upload to server - no local storage or client data url fallback
   throw new Error(
-    lastServerError || 
-    'cPanel সার্ভারে ফাইল আপলোড করা যায়নি। দয়া করে নিশ্চিত করুন cPanel-এ /uploads ফোল্ডার রয়েছে এবং 755 বা 777 রাইট পারমিশন সক্রিয় আছে।'
+    'Failed to upload file to server. Please ensure the /uploads directory exists and has write permissions (755 or 777).'
   );
 }
 

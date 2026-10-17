@@ -497,7 +497,7 @@ Content-Location: document.html
     <tr>
       <td class="title-text" style="vertical-align: middle;">
         ${getDocTitle()}
-        ${document.status === 'Paid' ? '<span style="background-color: #059669; color: #ffffff; padding: 2px 8px; font-size: 9pt; font-weight: bold; border-radius: 4px; margin-left: 10px; display: inline-block;">✓ PAID / পরিশোধিত</span>' : ''}
+        ${document.status === 'Paid' ? '<span style="background-color: #059669; color: #ffffff; padding: 2px 8px; font-size: 9pt; font-weight: bold; border-radius: 4px; margin-left: 10px; display: inline-block;">✓ PAID IN FULL</span>' : ''}
       </td>
       <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 10pt; vertical-align: middle; line-height: 1.4;">
         Doc No: ${document.docNumber}<br/>
@@ -712,7 +712,7 @@ ${rawBase64Logo}
             document.status === 'Paid' ? (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 text-emerald-800 px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>PAID &bull; পরিশোধিত</span>
+                <span>PAID IN FULL</span>
                 <button
                   type="button"
                   onClick={() => onSaveDocument({ 
@@ -735,7 +735,7 @@ ${rawBase64Logo}
                 title={document.type === 'CHALLAN' ? 'Mark this delivery challan as Paid (Optional)' : 'Mark this invoice as Paid'}
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-100" />
-                <span>Mark as Paid {document.type === 'CHALLAN' ? '(ঐচ্ছিক)' : '(টাকা পরিশোধ)'}</span>
+                <span>Mark as Paid {document.type === 'CHALLAN' ? '(Optional)' : ''}</span>
               </button>
             )
           )}
@@ -759,7 +759,7 @@ ${rawBase64Logo}
                 <button
                   onClick={() => onViewDocument?.(linkedInvoice)}
                   className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold rounded-xl border border-emerald-300 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                  title={`ইনভয়েস ইতিমধ্যে তৈরি সম্পন্ন: ${linkedInvoice.docNumber} (ক্লিক করে দেখুন)`}
+                  title={`Invoice already created: ${linkedInvoice.docNumber} (click to view)`}
                 >
                   <FileText className="w-4 h-4 text-emerald-600" />
                   <span>Invoiced ({linkedInvoice.docNumber.split('/').pop() || 'INV'})</span>
@@ -810,7 +810,7 @@ ${rawBase64Logo}
                 <button
                   onClick={() => onViewDocument?.(linkedChallan)}
                   className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold rounded-xl border border-blue-200 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                  title={`চালান ইতিমধ্যে তৈরি সম্পন্ন: ${linkedChallan.docNumber} (ক্লিক করে দেখুন)`}
+                  title={`Challan already issued: ${linkedChallan.docNumber} (click to view)`}
                 >
                   <Truck className="w-4 h-4 text-blue-600" />
                   <span>Challan ({linkedChallan.docNumber.split('/').pop() || 'CH'})</span>
@@ -890,7 +890,7 @@ ${rawBase64Logo}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
             <UserCheck className="w-4 h-4 text-blue-900" />
-            <span>Signatory (স্বাক্ষরকারী):</span>
+            <span>Signatory:</span>
           </span>
 
           {/* Quick Select Signatory Dropdown */}
@@ -1059,7 +1059,7 @@ ${rawBase64Logo}
                 </span>
                 {document.status === 'Paid' && (
                   <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded uppercase tracking-wider shadow-2xs">
-                    <Check className="w-3.5 h-3.5 stroke-[3]" /> PAID &bull; পরিশোধিত
+                    <Check className="w-3.5 h-3.5 stroke-[3]" /> PAID IN FULL
                   </span>
                 )}
               </div>
@@ -1170,7 +1170,7 @@ ${rawBase64Logo}
                   {document.status === 'Paid' && (
                     <div className="mt-2.5 pt-2 border-t border-blue-200/60 flex items-center gap-1.5 text-emerald-800 font-extrabold text-xs">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <span>PAID IN FULL &bull; সম্পূর্ণ পরিশোধিত</span>
+                      <span>PAID IN FULL</span>
                     </div>
                   )}
                 </div>

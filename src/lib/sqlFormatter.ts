@@ -40,6 +40,9 @@ export function generateSqlForEntity(table: string, item: any): string | null {
   if (!item || !item.id) return null;
 
   switch (table) {
+    case 'catalog_products':
+      return `INSERT INTO \`catalog_products\` (\`id\`, \`name\`, \`category\`, \`brand\`, \`price\`, \`call_for_price\`, \`badge\`, \`description\`, \`specs\`, \`image_url\`, \`status\`, \`display_order\`, \`created_at\`) VALUES (${escapeSql(item.id)}, ${escapeSql(item.name || '')}, ${escapeSql(item.category || 'General')}, ${escapeSql(item.brand || 'Hitachi')}, ${Number(item.price) || 0}, ${item.callForPrice ? 1 : 0}, ${escapeSql(item.badge || '')}, ${escapeSql(item.description || '')}, ${escapeSql(item.specs || [])}, ${escapeSql(item.imageUrl || item.image_url || '')}, ${escapeSql(item.status || 'active')}, ${Number(item.displayOrder ?? item.display_order) || 0}, ${escapeSql(item.createdAt || item.created_at || new Date().toISOString().split('T')[0])}) ON DUPLICATE KEY UPDATE \`name\` = VALUES(\`name\`), \`category\` = VALUES(\`category\`), \`brand\` = VALUES(\`brand\`), \`price\` = VALUES(\`price\`), \`call_for_price\` = VALUES(\`call_for_price\`), \`badge\` = VALUES(\`badge\`), \`description\` = VALUES(\`description\`), \`specs\` = VALUES(\`specs\`), \`image_url\` = VALUES(\`image_url\`), \`status\` = VALUES(\`status\`), \`display_order\` = VALUES(\`display_order\`);`;
+
     case 'products':
       return `INSERT INTO \`products\` (\`id\`, \`name\`, \`sku\`, \`category\`, \`brand\`, \`price\`, \`cost_price\`, \`stock\`, \`unit\`, \`description\`, \`specs\`, \`image_url\`) VALUES (${escapeSql(item.id)}, ${escapeSql(item.name || '')}, ${escapeSql(item.sku || '')}, ${escapeSql(item.category || 'General')}, ${escapeSql(item.brand || 'Hitachi')}, ${Number(item.price) || 0}, ${Number(item.costPrice ?? item.cost_price) || 0}, ${Number(item.stock) || 0}, ${escapeSql(item.unit || 'Pcs')}, ${escapeSql(item.description || '')}, ${escapeSql(item.specs || [])}, ${escapeSql(item.imageUrl || item.image_url || '')}) ON DUPLICATE KEY UPDATE \`name\` = VALUES(\`name\`), \`sku\` = VALUES(\`sku\`), \`category\` = VALUES(\`category\`), \`brand\` = VALUES(\`brand\`), \`price\` = VALUES(\`price\`), \`cost_price\` = VALUES(\`cost_price\`), \`stock\` = VALUES(\`stock\`), \`unit\` = VALUES(\`unit\`), \`description\` = VALUES(\`description\`), \`specs\` = VALUES(\`specs\`), \`image_url\` = VALUES(\`image_url\`);`;
 
@@ -104,7 +107,7 @@ export function buildFullSqlScript(data: {
   const exps = data.expenses || [];
 
   let out = `-- ==============================================================================
--- HITACHI SOLUTION CENTER / LOCALMARKET247 - COMPLETE DATABASE DUMP
+-- HITACHI AIR SOLUTION CENTER / LOCALMARKET247 - COMPLETE DATABASE DUMP
 -- Generated At: ${timestamp}
 -- Compatible with: MySQL 5.7+, MySQL 8.0+, MariaDB (cPanel phpMyAdmin) & PostgreSQL
 -- Character Set: utf8mb4 / Unicode

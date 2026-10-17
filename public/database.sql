@@ -1,5 +1,5 @@
 -- ==============================================================================
--- HITACHI SOLUTION CENTER / LOCALMARKET247 - COMPLETE DATABASE SCHEMA
+-- HITACHI AIR SOLUTION CENTER / LOCALMARKET247 - COMPLETE DATABASE SCHEMA
 -- Compatible with: MySQL 5.7+, MySQL 8.0+, MariaDB (cPanel phpMyAdmin) & PostgreSQL
 -- Character Set: utf8mb4 / Unicode
 -- Features: Full Inventory, Invoicing, Quotations, Field Dispatches, 
@@ -9,6 +9,31 @@
 SET FOREIGN_KEY_CHECKS = 0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+06:00"; -- Bangladesh Standard Time
+
+-- ------------------------------------------------------------------------------
+-- 0. Table: catalog_products (Dedicated Public Showcase Catalog - Zero ERP Link)
+-- ------------------------------------------------------------------------------
+DROP TABLE IF EXISTS `catalog_products`;
+CREATE TABLE `catalog_products` (
+  `id` VARCHAR(128) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `category` VARCHAR(100) NOT NULL,
+  `brand` VARCHAR(100) NOT NULL,
+  `price` DOUBLE NOT NULL DEFAULT 0,
+  `call_for_price` INT NOT NULL DEFAULT 0,
+  `badge` VARCHAR(100) DEFAULT '',
+  `description` TEXT,
+  `specs` LONGTEXT,
+  `image_url` LONGTEXT,
+  `status` VARCHAR(50) NOT NULL DEFAULT 'active',
+  `display_order` INT NOT NULL DEFAULT 0,
+  `created_at` VARCHAR(50) DEFAULT '',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_cat_category` (`category`),
+  KEY `idx_cat_brand` (`brand`),
+  KEY `idx_cat_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------------------------
 -- 1. Table: products (Products & Inventory Table)
@@ -355,18 +380,24 @@ CREATE TABLE `activity_logs` (
 -- ==============================================================================
 
 -- Seed Settings
-INSERT INTO `settings` (`id`, `name`, `slogan`, `address`, `phone1`, `phone2`, `email`, `website`, `invoice_prefix`, `quote_prefix`, `offer_prefix`, `bill_prefix`, `tax_rate`, `terms`, `signature_name`, `signature_label`, `logo_url`, `public_logo_url`, `watermark_url`, `favicon_url`, `challan_prefix`, `watermark_opacity`, `show_watermark`) VALUES ('global_settings', 'Jubayer Machineries', 'Your Problem Solution is Sustainable Partner', 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.', '01715-994956', '01799-498199', 'jubayermachineries@gmail.com', 'www.hitachiairsolutioncenter.com', 'JM/INV/2026/', 'JM/QT/2026/', 'JM/OF/2026/', 'JM/BILL/2026/', 5, '1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50\% advance with work order & 50\% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.', 'MD MAHI UDDIN', 'Managing Director', '', '/uploads/hitachi_solution_center_logo.png', '', '', 'JM/CH/2026/', 0.04, 1) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `slogan` = VALUES(`slogan`), `address` = VALUES(`address`), `phone1` = VALUES(`phone1`), `phone2` = VALUES(`phone2`), `email` = VALUES(`email`), `website` = VALUES(`website`), `tax_rate` = VALUES(`tax_rate`), `terms` = VALUES(`terms`), `signature_name` = VALUES(`signature_name`), `signature_label` = VALUES(`signature_label`), `logo_url` = VALUES(`logo_url`), `public_logo_url` = VALUES(`public_logo_url`), `watermark_url` = VALUES(`watermark_url`), `favicon_url` = VALUES(`favicon_url`), `challan_prefix` = VALUES(`challan_prefix`), `watermark_opacity` = VALUES(`watermark_opacity`), `show_watermark` = VALUES(`show_watermark`);
+INSERT INTO `settings` (`id`, `name`, `slogan`, `address`, `phone1`, `phone2`, `email`, `website`, `invoice_prefix`, `quote_prefix`, `offer_prefix`, `bill_prefix`, `tax_rate`, `terms`, `signature_name`, `signature_label`, `logo_url`, `public_logo_url`, `watermark_url`, `favicon_url`, `challan_prefix`, `watermark_opacity`, `show_watermark`) VALUES ('global_settings', 'Jubayer Machineries', 'Your Problem Solution is Sustainable Partner', 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.', '01715-994956', '01799-498199', 'jubayermachineries@gmail.com', 'www.hitachiairsolutioncenter.com', 'JM/INV/2026/', 'JM/QT/2026/', 'JM/OF/2026/', 'JM/BILL/2026/', 5, '1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50\% advance with work order & 50\% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.', 'MD MAHI UDDIN', 'Managing Director', '', '', '', '', 'JM/CH/2026/', 0.04, 1) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `slogan` = VALUES(`slogan`), `address` = VALUES(`address`), `phone1` = VALUES(`phone1`), `phone2` = VALUES(`phone2`), `email` = VALUES(`email`), `website` = VALUES(`website`), `tax_rate` = VALUES(`tax_rate`), `terms` = VALUES(`terms`), `signature_name` = VALUES(`signature_name`), `signature_label` = VALUES(`signature_label`), `logo_url` = VALUES(`logo_url`), `public_logo_url` = VALUES(`public_logo_url`), `watermark_url` = VALUES(`watermark_url`), `favicon_url` = VALUES(`favicon_url`), `challan_prefix` = VALUES(`challan_prefix`), `watermark_opacity` = VALUES(`watermark_opacity`), `show_watermark` = VALUES(`show_watermark`);
 -- Seed Staff Users with authorized accounts (No demo data)
 INSERT INTO `staff_users` (`id`, `name`, `email`, `phone`, `passcode`, `role`, `designation`, `status`, `permissions`, `created_at`) VALUES 
-('staff-admin-1', 'MD MAHI UDDIN', 'mahi@hitachisolutioncenter.com', '01715-994956', 'admin123', 'ADMIN', 'Managing Director & Owner', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"delete_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\",\"manage_settings\",\"view_staff_management\"]', '2026-01-01'),
-('staff-mgr-1', 'Kamrul Hasan', 'kamrul@hitachisolutioncenter.com', '01799-498199', 'mgr123', 'MANAGER', 'Operations Manager', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\"]', '2026-01-15'),
-('staff-sales-1', 'Engr. Rafiqul Islam', 'rafiq@hitachisolutioncenter.com', '01812-334455', 'sales123', 'SALESMAN', 'Senior Sales Executive', 'Active', '[\"view_overview\",\"view_inventory\",\"view_documents\",\"create_documents\",\"view_due_ledger\"]', '2026-02-01'),
-('staff-store-1', 'Tarikul Tanvir', 'store@hitachisolutioncenter.com', '01911-223344', 'staff123', 'STAFF', 'Store & Inventory Keeper', 'Active', '[\"view_inventory\",\"manage_inventory\",\"view_documents\"]', '2026-02-10')
+('staff-admin-1', 'MD MAHI UDDIN', 'mahi@hitachiairsolutioncenter.com', '01715-994956', 'admin123', 'ADMIN', 'Managing Director & Owner', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"delete_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\",\"manage_settings\",\"view_staff_management\"]', '2026-01-01'),
+('staff-mgr-1', 'Kamrul Hasan', 'kamrul@hitachiairsolutioncenter.com', '01799-498199', 'mgr123', 'MANAGER', 'Operations Manager', 'Active', '[\"view_overview\",\"view_inventory\",\"manage_inventory\",\"view_documents\",\"create_documents\",\"edit_documents\",\"view_due_ledger\",\"manage_due_ledger\",\"view_reports\"]', '2026-01-15'),
+('staff-sales-1', 'Engr. Rafiqul Islam', 'rafiq@hitachiairsolutioncenter.com', '01812-334455', 'sales123', 'SALESMAN', 'Senior Sales Executive', 'Active', '[\"view_overview\",\"view_inventory\",\"view_documents\",\"create_documents\",\"view_due_ledger\"]', '2026-02-01'),
+('staff-store-1', 'Tarikul Tanvir', 'store@hitachiairsolutioncenter.com', '01911-223344', 'staff123', 'STAFF', 'Store & Inventory Keeper', 'Active', '[\"view_inventory\",\"manage_inventory\",\"view_documents\"]', '2026-02-10')
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `phone` = VALUES(`phone`), `role` = VALUES(`role`), `designation` = VALUES(`designation`), `status` = VALUES(`status`), `permissions` = VALUES(`permissions`);
 
 -- Seed Initial Activity Log
 INSERT INTO `activity_logs` (`id`, `staff_id`, `staff_name`, `action`, `module`, `description`, `entity_id`, `ip_address`, `user_agent`) VALUES
 ('log-1', 'staff-admin-1', 'MD MAHI UDDIN', 'LOGIN', 'AUTHENTICATION', 'System database initialized with clean production schema and zero demo records.', 'global_settings', '127.0.0.1', 'Hitachi Cloud Management System')
 ON DUPLICATE KEY UPDATE `action` = VALUES(`action`);
+
+
+-- ------------------------------------------------------------------------------
+-- REAL-TIME ADMIN PANEL LIVE ENTRIES
+-- ------------------------------------------------------------------------------
+INSERT INTO `documents` (`id`, `type`, `doc_number`, `date`, `due_date`, `customer_id`, `customer_name`, `customer_company`, `customer_phone`, `customer_email`, `customer_address`, `subject`, `salutation`, `opening_paragraph`, `closing_paragraph`, `items`, `subtotal`, `tax_rate`, `tax_amount`, `discount`, `total`, `paid_amount`, `due_amount`, `status`, `terms`, `notes`, `signature_label`, `signature_name`, `vat_enabled`) VALUES ('doc-1791125466306', 'CHALLAN', 'JM/CH/2026/7353', '2026-10-04', NULL, 'cust_1791015181330_njq8', 'শিউলী আক্তার', 'শিউলী আক্তার', '01753459755', 'mst.sheulyakter21@gmail.com', '', '', '', '', '', '[{\"id\":\"item-1791125456640-0.19139627648557878\",\"name\":\"ff\",\"unit\":\"Pcs\",\"brand\":\"ffd\",\"price\":100,\"total\":100,\"quantity\":1,\"productId\":\"\"}]', 100, 5, 5, 0, 105, 0, 105, 'Active', '1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50\% advance with work order & 50\% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.', '', 'Managing Director', 'MD MAHI UDDIN', 1) ON DUPLICATE KEY UPDATE `type` = VALUES(`type`), `doc_number` = VALUES(`doc_number`), `date` = VALUES(`date`), `due_date` = VALUES(`due_date`), `customer_name` = VALUES(`customer_name`), `customer_company` = VALUES(`customer_company`), `items` = VALUES(`items`), `subtotal` = VALUES(`subtotal`), `total` = VALUES(`total`), `paid_amount` = VALUES(`paid_amount`), `due_amount` = VALUES(`due_amount`), `status` = VALUES(`status`), `notes` = VALUES(`notes`), `vat_enabled` = VALUES(`vat_enabled`);
 
 SET FOREIGN_KEY_CHECKS = 1;

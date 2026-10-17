@@ -32,29 +32,29 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
     const inputPass = passcode.trim();
 
     if (!inputPass) {
-      setError('অনুগ্রহ করে আপনার পাসওয়ার্ড দিন। (Please enter your password)');
+      setError('Please enter your password.');
       return;
     }
 
     if (!selectedStaffId) {
-      setError('অনুগ্রহ করে প্রথমে আপনার ইউজার অ্যাকাউন্ট নির্বাচন করুন। (Please select your user account)');
+      setError('Please select your user account first.');
       return;
     }
 
     const staff = staffUsers.find(s => s.id === selectedStaffId);
     if (!staff) {
-      setError('নির্বাচিত অ্যাকাউন্ট পাওয়া যায়নি। (Selected account not found)');
+      setError('Selected account not found.');
       return;
     }
 
     if (staff.status === 'Inactive') {
-      setError('এই অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে। (This account has been deactivated)');
+      setError('This account has been deactivated.');
       return;
     }
 
     // Strict individual password check: each user can only log in with their own password
     if (staff.passcode !== inputPass) {
-      setError(`ভুল পাসওয়ার্ড! "${staff.name}" শুধুমাত্র তার নিজস্ব পাসওয়ার্ড দিয়েই লগইন করতে পারবেন। অন্য কারো পাসওয়ার্ড দিয়ে লগইন হবে না।`);
+      setError(`Incorrect password! "${staff.name}" can only log in with their own personal password.`);
       return;
     }
 
@@ -139,7 +139,7 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
           {/* Sub-Account Selector Dropdown */}
           <div className="space-y-1.5">
             <label className="font-bold text-slate-700 flex items-center justify-between">
-              <span>Select Your User Account (ইউজার অ্যাকাউন্ট) <span className="text-rose-600">*</span></span>
+              <span>Select Your User Account <span className="text-rose-600">*</span></span>
               {selectedStaff && (
                 <span className="text-[10px] text-blue-900 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-bold">
                   {selectedStaff.role}
@@ -152,7 +152,7 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
               className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded-xl p-3 text-slate-900 font-bold"
               required
             >
-              <option value="" disabled>-- আপনার ইউজার অ্যাকাউন্ট নির্বাচন করুন (Select User) --</option>
+              <option value="" disabled>-- Select Your User Account --</option>
               {staffUsers.map((staff) => (
                 <option key={staff.id} value={staff.id}>
                   {staff.name} — {staff.designation || staff.role}
@@ -178,7 +178,7 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
                 type={showPasscode ? 'text' : 'password'}
                 value={passcode}
                 onChange={(e) => { setPasscode(e.target.value); setError(''); }}
-                placeholder={selectedStaff ? `${selectedStaff.name}-এর পাসওয়ার্ড লিখুন` : "Enter your password"}
+                placeholder={selectedStaff ? `Enter password for ${selectedStaff.name}` : "Enter your password"}
                 autoComplete="new-password"
                 className="w-full pl-3.5 pr-10 py-3 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-hidden focus:border-blue-900 rounded-xl text-slate-900 font-mono font-bold tracking-wide transition-all"
                 required
@@ -192,7 +192,7 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
               </button>
             </div>
             <p className="text-[10px] text-slate-500 font-medium pt-0.5">
-              🔒 প্রতিটি ইউজার শুধুমাত্র তার নিজস্ব পাসওয়ার্ড দিয়েই লগইন করতে পারবেন।
+              🔒 Each user must log in using their own personal password.
             </p>
           </div>
 

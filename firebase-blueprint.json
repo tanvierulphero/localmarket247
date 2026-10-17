@@ -32,6 +32,30 @@
       },
       "required": ["id", "name", "sku", "category", "brand", "price", "stock", "unit"]
     },
+    "catalogProduct": {
+      "title": "CatalogProduct",
+      "description": "Public showcase catalog product independent of inventory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "price": { "type": "number" },
+        "callForPrice": { "type": "boolean" },
+        "badge": { "type": "string" },
+        "description": { "type": "string" },
+        "specs": {
+          "type": "array",
+          "items": { "$ref": "#/entities/productSpec" }
+        },
+        "imageUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "displayOrder": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "brand", "price", "status"]
+    },
     "customer": {
       "title": "Customer",
       "description": "Customer contact metrics",
@@ -148,6 +172,10 @@
     }
   },
   "firestore": {
+    "catalogProducts": {
+      "schema": "catalogProduct",
+      "description": "List of custom showcase catalog products for public website"
+    },
     "products": {
       "schema": "product",
       "description": "List of inventory products"

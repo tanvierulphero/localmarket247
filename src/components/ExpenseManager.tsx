@@ -215,7 +215,7 @@ export default function ExpenseManager({
       return;
     }
     if (!paidBy || !paidBy.trim()) {
-      setFormError('কার দ্বারা খরচ হয়েছে তার নাম উল্লেখ করা আবশ্যক (Please enter who incurred/paid the expense).');
+      setFormError('Please enter who incurred or paid this expense.');
       return;
     }
 
@@ -257,7 +257,7 @@ export default function ExpenseManager({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `hitachisolutioncenter-expenses-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `hitachiairsolutioncenter-expenses-${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -505,7 +505,7 @@ export default function ExpenseManager({
                 <th className="py-3 px-4">Voucher No. / Date</th>
                 <th className="py-3 px-3">Category</th>
                 <th className="py-3 px-3">Description / Title</th>
-                <th className="py-3 px-3">কার দ্বারা খরচ / Paid By</th>
+                <th className="py-3 px-3">Paid By</th>
                 <th className="py-3 px-3 text-center">Payment Method</th>
                 <th className="py-3 px-4 text-right">Amount (BDT)</th>
                 <th className="py-3 px-3 text-center w-24">Actions</th>
@@ -724,8 +724,8 @@ export default function ExpenseManager({
 
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700 flex items-center justify-between">
-                    <span>কার দ্বারা খরচ হয়েছে / ব্যয়কারীর নাম *</span>
-                    <span className="text-[10px] text-slate-400 font-normal">কে খরচ করেছে তার নাম আবশ্যক</span>
+                    <span>Paid By / Incurred By *</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Person name is required</span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <select
@@ -741,14 +741,14 @@ export default function ExpenseManager({
                       {staffUsers.filter(u => u.name !== 'MD MAHI UDDIN').map(u => (
                         <option key={u.id} value={u.name}>{u.name} ({u.designation || u.role})</option>
                       ))}
-                      <option value="CUSTOM">অন্য ব্যক্তি / Custom Name...</option>
+                      <option value="CUSTOM">Other Person / Custom Name...</option>
                     </select>
                     <input
                       type="text"
                       required
                       value={paidBy}
                       onChange={(e) => setPaidBy(e.target.value)}
-                      placeholder="ব্যয়কারীর নাম লিখুন (e.g. Staff / Driver / Tech name)"
+                      placeholder="Enter person name (e.g. Staff / Driver / Tech name)"
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-bold text-slate-900 focus:bg-white focus:outline-hidden"
                     />
                   </div>

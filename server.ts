@@ -5,13 +5,22 @@ import path from 'path';
 import multer from 'multer';
 import { Server as SocketIOServer } from 'socket.io';
 import { db, pool } from './src/db/index.ts';
-import { products, customers, documents, staffUsers, settings, fieldDispatches, suppliers, purchases, salesReturns, expenses } from './src/db/schema.ts';
+import { products, catalogProducts, customers, documents, staffUsers, settings, fieldDispatches, suppliers, purchases, salesReturns, expenses } from './src/db/schema.ts';
 import { eq, sql } from 'drizzle-orm';
-import { INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_DOCUMENTS, INITIAL_STAFF_USERS, DEFAULT_SETTINGS, INITIAL_FIELD_DISPATCHES, INITIAL_SUPPLIERS, INITIAL_PURCHASES, INITIAL_SALES_RETURNS, INITIAL_EXPENSES } from './src/initialData.ts';
+import { INITIAL_PRODUCTS, INITIAL_CATALOG_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_DOCUMENTS, INITIAL_STAFF_USERS, DEFAULT_SETTINGS, INITIAL_FIELD_DISPATCHES, INITIAL_SUPPLIERS, INITIAL_PURCHASES, INITIAL_SALES_RETURNS, INITIAL_EXPENSES } from './src/initialData.ts';
 import { appendSqlToFiles, appendDeleteSqlToFiles } from './src/lib/sqlSync.ts';
 
 const app = express();
 const port = 3000;
+
+// Helper to strip client-side timestamp strings so Drizzle and Postgres can manage them cleanly
+function cleanDbRecord<T extends Record<string, any>>(record: T): Record<string, any> {
+  if (!record || typeof record !== 'object') return record;
+  const cleaned: Record<string, any> = { ...record };
+  delete cleaned.updatedAt;
+  delete cleaned.updated_at;
+  return cleaned;
+}
 
 const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, {
@@ -136,8 +145,28 @@ async function ensureSchemaColumns() {
       });
       try {
         await migrationPool.query(`
+          CREATE TABLE IF NOT EXISTS "catalog_products" (
+            "id" text PRIMARY KEY NOT NULL,
+            "name" text NOT NULL,
+            "category" text NOT NULL,
+            "brand" text NOT NULL,
+            "price" real NOT NULL DEFAULT 0,
+            "call_for_price" integer DEFAULT 0,
+            "badge" text DEFAULT '',
+            "description" text DEFAULT '',
+            "specs" jsonb DEFAULT '[]'::jsonb,
+            "image_url" text DEFAULT '',
+            "status" text DEFAULT 'active',
+            "display_order" integer DEFAULT 0,
+            "created_at" text DEFAULT '',
+            "updated_at" timestamp DEFAULT now()
+          );
           ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "public_logo_url" text DEFAULT '';
           ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "challan_prefix" text DEFAULT 'JM/CH/2026/';
+          ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "whatsapp" text DEFAULT '';
+          ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "messenger_url" text DEFAULT '';
+          ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "facebook_url" text DEFAULT '';
+          ALTER TABLE "settings" ADD COLUMN IF NOT EXISTS "telegram_url" text DEFAULT '';
           ALTER TABLE "field_dispatches" ALTER COLUMN "dispatch_number" DROP NOT NULL;
           ALTER TABLE "field_dispatches" ALTER COLUMN "staff_id" DROP NOT NULL;
           ALTER TABLE "field_dispatches" ALTER COLUMN "customer_id" DROP NOT NULL;
@@ -179,6 +208,28 @@ async function seedInitialDataIfNeeded() {
       }).onConflictDoNothing().catch(() => {});
     }
 
+    const existingCatalog = await db.select().from(catalogProducts).limit(1).catch(() => []);
+    if (existingCatalog.length === 0 && INITIAL_CATALOG_PRODUCTS.length > 0) {
+      console.log('Seeding initial custom showcase catalog products...');
+      for (const cp of INITIAL_CATALOG_PRODUCTS) {
+        await (db.insert(catalogProducts) as any).values({
+          id: cp.id,
+          name: cp.name,
+          category: cp.category,
+          brand: cp.brand,
+          price: cp.price,
+          callForPrice: cp.callForPrice ? 1 : 0,
+          badge: cp.badge || '',
+          description: cp.description || '',
+          specs: cp.specs || [],
+          imageUrl: cp.imageUrl || '',
+          status: cp.status || 'active',
+          displayOrder: cp.displayOrder || 0,
+          createdAt: cp.createdAt || new Date().toISOString().split('T')[0],
+        }).onConflictDoNothing().catch(() => {});
+      }
+    }
+
     isSeeded = true;
   } catch (err) {
     console.error('Database setup check notice:', err);
@@ -189,7 +240,90 @@ async function seedInitialDataIfNeeded() {
 seedInitialDataIfNeeded().catch(() => {});
 
 // REST API Routes
-// 1. Products
+// 0. Public Showcase Catalog Products (Completely separated from Inventory)
+app.get('/api/catalog-products', async (_req, res) => {
+  try {
+    await seedInitialDataIfNeeded();
+    const result = await db.select().from(catalogProducts);
+    res.json(result);
+  } catch (err: any) {
+    console.error('Failed to fetch catalog products:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch catalog products' });
+  }
+});
+
+app.post('/api/catalog-products', async (req, res) => {
+  try {
+    const item = req.body;
+    if (!item.id) {
+      return res.status(400).json({ error: 'Missing catalog product ID' });
+    }
+    const productData = {
+      id: String(item.id),
+      name: String(item.name || ''),
+      category: String(item.category || 'General'),
+      brand: String(item.brand || 'Hitachi'),
+      price: Number(item.price) || 0,
+      callForPrice: item.callForPrice ? 1 : 0,
+      badge: String(item.badge || ''),
+      description: String(item.description || ''),
+      specs: Array.isArray(item.specs) ? item.specs : [],
+      imageUrl: String(item.imageUrl || ''),
+      status: String(item.status || 'active'),
+      displayOrder: Number(item.displayOrder) || 0,
+      createdAt: String(item.createdAt || new Date().toISOString().split('T')[0]),
+    };
+
+    // Sync to SQL file immediately
+    appendSqlToFiles('catalog_products', productData);
+
+    try {
+      await (db.insert(catalogProducts) as any).values(productData).onConflictDoUpdate({
+        target: catalogProducts.id,
+        set: {
+          name: productData.name,
+          category: productData.category,
+          brand: productData.brand,
+          price: productData.price,
+          callForPrice: productData.callForPrice,
+          badge: productData.badge,
+          description: productData.description,
+          specs: productData.specs,
+          imageUrl: productData.imageUrl,
+          status: productData.status,
+          displayOrder: productData.displayOrder,
+        },
+      });
+    } catch (dbErr) {
+      console.warn('Database save warning for catalog product (written to SQL file):', dbErr);
+    }
+    notifyChange('catalog_products', 'save', productData);
+    res.json(productData);
+  } catch (err: any) {
+    console.error('Failed to save catalog product:', err);
+    res.status(500).json({ error: err.message || 'Failed to save catalog product' });
+  }
+});
+
+app.delete('/api/catalog-products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Sync delete to SQL file
+    appendDeleteSqlToFiles('catalog_products', id);
+    try {
+      await db.delete(catalogProducts).where(eq(catalogProducts.id, id));
+    } catch (dbErr) {
+      console.warn('Database delete warning (synced to SQL file):', dbErr);
+    }
+    notifyChange('catalog_products', 'delete', { id });
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error('Failed to delete catalog product:', err);
+    res.status(500).json({ error: err.message || 'Failed to delete catalog product' });
+  }
+});
+
+// 1. Products (Internal ERP Stock Inventory)
 app.get('/api/products', async (_req, res) => {
   try {
     await seedInitialDataIfNeeded();
@@ -292,7 +426,7 @@ app.post('/api/customers', async (req, res) => {
     appendSqlToFiles('customers', item);
 
     try {
-      await (db.insert(customers) as any).values(item).onConflictDoUpdate({
+      await (db.insert(customers) as any).values(cleanDbRecord(item)).onConflictDoUpdate({
         target: customers.id,
         set: {
           companyId: item.companyId || '',
@@ -353,17 +487,20 @@ app.post('/api/documents', async (req, res) => {
     }
 
     const totalNum = Math.max(0, Number(item.total) || 0);
-    const paidNum = item.paidAmount !== undefined && item.paidAmount !== null 
-      ? Number(item.paidAmount) 
-      : (item.status === 'Paid' ? totalNum : 0);
-    let dueNum = item.dueAmount !== undefined && item.dueAmount !== null && (Number(item.dueAmount) > 0 || paidNum > 0 || item.status === 'Paid')
-      ? Number(item.dueAmount) 
-      : (item.status === 'Paid' ? 0 : Math.max(0, totalNum - paidNum));
+    const paidNum = Math.max(0, Number(item.paidAmount) || 0);
+    let dueNum = Math.max(0, totalNum - paidNum);
     
-    if (dueNum === 0 && paidNum < totalNum && item.status !== 'Paid') {
-      dueNum = Math.max(0, totalNum - paidNum);
+    let status = item.status || 'Unpaid';
+    if (dueNum === 0 && totalNum >= 0) {
+      status = 'Paid';
+    } else if (paidNum > 0 && dueNum > 0) {
+      status = 'Partially Paid';
+    } else if (paidNum === 0 && dueNum > 0 && status === 'Paid') {
+      status = 'Unpaid';
     }
-    if (item.status === 'Paid') {
+
+    // Delivery Challan: optional payment, does not force debt unless recorded
+    if (item.type === 'CHALLAN' && status !== 'Paid' && (!item.paidAmount || Number(item.paidAmount) === 0)) {
       dueNum = 0;
     }
 
@@ -372,6 +509,7 @@ app.post('/api/documents', async (req, res) => {
       total: totalNum,
       paidAmount: paidNum,
       dueAmount: dueNum,
+      status,
       vatEnabled: item.vatEnabled === false || item.vatEnabled === 0 ? 0 : 1
     };
 
@@ -379,7 +517,7 @@ app.post('/api/documents', async (req, res) => {
     appendSqlToFiles('documents', dbItem);
 
     try {
-      await (db.insert(documents) as any).values(dbItem).onConflictDoUpdate({
+      await (db.insert(documents) as any).values(cleanDbRecord(dbItem)).onConflictDoUpdate({
         target: documents.id,
         set: {
           type: item.type,
@@ -463,7 +601,7 @@ app.post('/api/staff', async (req, res) => {
     appendSqlToFiles('staff_users', item);
 
     try {
-      await (db.insert(staffUsers) as any).values(item).onConflictDoUpdate({
+      await (db.insert(staffUsers) as any).values(cleanDbRecord(item)).onConflictDoUpdate({
         target: staffUsers.id,
         set: {
           name: item.name,
@@ -538,7 +676,7 @@ app.post('/api/settings', async (req, res) => {
     appendSqlToFiles('settings', merged);
 
     try {
-      await (db.insert(settings) as any).values(merged).onConflictDoUpdate({
+      await (db.insert(settings) as any).values(cleanDbRecord(merged)).onConflictDoUpdate({
         target: settings.id,
         set: {
           name: merged.name || DEFAULT_SETTINGS.name,
@@ -563,6 +701,10 @@ app.post('/api/settings', async (req, res) => {
           challanPrefix: merged.challanPrefix || 'JM/CH/2026/',
           watermarkOpacity: merged.watermarkOpacity !== undefined ? merged.watermarkOpacity : 0.04,
           showWatermark: merged.showWatermark !== undefined ? merged.showWatermark : 1,
+          whatsapp: merged.whatsapp ?? '',
+          messengerUrl: merged.messengerUrl ?? '',
+          facebookUrl: merged.facebookUrl ?? '',
+          telegramUrl: merged.telegramUrl ?? '',
         },
       });
     } catch (dbErr) {
@@ -708,7 +850,7 @@ app.post('/api/suppliers', async (req, res) => {
     appendSqlToFiles('suppliers', item);
 
     try {
-      await (db.insert(suppliers) as any).values(item).onConflictDoUpdate({
+      await (db.insert(suppliers) as any).values(cleanDbRecord(item)).onConflictDoUpdate({
         target: suppliers.id,
         set: {
           supplierId: item.supplierId || '',
@@ -773,7 +915,7 @@ app.post('/api/purchases', async (req, res) => {
     appendSqlToFiles('purchases', item);
 
     try {
-      await (db.insert(purchases) as any).values(item).onConflictDoUpdate({
+      await (db.insert(purchases) as any).values(cleanDbRecord(item)).onConflictDoUpdate({
         target: purchases.id,
         set: {
           purchaseNumber: item.purchaseNumber,
@@ -852,11 +994,11 @@ app.post('/api/returns', async (req, res) => {
     appendSqlToFiles('sales_returns', item);
 
     try {
-      await (db.insert(salesReturns) as any).values({
+      await (db.insert(salesReturns) as any).values(cleanDbRecord({
         ...item,
         deductFromDue: item.deductFromDue ? 1 : 0,
         restocked: item.restocked ? 1 : 0
-      }).onConflictDoUpdate({
+      })).onConflictDoUpdate({
         target: salesReturns.id,
         set: {
           returnNumber: item.returnNumber,
@@ -1010,29 +1152,29 @@ app.post('/api/database/clear', async (_req, res) => {
 app.post('/api/database/seed-demo', async (_req, res) => {
   try {
     for (const p of INITIAL_PRODUCTS) {
-      await db.insert(products).values(p).onConflictDoNothing().catch(() => {});
+      await (db.insert(products) as any).values(cleanDbRecord(p)).onConflictDoNothing().catch(() => {});
     }
     for (const c of INITIAL_CUSTOMERS) {
-      await db.insert(customers).values(c).onConflictDoNothing().catch(() => {});
+      await (db.insert(customers) as any).values(cleanDbRecord(c)).onConflictDoNothing().catch(() => {});
     }
     for (const s of INITIAL_SUPPLIERS) {
-      await db.insert(suppliers).values(s).onConflictDoNothing().catch(() => {});
+      await (db.insert(suppliers) as any).values(cleanDbRecord(s)).onConflictDoNothing().catch(() => {});
     }
     for (const p of INITIAL_PURCHASES) {
-      await db.insert(purchases).values(p).onConflictDoNothing().catch(() => {});
+      await (db.insert(purchases) as any).values(cleanDbRecord(p)).onConflictDoNothing().catch(() => {});
     }
     for (const d of INITIAL_DOCUMENTS) {
-      await db.insert(documents).values(d).onConflictDoNothing().catch(() => {});
+      await (db.insert(documents) as any).values(cleanDbRecord(d)).onConflictDoNothing().catch(() => {});
     }
     for (const fd of INITIAL_FIELD_DISPATCHES) {
-      await db.insert(fieldDispatches).values(fd).onConflictDoNothing().catch(() => {});
+      await (db.insert(fieldDispatches) as any).values(cleanDbRecord(fd)).onConflictDoNothing().catch(() => {});
     }
     for (const ret of INITIAL_SALES_RETURNS) {
-      await (db.insert(salesReturns) as any).values({
+      await (db.insert(salesReturns) as any).values(cleanDbRecord({
         ...ret,
         deductFromDue: ret.deductFromDue ? 1 : 0,
         restocked: ret.restocked ? 1 : 0
-      }).onConflictDoNothing().catch(() => {});
+      })).onConflictDoNothing().catch(() => {});
     }
     for (const expItem of INITIAL_EXPENSES) {
       await (db.insert(expenses) as any).values({

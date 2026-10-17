@@ -55,24 +55,31 @@ interface DueLedgerProps {
 export function getDocFinancials(doc: Document) {
   if (!doc) return { total: 0, paid: 0, due: 0 };
   const total = Math.max(0, Number(doc.total) || 0);
-  let paid = doc.paidAmount !== undefined && doc.paidAmount !== null 
-    ? Number(doc.paidAmount) 
+  
+  let paid = typeof doc.paidAmount === 'number' && !isNaN(doc.paidAmount)
+    ? Math.max(0, doc.paidAmount)
     : (doc.status === 'Paid' ? total : 0);
-  let due = doc.dueAmount !== undefined && doc.dueAmount !== null && (Number(doc.dueAmount) > 0 || paid > 0 || doc.status === 'Paid')
-    ? Number(doc.dueAmount) 
-    : (doc.status === 'Paid' ? 0 : Math.max(0, total - paid));
 
-  // If due is 0 but total > 0 and paid < total and status is not Paid, correct the due!
-  if (due === 0 && paid < total && doc.status !== 'Paid') {
-    due = Math.max(0, total - paid);
+  // Reconcile with parsed payment log from notes if notes exist and contain payments
+  if (doc.notes && doc.notes.includes('[')) {
+    const bracketRegex = /\[(?:Payment|Company Due|Customer Due|Due|Collection|Cleared|Received)[^\]]*:([^\]]+)\]/gi;
+    let match;
+    let sumParsedFromNotes = 0;
+    while ((match = bracketRegex.exec(doc.notes)) !== null) {
+      const amtMatch = match[1].match(/Tk\.?\s*([\d,]+)/i);
+      if (amtMatch) {
+        sumParsedFromNotes += parseInt(amtMatch[1].replace(/,/g, ''), 10) || 0;
+      }
+    }
+    if (sumParsedFromNotes > paid) {
+      paid = sumParsedFromNotes;
+    }
   }
-  if (doc.status === 'Paid') {
-    due = 0;
-    paid = total;
-  }
+
+  let due = Math.max(0, total - paid);
 
   // Delivery Challan: payment is strictly optional. If not marked Paid, it does not force an overdue debt.
-  if (doc.type === 'CHALLAN' && doc.status !== 'Paid' && (!doc.paidAmount || doc.paidAmount === 0)) {
+  if (doc.type === 'CHALLAN' && doc.status !== 'Paid' && (!doc.paidAmount || Number(doc.paidAmount) === 0)) {
     due = 0;
   }
 
@@ -100,33 +107,51 @@ function parsePaymentsFromDoc(doc: Document) {
   const { total, paid, due } = getDocFinancials(doc);
   const notesText = doc.notes || '';
 
-  // Pattern: [Payment Received: Tk. X on YYYY-MM-DD via Z - Notes - Ref: MR-...]
-  // With optional discount: [Payment Received: Tk. X (Discount: Tk. Y) on YYYY-MM-DD via Z - ... - Ref: MR-...]
-  const pRegex = /\[(?:Payment Received|Company Due Received|Due Collected|Payment Cleared): Tk\.?\s*([\d,]+)(?:\s*\(Discount:\s*Tk\.?\s*([\d,]+)\))?\s*(?:on|via)\s*([^\s\]-]+)?\s*(?:on|via)?\s*([\d-]+)?\s*-\s*([^\]]*)\]/gi;
+  // Match any bracketed payment receipt note
+  const bracketRegex = /\[(?:Payment Received|Company Due Received|Customer Due Received|Due Collected|Payment Cleared):([^\]]+)\]/gi;
   let match;
-  while ((match = pRegex.exec(notesText)) !== null) {
-    const amountStr = (match[1] || '0').replace(/,/g, '');
-    const amount = parseInt(amountStr, 10) || 0;
-    const discountStr = (match[2] || '0').replace(/,/g, '');
-    const discount = parseInt(discountStr, 10) || 0;
+  while ((match = bracketRegex.exec(notesText)) !== null) {
+    const body = match[1];
+
+    const amtMatch = body.match(/Tk\.?\s*([\d,]+)/i);
+    const amount = amtMatch ? parseInt(amtMatch[1].replace(/,/g, ''), 10) : 0;
+
+    const discMatch = body.match(/\(Discount:\s*Tk\.?\s*([\d,]+)\)/i);
+    const discount = discMatch ? parseInt(discMatch[1].replace(/,/g, ''), 10) : 0;
+
     if (amount <= 0 && discount <= 0) continue;
 
-    let partA = (match[3] || 'Cash').trim();
-    let partB = (match[4] || doc.date || new Date().toISOString().split('T')[0]).trim();
-    let paymentMethod = partA;
-    let date = partB;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(partA)) {
-      date = partA;
-      paymentMethod = partB || 'Cash';
+    // Date extraction: search for valid YYYY-MM-DD
+    const dateMatch = body.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+    const date = dateMatch ? dateMatch[1] : (doc.date || new Date().toISOString().split('T')[0]);
+
+    // Payment method extraction
+    let paymentMethod = 'Cash';
+    const methodMatch = body.match(/via\s+([A-Za-z0-9\s\/]+?)(?=\s+on\s+|\s*-\s*|$)/i);
+    if (methodMatch && methodMatch[1].trim()) {
+      paymentMethod = methodMatch[1].trim();
+    } else if (/Cheque/i.test(body)) {
+      paymentMethod = 'Cheque';
+    } else if (/Bank/i.test(body)) {
+      paymentMethod = 'Bank Transfer';
+    } else if (/bKash|Nagad/i.test(body)) {
+      paymentMethod = 'bKash / Nagad';
     }
 
-    let rawNote = (match[5] || '').trim();
+    // Reference / Receipt No extraction
     let receiptNo = `MR-${date.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const refMatch = rawNote.match(/Ref:\s*(MR-[\w-]+)/i);
+    const refMatch = body.match(/Ref:\s*([A-Za-z0-9_-]+)/i);
     if (refMatch) {
       receiptNo = refMatch[1];
-      rawNote = rawNote.replace(/Ref:\s*MR-[\w-]+/i, '').replace(/-\s*$/, '').trim();
     }
+
+    // Clean up memo note text
+    let cleanNote = body;
+    const splitIndex = cleanNote.indexOf('-');
+    if (splitIndex !== -1) {
+      cleanNote = cleanNote.slice(splitIndex + 1);
+    }
+    cleanNote = cleanNote.replace(/Ref:\s*[A-Za-z0-9_-]+/gi, '').replace(/RefNo:\s*[A-Za-z0-9_-]+/gi, '').replace(/[-:]+$/g, '').trim();
 
     results.push({
       id: `${doc.id}-p-${match.index}`,
@@ -135,7 +160,7 @@ function parsePaymentsFromDoc(doc: Document) {
       amount,
       discount,
       paymentMethod: paymentMethod || 'Cash',
-      notes: rawNote || 'Payment Received',
+      notes: cleanNote || 'Due Payment Received',
       references: `${doc.type} #${doc.docNumber}`,
       remainingDue: due,
       customerName: doc.customerName,
@@ -144,15 +169,17 @@ function parsePaymentsFromDoc(doc: Document) {
     });
   }
 
-  // Fallback: If no parsed payments found in notes, but doc has recorded paid amount > 0
-  if (results.length === 0 && paid > 0) {
-    results.push({
-      id: `${doc.id}-fallback-receipt`,
+  // AUDIT RECONCILIATION: Ensure sum of parsed payments equals total recorded doc.paidAmount!
+  const sumParsedPayments = results.reduce((sum, p) => sum + p.amount, 0);
+  if (paid > sumParsedPayments) {
+    const unloggedPaid = paid - sumParsedPayments;
+    results.unshift({
+      id: `${doc.id}-initial-advance`,
       receiptNo: `MR-${(doc.date || '2026-01-01').replace(/-/g, '')}-${doc.docNumber.replace(/[^0-9]/g, '').slice(-4) || '1001'}`,
       date: doc.date || new Date().toISOString().split('T')[0],
-      amount: paid,
-      paymentMethod: 'Cash / Bank',
-      notes: 'Payment received',
+      amount: unloggedPaid,
+      paymentMethod: 'Direct Payment / Advance',
+      notes: 'Initial payment recorded at document creation',
       references: `${doc.type} #${doc.docNumber}`,
       remainingDue: due,
       customerName: doc.customerName,
@@ -183,6 +210,12 @@ function generateCustomerLedgerTransactions(
   }[] = [];
 
   item.documents.forEach(doc => {
+    // Only commercial invoices / bills create debt transactions!
+    // Delivery Challans are goods delivery notes and do not force an unbilled debt.
+    if (doc.type === 'CHALLAN' && doc.status !== 'Paid' && (!doc.paidAmount || doc.paidAmount === 0)) {
+      return;
+    }
+
     const { total } = getDocFinancials(doc);
 
     // Itemized goods / services description without bill number
@@ -235,7 +268,7 @@ function generateCustomerLedgerTransactions(
   // Sort chronologically ascending by date
   transactions.sort((a, b) => {
     const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
-    if (diff !== 0) return diff;
+    if (diff !== 0 && !isNaN(diff)) return diff;
     if (a.type === 'INVOICE' && b.type !== 'INVOICE') return -1;
     if (a.type !== 'INVOICE' && b.type === 'INVOICE') return 1;
     return 0;
@@ -307,12 +340,12 @@ function downloadCustomerStatementCSV(
 
 // Helper: Generate WhatsApp Reminder message
 function getWhatsAppReminderText(customerName: string, companyName: string, dueAmount: number, settingsName: string, hotline: string) {
-  return `প্রিয় ${customerName}${companyName ? ` (${companyName})` : ''},
-আসসালামু আলাইকুম।
-${settingsName || 'Jubayer Machineries'}-এ আপনার বর্তমান বকেয়ার পরিমাণ Tk. ${dueAmount.toLocaleString()}।
-অনুগ্রহ করে দ্রুততম সময়ে বকেয়া পরিশোধে সহযোগিতা করার জন্য বিনীত অনুরোধ জানাচ্ছি।
-বিস্তারিত বা যেকোনো সহযোগিতার জন্য যোগাযোগ করুন: ${hotline || '01715-994956'}।
-ধন্যবাদ।`;
+  return `Dear ${customerName}${companyName ? ` (${companyName})` : ''},
+Greetings.
+Your current outstanding balance with ${settingsName || 'Jubayer Machineries'} is Tk. ${dueAmount.toLocaleString()}.
+Kindly arrange the payment at your earliest convenience.
+For queries or details, please contact: ${hotline || '01715-994956'}.
+Thank you.`;
 }
 
 export default function DueLedger({ 
@@ -710,16 +743,16 @@ export default function DueLedger({
     });
   }, [purchases, purchaseSearch]);
 
-  // Single Document Payment Submission
+  // Single Document Payment Submission - supports collecting payment as many times as desired
   const handleCollectPaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!collectingDoc || (paymentAmount <= 0 && discountWaiver <= 0)) return;
 
     const { total, paid: currentPaid, due: currentDue } = getDocFinancials(collectingDoc);
-    const safePayAmount = Math.min(currentDue, paymentAmount);
+    const safePayAmount = Math.max(0, paymentAmount);
     const safeDiscount = Math.min(Math.max(0, currentDue - safePayAmount), discountWaiver);
     const totalDeducted = safePayAmount + safeDiscount;
-    const newPaid = Math.min(total, currentPaid + safePayAmount);
+    const newPaid = currentPaid + safePayAmount;
     const newDue = Math.max(0, currentDue - totalDeducted);
 
     let newStatus: DocumentStatus = 'Partially Paid';
@@ -769,14 +802,14 @@ export default function DueLedger({
     setPaymentReferenceNo('');
   };
 
-  // Open Company Total Payment modal
+  // Open Company Total Payment modal - can be opened anytime for any customer
   const handleOpenCompanyPay = (item: { customer: Customer; due: number; documents: Document[] }) => {
     setCollectingCompany({
       customer: item.customer,
-      totalDue: item.due,
+      totalDue: Math.max(0, item.due),
       documents: item.documents
     });
-    setCompanyPayAmount(item.due);
+    setCompanyPayAmount(item.due > 0 ? item.due : 0);
     setCompanyDiscountWaiver(0);
     setCompanyPayMethod('Bank Transfer');
     setCompanyPayDate(new Date().toISOString().split('T')[0]);
@@ -784,7 +817,7 @@ export default function DueLedger({
     setCompanyPayRefNo('');
   };
 
-  // Company Consolidated Due Payment submission
+  // Company Consolidated Due Payment submission - unlimited payments supported
   const handleCompanyPaySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!collectingCompany || (companyPayAmount <= 0 && companyDiscountWaiver <= 0)) return;
@@ -823,6 +856,35 @@ export default function DueLedger({
         notes: (doc.notes || '') + `\n[Company Due Received: Tk. ${payForDoc.toLocaleString()}${discountTag} via ${companyPayMethod} on ${companyPayDate} - ${companyPayNotes || 'Ledger Payment'}${companyPayRefNo ? ` - RefNo: ${companyPayRefNo}` : ''} - Ref: ${receiptNo}]`
       };
       updatedDocs.push(updatedDoc);
+    }
+
+    // If all unpaid docs were settled and there is still remaining payment, OR if all documents were already paid:
+    if (remainingPayment > 0 && collectingCompany.documents.length > 0) {
+      // Apply payment to the latest invoice or document so the customer's ledger records the transaction
+      const targetDoc = [...collectingCompany.documents]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      if (targetDoc) {
+        const alreadyUpdatedIndex = updatedDocs.findIndex(d => d.id === targetDoc.id);
+        const baseDoc = alreadyUpdatedIndex !== -1 ? updatedDocs[alreadyUpdatedIndex] : targetDoc;
+        const { total, paid: currentPaid } = getDocFinancials(baseDoc);
+        const newPaid = currentPaid + remainingPayment;
+        const extraNote = `\n[Company Due Received: Tk. ${remainingPayment.toLocaleString()} via ${companyPayMethod} on ${companyPayDate} - ${companyPayNotes || 'Advance / Installment Collection'}${companyPayRefNo ? ` - RefNo: ${companyPayRefNo}` : ''} - Ref: ${receiptNo}]`;
+        const finalizedDoc: Document = {
+          ...baseDoc,
+          total,
+          paidAmount: newPaid,
+          dueAmount: 0,
+          status: 'Paid',
+          notes: (baseDoc.notes || '') + extraNote
+        };
+        if (alreadyUpdatedIndex !== -1) {
+          updatedDocs[alreadyUpdatedIndex] = finalizedDoc;
+        } else {
+          updatedDocs.push(finalizedDoc);
+        }
+        remainingPayment = 0;
+      }
     }
 
     if (onBatchUpdateDocuments && updatedDocs.length > 0) {
@@ -932,11 +994,11 @@ export default function DueLedger({
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-blue-900" />
             <h2 className="text-xl font-black font-display text-slate-900 tracking-tight">
-              Due Outstanding Ledger &bull; বকেয়া খতিয়ান ও হিসাব
+              Due Outstanding Ledger
             </h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Accounts Receivable (গ্রাহক দেনাদার বকেয়া) এবং Accounts Payable (সাপ্লায়ার পাওনাদার দেনা) সেন্ট্রাল ম্যানেজমেন্ট।
+            Accounts Receivable (Customer Dues) and Accounts Payable (Supplier Dues) Central Management.
           </p>
         </div>
         
@@ -951,7 +1013,7 @@ export default function DueLedger({
             }`}
           >
             <Users className="w-4 h-4 text-amber-300" />
-            <span>Customer Dues (গ্রাহক বকেয়া)</span>
+            <span>Customer Dues</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 bg-white/20 rounded-full">
               Tk. {totalOutstanding.toLocaleString()}
             </span>
@@ -965,7 +1027,7 @@ export default function DueLedger({
             }`}
           >
             <Building2 className="w-4 h-4 text-emerald-400" />
-            <span>Supplier Dues (সাপ্লায়ার দেনা)</span>
+            <span>Supplier Dues</span>
             <span className="text-[10px] font-mono px-1.5 py-0.2 bg-white/20 rounded-full">
               Tk. {totalSupplierPayableDue.toLocaleString()}
             </span>
@@ -973,7 +1035,7 @@ export default function DueLedger({
         </div>
       </div>
 
-      {/* SECTION 1: CUSTOMER RECEIVABLES (গ্রাহক দেনাদার বকেয়া) */}
+      {/* SECTION 1: CUSTOMER RECEIVABLES */}
       {mainTab === 'customers' && (
         <div className="space-y-6 animate-fade-in">
           {/* Receivables Analytics Widgets */}
@@ -985,7 +1047,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Total Outstanding (মোট বকেয়া)
+                  Total Outstanding
                 </span>
                 <span className="text-base sm:text-xl font-black text-rose-700 font-display block mt-1 truncate">
                   Tk. {totalOutstanding.toLocaleString()}
@@ -1003,7 +1065,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Overdue Dues (মেয়াদোত্তীর্ণ)
+                  Overdue Dues
                 </span>
                 <span className="text-base sm:text-xl font-black text-amber-800 font-display block mt-1 truncate">
                   Tk. {overdueOutstanding.toLocaleString()}
@@ -1021,7 +1083,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Total Collected (মোট আদায়কৃত)
+                  Total Collected
                 </span>
                 <span className="text-base sm:text-xl font-black text-emerald-700 font-display block mt-1 truncate">
                   Tk. {totalPaid.toLocaleString()}
@@ -1037,7 +1099,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Collection Rate (আদায় হার)
+                  Collection Rate
                 </span>
                 <span className="text-base sm:text-xl font-black text-blue-900 font-display block mt-1 truncate">
                   {totalInvoiced > 0 ? ((totalPaid / totalInvoiced) * 100).toFixed(1) : "0"}%
@@ -1060,7 +1122,7 @@ export default function DueLedger({
               }`}
             >
               <Users className="w-4 h-4" />
-              Customer Accounts Ledger (গ্রাহক খাতা)
+              Customer Accounts Ledger
             </button>
             <button
               onClick={() => setCustomerSubTab('invoices')}
@@ -1071,7 +1133,7 @@ export default function DueLedger({
               }`}
             >
               <FileText className="w-4 h-4" />
-              Due Invoices & Bills (বকেয়া চালান ও বিল)
+              Due Invoices & Bills
             </button>
             <button
               onClick={() => setCustomerSubTab('aging')}
@@ -1082,7 +1144,7 @@ export default function DueLedger({
               }`}
             >
               <Clock className="w-4 h-4" />
-              Aging Analysis (বকেয়া বয়স বিশ্লেষণ)
+              Aging Analysis
             </button>
           </div>
 
@@ -1254,17 +1316,19 @@ export default function DueLedger({
                                       Statement
                                     </button>
 
-                                    {/* Collect Due */}
-                                    {item.due > 0 && (
-                                      <button
-                                        onClick={() => handleOpenCompanyPay(item)}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shadow-2xs transition-colors cursor-pointer"
-                                        title="Collect outstanding due payment"
-                                      >
-                                        <CreditCard className="w-3 h-3" />
-                                        Collect Due
-                                      </button>
-                                    )}
+                                    {/* Collect Due - Always available so payments can be collected unlimited times */}
+                                    <button
+                                      onClick={() => handleOpenCompanyPay(item)}
+                                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 font-bold rounded-lg text-[11px] shadow-2xs transition-colors cursor-pointer ${
+                                        item.due > 0 
+                                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      }`}
+                                      title="Collect due or record payment for this client"
+                                    >
+                                      <CreditCard className="w-3 h-3" />
+                                      {item.due > 0 ? 'Collect Due' : 'Record Pay'}
+                                    </button>
 
                                     {/* WhatsApp Due Reminder */}
                                     {item.due > 0 && (
@@ -1587,7 +1651,7 @@ export default function DueLedger({
               <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-2xs">
                 <h3 className="text-base font-extrabold text-slate-900 font-display flex items-center gap-2">
                   <Clock className="w-5 h-5 text-blue-900" />
-                  Accounts Receivable Aging Schedule (বকেয়া বয়স বিশ্লেষণ)
+                  Accounts Receivable Aging Schedule
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
                   Categorization of receivables by the number of days they have been outstanding since the invoice date.
@@ -1721,7 +1785,7 @@ export default function DueLedger({
         </div>
       )}
 
-      {/* SECTION 2: SUPPLIER PAYABLES (সাপ্লায়ার পাওনাদার দেনা) */}
+      {/* SECTION 2: SUPPLIER PAYABLES */}
       {mainTab === 'suppliers' && (
         <div className="space-y-6 animate-fade-in">
           {/* Payables Analytics Widgets */}
@@ -1733,7 +1797,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Total Supplier Payables (মোট দেনা)
+                  Total Supplier Payables
                 </span>
                 <span className="text-base sm:text-xl font-black text-amber-800 font-display block mt-1 truncate font-mono">
                   Tk. {totalSupplierPayableDue.toLocaleString()}
@@ -1751,7 +1815,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Paid to Suppliers (পরিশোধিত)
+                  Paid to Suppliers
                 </span>
                 <span className="text-base sm:text-xl font-black text-emerald-700 font-display block mt-1 truncate font-mono">
                   Tk. {totalPaidToSuppliers.toLocaleString()}
@@ -1769,7 +1833,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Total Procurement (মোট ক্রয়)
+                  Total Procurement
                 </span>
                 <span className="text-base sm:text-xl font-black text-blue-900 font-display block mt-1 truncate font-mono">
                   Tk. {totalPurchaseValue.toLocaleString()}
@@ -1787,7 +1851,7 @@ export default function DueLedger({
               </div>
               <div className="min-w-0 flex-1">
                 <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none truncate">
-                  Net Working Balance (পাওনা - দেনা)
+                  Net Working Balance
                 </span>
                 <span className={`text-base sm:text-xl font-black font-display block mt-1 truncate font-mono ${
                   (totalOutstanding - totalSupplierPayableDue) >= 0 ? 'text-emerald-700' : 'text-rose-700'
@@ -1812,7 +1876,7 @@ export default function DueLedger({
               }`}
             >
               <Building2 className="w-4 h-4" />
-              Supplier Accounts (মহাজন / সাপ্লায়ার খাতা)
+              Supplier Accounts
             </button>
             <button
               onClick={() => setSupplierSubTab('purchases')}
@@ -1823,7 +1887,7 @@ export default function DueLedger({
               }`}
             >
               <FileSpreadsheet className="w-4 h-4" />
-              Due Purchase Vouchers (বকেয়া পারচেজ বিল)
+              Due Purchase Vouchers
             </button>
           </div>
 
@@ -2085,7 +2149,6 @@ export default function DueLedger({
                     type="number"
                     required
                     min={0}
-                    max={getDocFinancials(collectingDoc).due}
                     value={paymentAmount === 0 ? '' : paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value === '' ? 0 : Number(e.target.value))}
                     placeholder="Enter collected amount"
@@ -2097,7 +2160,7 @@ export default function DueLedger({
               {/* Discount / Waiver Amount */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
-                  <label className="text-slate-700 font-bold block">Cash Discount / Waiver (ছাড় / মওকুফ)</label>
+                  <label className="text-slate-700 font-bold block">Cash Discount / Waiver</label>
                   <span className="text-[10px] text-slate-400 font-normal">Optional</span>
                 </div>
                 <div className="relative">
@@ -2268,7 +2331,6 @@ export default function DueLedger({
                     type="number"
                     required
                     min={0}
-                    max={collectingCompany.totalDue}
                     value={companyPayAmount || ''}
                     onChange={(e) => setCompanyPayAmount(Number(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 pl-9 focus:bg-white focus:outline-hidden font-bold text-slate-900 text-base font-mono"
@@ -2280,7 +2342,7 @@ export default function DueLedger({
               {/* Discount / Waiver Amount */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
-                  <label className="text-slate-700 font-bold block">Cash Discount / Concession (ছাড় / মওকুফ)</label>
+                  <label className="text-slate-700 font-bold block">Cash Discount / Concession</label>
                   <span className="text-[10px] text-slate-400 font-normal">Optional</span>
                 </div>
                 <div className="relative">
@@ -2377,7 +2439,7 @@ export default function DueLedger({
             <div className="bg-gradient-to-r from-slate-950 to-amber-950 text-white p-5 flex justify-between items-center">
               <div>
                 <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block mb-0.5">
-                  Supplier Due Payment Desk (মহাজন দেনা পরিশোধ)
+                  Supplier Due Payment Desk
                 </span>
                 <h3 className="font-extrabold font-display text-sm sm:text-base">
                   {payingSupplier.supplier.company || payingSupplier.supplier.name}
@@ -2512,7 +2574,7 @@ export default function DueLedger({
                 <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
                 <div>
                   <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
-                    Official Money Receipt (মানি রিসিট)
+                    Official Money Receipt
                   </h3>
                   <p className="text-[10px] text-slate-400 hidden sm:block">
                     Printed receipt copy for client records & billing file
@@ -2558,7 +2620,7 @@ export default function DueLedger({
                 {/* Title */}
                 <div className="flex justify-center my-3">
                   <span className="bg-slate-900 text-white font-black text-xs uppercase tracking-widest px-6 py-1.5 rounded-lg text-center font-mono">
-                    OFFICIAL MONEY RECEIPT &bull; মানি রিসিট
+                    OFFICIAL MONEY RECEIPT
                   </span>
                 </div>
 
@@ -2605,7 +2667,7 @@ export default function DueLedger({
 
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-black text-slate-800">
-                      Amount Received (আদায়কৃত টাকা):
+                      Amount Received:
                     </span>
                     <span className="text-xl font-black text-slate-950 font-display font-mono">
                       Tk. {recentReceipt.amount.toLocaleString()}.00
@@ -2614,20 +2676,20 @@ export default function DueLedger({
 
                   {recentReceipt.discount && recentReceipt.discount > 0 ? (
                     <div className="flex justify-between items-center text-[11px] font-bold text-emerald-800 pt-1">
-                      <span>Discount / Waiver Allowed (ছাড়/মওকুফ):</span>
+                      <span>Discount / Waiver Allowed:</span>
                       <span className="font-mono font-black">+ Tk. {recentReceipt.discount.toLocaleString()}.00</span>
                     </div>
                   ) : null}
 
                   <div className="text-[10px] text-slate-600 bg-white border border-slate-100 p-2.5 rounded-lg font-bold italic">
                     <span className="text-slate-400 uppercase tracking-wider font-mono block text-[9px] not-italic font-bold">
-                      Amount in Words (কথায়):
+                      Amount in Words:
                     </span>
                     {numberToWords(recentReceipt.amount)}
                   </div>
 
                   <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-[10px] font-bold text-slate-500">
-                    <span>Remaining Outstanding Due (অবশিষ্ট বকেয়া):</span>
+                    <span>Remaining Outstanding Due:</span>
                     <span className="text-rose-600 font-black font-mono text-xs">
                       Tk. {recentReceipt.remainingDue.toLocaleString()}.00
                     </span>
@@ -2677,7 +2739,7 @@ export default function DueLedger({
                 <CheckCircle className="w-5 h-5 text-amber-400 shrink-0" />
                 <div>
                   <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
-                    Supplier Payment Voucher &bull; ডেবিট ভাউচার
+                    Supplier Payment Voucher
                   </h3>
                   <p className="text-[10px] text-slate-400 hidden sm:block">
                     Accounts payable disbursement voucher copy
@@ -2717,7 +2779,7 @@ export default function DueLedger({
 
                 <div className="flex justify-center my-3">
                   <span className="bg-amber-900 text-white font-black text-xs uppercase tracking-widest px-6 py-1.5 rounded-lg text-center font-mono">
-                    SUPPLIER PAYMENT VOUCHER &bull; ডেবিট ভাউচার
+                    SUPPLIER PAYMENT VOUCHER
                   </span>
                 </div>
 
@@ -2762,7 +2824,7 @@ export default function DueLedger({
 
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-black text-slate-800">
-                      Amount Paid (পরিশোধিত টাকা):
+                      Amount Paid:
                     </span>
                     <span className="text-xl font-black text-slate-950 font-display font-mono">
                       Tk. {recentVoucher.amount.toLocaleString()}.00
@@ -2850,7 +2912,7 @@ export default function DueLedger({
                   <FileSpreadsheet className="w-5 h-5 text-amber-400 shrink-0" />
                   <div>
                     <h3 className="font-extrabold text-xs sm:text-sm text-white leading-tight">
-                      {cust.company || cust.name} - Customer Ledger Statement (গ্রাহক খতিয়ান)
+                      {cust.company || cust.name} - Customer Ledger Statement
                     </h3>
                     <p className="text-[10px] text-slate-400 hidden sm:block">
                       Chronological statement of invoices, payments received, and running due balance.
@@ -2859,19 +2921,18 @@ export default function DueLedger({
                 </div>
                 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {liveReportItem.due > 0 && (
-                    <button
-                      onClick={() => {
-                        const target = liveReportItem;
-                        setViewingCustomerReport(null);
-                        handleOpenCompanyPay(target);
-                      }}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
-                    >
-                      <CreditCard className="w-3.5 h-3.5" />
-                      Collect Payment
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      const target = liveReportItem;
+                      setViewingCustomerReport(null);
+                      handleOpenCompanyPay(target);
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold uppercase rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                    title="Collect or record payment for this client"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    Collect Payment
+                  </button>
                   <button
                     onClick={() => downloadCustomerStatementCSV(cust, transactions, {
                       invoiced: periodBilled,
@@ -2982,7 +3043,7 @@ export default function DueLedger({
                       CUSTOMER ACCOUNT STATEMENT
                     </span>
                     <span className="text-[10px] sm:text-[11px] text-rose-700 font-extrabold block">
-                      Accounts Receivable Ledger &bull; গ্রাহক খতিয়ান
+                      Accounts Receivable Ledger
                     </span>
                     <span className="text-[9px] sm:text-[10px] text-slate-400 block font-semibold mt-0.5">
                       Report Date: {new Date().toLocaleDateString('en-GB')}
@@ -3118,7 +3179,7 @@ export default function DueLedger({
                           <tr className="bg-slate-50 font-bold">
                             <td className="py-2 px-3 font-mono text-[10px]">{startFilter || '--'}</td>
                             <td className="py-2 px-3 font-mono text-[10px]">--</td>
-                            <td className="py-2 px-3 text-slate-600 italic">Opening Balance Brought Forward (পূর্বের জের)</td>
+                            <td className="py-2 px-3 text-slate-600 italic">Opening Balance Brought Forward</td>
                             <td className="py-2 px-3 text-right font-mono">--</td>
                             <td className="py-2 px-3 text-right font-mono">--</td>
                             <td className="py-2 px-3 text-right font-mono font-black text-rose-700">
@@ -3152,7 +3213,7 @@ export default function DueLedger({
                         {/* Summary Footer */}
                         <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-900 text-xs">
                           <td colSpan={3} className="py-3 px-3 uppercase tracking-wider text-[10px]">
-                            Grand Closing Balance (সর্বমোট জের):
+                            Grand Closing Balance:
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-black whitespace-nowrap">
                             Tk. {periodBilled.toLocaleString()}
@@ -3233,7 +3294,7 @@ export default function DueLedger({
                   {settings?.name || 'Jubayer Machineries'}
                 </div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
-                  SUPPLIER ACCOUNTS PAYABLE LEDGER &bull; মহাজন খতিয়ান
+                  SUPPLIER ACCOUNTS PAYABLE LEDGER
                 </div>
               </div>
 

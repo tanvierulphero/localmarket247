@@ -600,7 +600,7 @@ export default function StaffManagement({
                   <label className="font-bold text-slate-700 block">Email Address</label>
                   <input
                     type="email"
-                    placeholder="staff@hitachisolutioncenter.com"
+                    placeholder="staff@hitachiairsolutioncenter.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-semibold focus:bg-white focus:outline-hidden"

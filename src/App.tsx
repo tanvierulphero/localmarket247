@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Product, Customer, Document, BusinessSettings, DocumentType, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from './types';
+import { Product, CatalogProduct, Customer, Document, BusinessSettings, DocumentType, StaffUser, PermissionKey, FieldDispatch, Supplier, Purchase, SalesReturn, Expense } from './types';
 import { 
   DEFAULT_SETTINGS, 
-  INITIAL_STAFF_USERS
+  INITIAL_STAFF_USERS,
+  INITIAL_CATALOG_PRODUCTS
 } from './initialData';
 
 import { generateNextDocNumber } from './lib/documentNumber';
 
 // Component imports
 import PublicCatalog from './components/PublicCatalog';
+import PublicCatalogManager from './components/PublicCatalogManager';
 import AdminLogin from './components/AdminLogin';
 import PrintDocument from './components/PrintDocument';
 import DashboardOverview from './components/DashboardOverview';
@@ -62,6 +64,9 @@ import {
   Layers
 } from 'lucide-react';
 import { 
+  apiGetCatalogProducts,
+  apiSaveCatalogProduct,
+  apiDeleteCatalogProduct,
   apiGetProducts,
   apiSaveProduct,
   apiDeleteProduct,
@@ -113,6 +118,7 @@ export default function App() {
 
   // Core Database lists
   const [products, setProducts] = useState<Product[]>([]);
+  const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>(INITIAL_CATALOG_PRODUCTS);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [dispatches, setDispatches] = useState<FieldDispatch[]>([]);
@@ -151,7 +157,7 @@ export default function App() {
       const res = await apiUploadImage(file);
       const serverUrl = (res?.url || '').trim();
       if (!serverUrl) {
-        throw new Error('সার্ভার থেকে কোনো বৈধ ফাইলের পাথ পাওয়া যায়নি।');
+        throw new Error('No valid file path returned from the server.');
       }
 
       // 2. Persist to database/settings
@@ -166,8 +172,8 @@ export default function App() {
       setSettingsSavedFeedback(true);
       setTimeout(() => setSettingsSavedFeedback(false), 4000);
     } catch (err: any) {
-      console.error('Failed to upload logo to cPanel:', err);
-      alert('কোম্পানি লগো আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
+      console.error('Failed to upload logo to server:', err);
+      alert('Failed to upload company logo: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingLogo(false);
     }
@@ -180,7 +186,7 @@ export default function App() {
       const res = await apiUploadImage(file);
       const serverUrl = (res?.url || '').trim();
       if (!serverUrl) {
-        throw new Error('cPanel সার্ভার থেকে কোনো ফাইলের পাথ পাওয়া যায়নি।');
+        throw new Error('No valid file path returned from the server.');
       }
 
       // 2. Persist server URL to database
@@ -195,8 +201,8 @@ export default function App() {
       setSettingsSavedFeedback(true);
       setTimeout(() => setSettingsSavedFeedback(false), 4000);
     } catch (err: any) {
-      console.error('Failed to upload public logo to cPanel:', err);
-      alert('cPanel এ লগো আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
+      console.error('Failed to upload public logo:', err);
+      alert('Failed to upload public logo: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingPublicLogo(false);
     }
@@ -217,7 +223,7 @@ export default function App() {
       setTimeout(() => setSettingsSavedFeedback(false), 4000);
     } catch (err: any) {
       console.error('Failed to save public logo:', err);
-      alert('পাবলিক লগো সেভ করতে সমস্যা হয়েছে: ' + (err?.message || 'Error saving settings'));
+      alert('Failed to save public logo: ' + (err?.message || 'Error saving settings'));
     }
   };
 
@@ -227,7 +233,7 @@ export default function App() {
       const res = await apiUploadImage(file);
       const serverUrl = (res?.url || '').trim();
       if (!serverUrl) {
-        throw new Error('সার্ভার থেকে কোনো বৈধ ফাইলের পাথ পাওয়া যায়নি।');
+        throw new Error('No valid file path returned from the server.');
       }
 
       const updated = { ...settings, ...settingsForm, watermarkUrl: serverUrl, showWatermark: 1 };
@@ -241,8 +247,8 @@ export default function App() {
       setSettingsSavedFeedback(true);
       setTimeout(() => setSettingsSavedFeedback(false), 4000);
     } catch (err: any) {
-      console.error('Failed to upload watermark to cPanel:', err);
-      alert('ওয়াটারমার্ক আপলোড করতে সমস্যা হয়েছে: ' + (err?.message || 'Upload error'));
+      console.error('Failed to upload watermark:', err);
+      alert('Failed to upload watermark: ' + (err?.message || 'Upload error'));
     } finally {
       setIsUploadingWatermark(false);
     }
@@ -300,36 +306,44 @@ export default function App() {
     return currentUser.permissions.includes(perm);
   };
 
-  // Helper: Sanitize document to guarantee total, paidAmount, and dueAmount follow accounting rules
+  // Helper: Sanitize document to guarantee total, paidAmount, and dueAmount follow strict accounting rules
   const sanitizeDoc = (doc: Document): Document => {
     if (!doc) return doc;
     const total = Math.max(0, Number(doc.total) || 0);
-    let paid = doc.paidAmount !== undefined && doc.paidAmount !== null 
-      ? Number(doc.paidAmount) 
+    let paid = typeof doc.paidAmount === 'number' && !isNaN(doc.paidAmount)
+      ? Math.max(0, doc.paidAmount)
       : (doc.status === 'Paid' ? total : 0);
-    let due = doc.dueAmount !== undefined && doc.dueAmount !== null && (Number(doc.dueAmount) > 0 || paid > 0 || doc.status === 'Paid')
-      ? Number(doc.dueAmount) 
-      : (doc.status === 'Paid' ? 0 : Math.max(0, total - paid));
-    if (due === 0 && paid < total && doc.status !== 'Paid') {
-      due = Math.max(0, total - paid);
+    
+    let due = Math.max(0, total - paid);
+    let status = doc.status || 'Unpaid';
+
+    if (due === 0 && total >= 0) {
+      status = 'Paid';
+    } else if (paid > 0 && due > 0) {
+      status = 'Partially Paid';
+    } else if (paid === 0 && due > 0 && status === 'Paid') {
+      status = 'Unpaid';
     }
-    if (doc.status === 'Paid') {
+
+    if (doc.type === 'CHALLAN' && status !== 'Paid' && (!doc.paidAmount || Number(doc.paidAmount) === 0)) {
       due = 0;
-      paid = total;
     }
+
     return {
       ...doc,
       total,
       paidAmount: paid,
       dueAmount: due,
+      status
     };
   };
 
   // Fetch all data from Cloud SQL Database on load
   const loadCloudSqlData = async () => {
     try {
-      const [prods, custs, docs, staff, setts, disps, sups, purs, rets, exps] = await Promise.all([
+      const [prods, catProds, custs, docs, staff, setts, disps, sups, purs, rets, exps] = await Promise.all([
         apiGetProducts().catch(() => []),
+        apiGetCatalogProducts().catch(() => []),
         apiGetCustomers().catch(() => []),
         apiGetDocuments().catch(() => []),
         apiGetStaff().catch(() => INITIAL_STAFF_USERS),
@@ -343,6 +357,10 @@ export default function App() {
 
       const safeProds = Array.isArray(prods) ? prods : [];
       setProducts(safeProds);
+
+      if (Array.isArray(catProds) && catProds.length > 0) {
+        setCatalogProducts(catProds);
+      }
 
       const safeCusts = Array.isArray(custs) ? custs : [];
       setCustomers(safeCusts);
@@ -383,7 +401,9 @@ export default function App() {
     try {
       socket = io();
       socket.on('db_change', (change: any) => {
-        if (change.entity === 'products') {
+        if (change.entity === 'catalog_products') {
+          apiGetCatalogProducts().then(cp => { if (Array.isArray(cp) && cp.length > 0) setCatalogProducts(cp); }).catch(() => {});
+        } else if (change.entity === 'products') {
           apiGetProducts().then(setProducts).catch(() => {});
         } else if (change.entity === 'customers') {
           apiGetCustomers().then(setCustomers).catch(() => {});
@@ -497,7 +517,7 @@ export default function App() {
 
   const handleDeleteStaff = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন স্টাফ অ্যাকাউন্ট ডিলেট করতে পারবেন (Only Administrator can delete staff accounts).');
+      alert('Only Administrator can delete staff accounts.');
       return;
     }
     const updated = staffUsers.filter(s => s.id !== id);
@@ -526,7 +546,7 @@ export default function App() {
   // Clear All Data Handler (for fresh entry)
   const handleClearAllData = async () => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন সম্পূর্ণ ডাটাবেস ক্লিয়ার করতে পারবেন (Only Administrator can clear database data).');
+      alert('Only Administrator can clear database data.');
       return;
     }
     if (window.confirm("Are you sure you want to clear all products, customers, invoices, purchases, challans, and expenses from the database? This allows setting up fresh data.")) {
@@ -562,6 +582,40 @@ export default function App() {
     }
   };
 
+  // HANDLERS FOR PUBLIC SHOWCASE CATALOG (Completely separate from inventory)
+  const handleSaveCatalogProduct = async (p: CatalogProduct) => {
+    const exists = catalogProducts.some(item => item.id === p.id);
+    const updated = exists
+      ? catalogProducts.map(item => item.id === p.id ? p : item)
+      : [p, ...catalogProducts];
+    setCatalogProducts(updated);
+    try {
+      await apiSaveCatalogProduct(p);
+    } catch (e: any) {
+      console.warn('Backend catalog sync warning:', e);
+    }
+  };
+
+  const handleDeleteCatalogProduct = async (id: string) => {
+    const updated = catalogProducts.filter(p => p.id !== id);
+    setCatalogProducts(updated);
+    try {
+      await apiDeleteCatalogProduct(id);
+    } catch (e: any) {
+      console.warn('Backend catalog delete warning:', e);
+    }
+  };
+
+  const handleSaveSettingsDirect = async (updatedSettings: BusinessSettings) => {
+    setSettings(updatedSettings);
+    setSettingsForm(updatedSettings);
+    try {
+      await apiSaveSettings(updatedSettings);
+    } catch (e: any) {
+      console.warn('Backend settings save warning:', e);
+    }
+  };
+
   // HANDLERS FOR INVENTORY / PRODUCTS
   const handleAddProduct = async (p: Product) => {
     const list = [p, ...products];
@@ -585,7 +639,7 @@ export default function App() {
 
   const handleDeleteProduct = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন প্রোডাক্ট ডিলেট করতে পারবেন (Only Administrator can delete products).');
+      alert('Only Administrator can delete products.');
       return;
     }
     const list = products.filter(p => p.id !== id);
@@ -626,7 +680,7 @@ export default function App() {
 
   const handleDeleteCustomer = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন কাস্টমার রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete customers).');
+      alert('Only Administrator can delete customers.');
       return;
     }
     const list = customers.filter(c => c.id !== id);
@@ -896,7 +950,7 @@ export default function App() {
 
   const handleDeleteDocument = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন ডকুমেন্টস ডিলেট করতে পারবেন (Only Administrator can delete documents).');
+      alert('Only Administrator can delete documents.');
       return;
     }
     const list = documents.filter(d => d.id !== id);
@@ -928,7 +982,7 @@ export default function App() {
 
   const handleDeleteDispatch = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন ফিল্ড সার্ভিস রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete dispatch records).');
+      alert('Only Administrator can delete dispatch records.');
       return;
     }
     const list = dispatches.filter(d => d.id !== id);
@@ -960,7 +1014,7 @@ export default function App() {
 
   const handleDeleteSupplier = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন সাপ্লায়ার রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete suppliers).');
+      alert('Only Administrator can delete suppliers.');
       return;
     }
     const list = suppliers.filter(s => s.id !== id);
@@ -1058,7 +1112,7 @@ export default function App() {
 
   const handleDeletePurchase = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন পারচেজ রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete purchases).');
+      alert('Only Administrator can delete purchases.');
       return;
     }
     const list = purchases.filter(p => p.id !== id);
@@ -1127,7 +1181,7 @@ export default function App() {
 
   const handleDeleteReturn = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন সেলস রিটার্ন রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete return records).');
+      alert('Only Administrator can delete return records.');
       return;
     }
     const list = salesReturns.filter(r => r.id !== id);
@@ -1159,7 +1213,7 @@ export default function App() {
 
   const handleDeleteExpense = async (id: string) => {
     if (currentUser?.role !== 'ADMIN') {
-      alert('শুধুমাত্র অ্যাডমিন খরচ রেকর্ড ডিলেট করতে পারবেন (Only Administrator can delete expenses).');
+      alert('Only Administrator can delete expenses.');
       return;
     }
     const list = expenses.filter(e => e.id !== id);
@@ -1255,10 +1309,10 @@ export default function App() {
   return (
     <div className="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen">
       
-      {/* 1. PUBLIC WEBSITE CATALOG VIEW */}
+      {/* 1. PUBLIC WEBSITE CATALOG VIEW (Dedicated custom catalog showcase, 0 connection to inventory) */}
       {currentView === 'catalog' && (
         <PublicCatalog 
-          products={products}
+          catalogProducts={catalogProducts}
           customers={customers}
           documents={documents}
           settings={settings}
@@ -1332,6 +1386,30 @@ export default function App() {
                   >
                     <BarChart3 className="w-4 h-4" />
                     Overview Stats
+                  </button>
+                )}
+
+                {/* Tab: Public Showcase Catalog (Custom Showcase completely separate from Inventory) */}
+                {(currentUser?.role === 'ADMIN' || hasPermission('manage_public_catalog')) && (
+                  <button
+                    onClick={() => { setActiveTab('public_catalog'); setEditingDocument(null); setIsCreatingDoc(null); }}
+                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-lg transition-all text-left cursor-pointer ${
+                      activeTab === 'public_catalog' && !editingDocument && !isCreatingDoc
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold shadow-sm'
+                        : 'hover:bg-slate-800 hover:text-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      <span>Public Showcase</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      activeTab === 'public_catalog' && !editingDocument && !isCreatingDoc
+                        ? 'bg-blue-800 text-blue-100'
+                        : 'bg-slate-800 text-slate-300'
+                    }`}>
+                      {catalogProducts.length}
+                    </span>
                   </button>
                 )}
 
@@ -1672,6 +1750,21 @@ export default function App() {
                     />
                   )}
 
+                  {/* TAB PANEL: Public Showcase Catalog (Custom Showcase completely separate from Inventory) */}
+                  {activeTab === 'public_catalog' && (currentUser?.role === 'ADMIN' || hasPermission('manage_public_catalog')) && (
+                    <ErrorBoundary fallbackTitle="Public Showcase Manager">
+                      <PublicCatalogManager
+                        catalogProducts={catalogProducts}
+                        settings={settings}
+                        currentUser={currentUser}
+                        onSaveProduct={handleSaveCatalogProduct}
+                        onDeleteProduct={isAdmin ? handleDeleteCatalogProduct : undefined}
+                        onSaveSettings={handleSaveSettingsDirect}
+                        onVisitPublicSite={() => setCurrentView('catalog')}
+                      />
+                    </ErrorBoundary>
+                  )}
+
                   {/* TAB PANEL 2: Inventory Stock */}
                   {activeTab === 'inventory' && hasPermission('view_inventory') && (
                     <ErrorBoundary fallbackTitle="Stock Inventory">
@@ -1730,6 +1823,8 @@ export default function App() {
                           setEditingDocument(newDoc);
                           setIsCreatingDoc(type);
                         }}
+                        onUpdateDocument={handleUpdateDocumentOnly}
+                        onBatchUpdateDocuments={handleBatchUpdateDocuments}
                       />
                     </ErrorBoundary>
                   )}
@@ -1892,7 +1987,7 @@ export default function App() {
                               <div className="flex justify-between items-center">
                                 <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                                   <ImageIcon className="w-3.5 h-3.5 text-blue-700" />
-                                  Company Main Logo (কোম্পানির মূল লগো)
+                                  Company Main Logo (Invoices & ERP)
                                 </label>
                               </div>
 
@@ -1905,7 +2000,7 @@ export default function App() {
                                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-300 hover:border-blue-700 rounded-xl text-xs font-bold text-slate-700 hover:text-blue-900 cursor-pointer shadow-2xs transition-all active:scale-98 ${isUploadingLogo ? 'opacity-60 pointer-events-none' : ''}`}
                                 >
                                   <Upload className={`w-4 h-4 text-blue-700 ${isUploadingLogo ? 'animate-bounce' : ''}`} />
-                                  <span>{isUploadingLogo ? 'Uploading logo...' : 'Upload New Logo (লগো ফাইল সিলেক্ট করুন)'}</span>
+                                  <span>{isUploadingLogo ? 'Uploading logo...' : 'Upload New Logo'}</span>
                                 </button>
                                 <input
                                   ref={logoFileInputRef}
@@ -1940,39 +2035,39 @@ export default function App() {
                                     <Logo logoUrl={settingsForm.logoUrl} className="max-h-full max-w-full text-blue-900" alt="Logo Preview" />
                                   ) : (
                                     <span className="text-[10px] text-slate-400 font-bold italic text-center">
-                                      কোনো লগো নেই
+                                      No Logo
                                     </span>
                                   )}
                                 </div>
                                 <div className="text-[11px] text-slate-600 space-y-0.5">
                                   <div className="font-bold text-slate-800 flex items-center gap-1">
                                     <CheckCircle2 className={`w-3.5 h-3.5 ${settingsForm.logoUrl ? 'text-emerald-600' : 'text-slate-400'}`} />
-                                    <span>{settingsForm.logoUrl ? 'কাস্টম লগো সক্রিয় (Custom Logo Active)' : 'কোনো লগো আপলোড করা হয়নি'}</span>
+                                    <span>{settingsForm.logoUrl ? 'Custom Logo Active' : 'No Logo Uploaded'}</span>
                                   </div>
                                   <p className="text-[10px] text-slate-400">
-                                    {settingsForm.logoUrl ? 'ইনভয়েস, কোটেশন, বিল ও নেভিগেশন হেডারে প্রদর্শিত হচ্ছে।' : 'লগো দেখতে উপরে আপনার কাঙ্ক্ষিত লগো ফাইল আপলোড করুন।'}
+                                    {settingsForm.logoUrl ? 'Displayed on invoices, quotations, challans, and navigation.' : 'Upload a logo to appear on print documents.'}
                                   </p>
                                 </div>
                               </div>
                             </div>
 
-                            {/* SECTION A2: PUBLIC WEBSITE LOGO (পাবলিক সাইটের লগো) */}
+                            {/* SECTION A2: PUBLIC WEBSITE LOGO */}
                             <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-4 space-y-3.5 shadow-2xs">
                               <div className="flex justify-between items-center">
                                 <div>
                                   <label className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                                     <Globe className="w-4 h-4 text-blue-700" />
-                                    <span>Public Website Header Logo (পাবলিক ওয়েবসাইটের মূল হেডার লগো)</span>
+                                    <span>Public Website Header Logo</span>
                                   </label>
                                   <p className="text-[10px] text-slate-500 mt-0.5">
-                                    পাবলিক ওয়েবসাইটের শীর্ষ হেডারে প্রদর্শিত লগো (আপনার ছবিতে মার্ক করা লগো)।
+                                    Logo displayed on the public website showcase header and footer.
                                   </p>
                                 </div>
                               </div>
 
                               {/* Upload Button & File Input */}
                               <div className="space-y-1">
-                                <span className="text-[10px] text-slate-600 font-bold">কম্পিউটার/মোবাইল থেকে নতুন লগো আপলোড করুন:</span>
+                                <span className="text-[10px] text-slate-600 font-bold">Upload new logo from computer/phone:</span>
                                 <div className="flex items-center gap-3">
                                   <button
                                     type="button"
@@ -1981,7 +2076,7 @@ export default function App() {
                                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50/80 hover:bg-blue-100/80 border-2 border-dashed border-blue-400 hover:border-blue-600 rounded-xl text-xs font-bold text-blue-950 cursor-pointer shadow-2xs transition-all active:scale-98 ${isUploadingPublicLogo ? 'opacity-60 pointer-events-none' : ''}`}
                                   >
                                     <Upload className={`w-4 h-4 text-blue-700 ${isUploadingPublicLogo ? 'animate-bounce' : ''}`} />
-                                    <span>{isUploadingPublicLogo ? 'আপলোড ও সেভ হচ্ছে...' : 'Upload Public Site Logo (লগো ফাইল সিলেক্ট করুন)'}</span>
+                                    <span>{isUploadingPublicLogo ? 'Uploading & saving...' : 'Upload Public Site Logo'}</span>
                                   </button>
                                   <input
                                     ref={publicLogoFileInputRef}
@@ -1998,21 +2093,21 @@ export default function App() {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-500 pt-0.5">
                                   <span className="font-semibold text-blue-950 bg-blue-100/70 border border-blue-200 px-2 py-0.5 rounded-md">
-                                    📏 প্রস্তাবিত সাইজ: <strong>300 × 75 px</strong> (অথবা <strong>400 × 100 px</strong>)
+                                    Recommended: <strong>300 × 75 px</strong> (or <strong>400 × 100 px</strong>)
                                   </span>
                                   <span className="text-slate-400">|</span>
-                                  <span>উচ্চতা: <strong>48px</strong> (অটো প্রস্থ)</span>
+                                  <span>Height: <strong>48px</strong> (Auto width)</span>
                                   <span className="text-slate-400">|</span>
-                                  <span>ফরম্যাট: <strong>স্বচ্ছ ব্যাকগ্রাউন্ড PNG বা SVG</strong></span>
+                                  <span>Format: <strong>Transparent PNG or SVG</strong></span>
                                 </div>
                                 <p className="text-[9px] text-blue-900 font-semibold bg-blue-100/60 p-1.5 rounded-lg border border-blue-200">
-                                  ⚡ ফাইল সিলেক্ট করলেই স্বয়ংক্রিয়ভাবে সরাসরি আপনার cPanel সার্ভারের <code>/uploads/</code> ফোল্ডারে আপলোড ও ডেটাবেজে সেভ হয়ে যাবে।
+                                  Automatically uploaded to your server <code>/uploads/</code> folder and synced with your database.
                                 </p>
                               </div>
 
                               {/* Manual Image URL Input */}
                               <div className="space-y-1">
-                                <span className="text-[10px] text-slate-600 font-bold">অথবা সরাসরি ছবির লিঙ্ক (Direct Image URL):</span>
+                                <span className="text-[10px] text-slate-600 font-bold">Or Direct Image URL:</span>
                                 <div className="flex gap-2">
                                   <input
                                     type="text"
@@ -2027,7 +2122,7 @@ export default function App() {
                                     className="px-3.5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
                                   >
                                     <Save className="w-3.5 h-3.5" />
-                                    সেভ করুন
+                                    Save
                                   </button>
                                 </div>
                               </div>
@@ -2044,7 +2139,7 @@ export default function App() {
                                     />
                                   ) : (
                                     <span className="text-[10px] text-slate-400 font-bold italic text-center">
-                                      কোনো লগো নেই
+                                      No Logo
                                     </span>
                                   )}
                                 </div>
@@ -2052,11 +2147,11 @@ export default function App() {
                                   <div className="font-bold text-slate-800 flex items-center gap-1.5">
                                     <CheckCircle2 className={`w-3.5 h-3.5 ${settingsForm.publicLogoUrl ? 'text-emerald-600' : 'text-slate-400'} flex-shrink-0`} />
                                     <span>
-                                      {settingsForm.publicLogoUrl ? 'কাস্টম পাবলিক লগো সক্রিয় (Custom Logo Active)' : 'কোনো পাবলিক লগো আপলোড করা হয়নি'}
+                                      {settingsForm.publicLogoUrl ? 'Custom Public Logo Active' : 'No Public Logo Uploaded'}
                                     </span>
                                   </div>
                                   <p className="text-[10px] text-slate-500 leading-snug">
-                                    পাবলিক ওয়েবসাইটের মূল হেডার ও ফুটারে এই কাস্টম লগোটি প্রদর্শিত হবে। কোনো ডিফল্ট লগো থাকবে না।
+                                    This custom logo appears across the public website header and footer.
                                   </p>
                                 </div>
                               </div>
@@ -2161,7 +2256,7 @@ export default function App() {
                               <div className="flex justify-between items-center">
                                 <label className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                                   <Globe className="w-3.5 h-3.5 text-blue-700" />
-                                  Browser Favicon (ব্রাউজার ট্যাব আইকন)
+                                  Browser Favicon (Tab Icon)
                                 </label>
                               </div>
 
@@ -2235,7 +2330,7 @@ export default function App() {
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                                 <Eye className="w-4 h-4 text-blue-900" />
-                                <span>লাইভ ভিজ্যুয়াল প্রিভিউ (Live Preview)</span>
+                                <span>Live Visual Preview</span>
                               </span>
                               <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10px]">
                                 <button
@@ -2243,14 +2338,14 @@ export default function App() {
                                   onClick={() => setBrandingPreviewMode('public')}
                                   className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${brandingPreviewMode === 'public' ? 'bg-blue-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
                                 >
-                                  🌐 পাবলিক সাইট হেডার
+                                  🌐 Public Site Header
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setBrandingPreviewMode('document')}
                                   className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${brandingPreviewMode === 'document' ? 'bg-blue-900 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
                                 >
-                                  📄 ইনভয়েস শিট
+                                  📄 Invoice Sheet
                                 </button>
                               </div>
                             </div>
@@ -2261,7 +2356,7 @@ export default function App() {
                                 <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
                                   <span className="flex items-center gap-1.5">
                                     <Sparkles className="w-3.5 h-3.5 text-blue-800" />
-                                    পাবলিক ওয়েবসাইটের শীর্ষ হেডার সিমুলেশন
+                                    Public Website Header Simulation
                                   </span>
                                   <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
                                     Live Simulator
@@ -2300,12 +2395,12 @@ export default function App() {
                                             />
                                           ) : (
                                             <span className="text-[9px] text-amber-800 font-bold italic px-1.5 whitespace-nowrap">
-                                              [ কোনো লগো নেই ]
+                                              [ No Logo ]
                                             </span>
                                           )}
                                         </div>
                                         <span className="absolute -top-2.5 -right-2 bg-amber-500 text-white text-[7px] font-black uppercase px-1.5 py-0.2 rounded shadow-xs">
-                                          মার্ক করা লগো
+                                          Header Logo
                                         </span>
                                       </div>
 
@@ -2347,9 +2442,9 @@ export default function App() {
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-900 flex items-start gap-2">
                                   <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                                   <div>
-                                    <span className="font-bold">হলুদ বর্ডারের ভেতরে প্রদর্শিত অংশটিই হলো আপনার পাবলিক সাইটের হেডার লগো।</span>
+                                    <span className="font-bold">The highlighted yellow dashed section is your public website's header logo.</span>
                                     <p className="text-amber-800 text-[9px] mt-0.5">
-                                      বামপাশের "Upload Public Site Logo" বাটনে ক্লিক করে ফাইল আপলোড করলেই তা স্বয়ংক্রিয়ভাবে সেভ হয়ে আপনার মূল পাবলিক ওয়েবসাইটে চলে আসবে।
+                                      Click the "Upload Public Site Logo" button on the left to upload your logo and it will be saved directly to your site.
                                     </p>
                                   </div>
                                 </div>
@@ -2460,7 +2555,7 @@ export default function App() {
                         {/* Direct Save Button for Branding Card */}
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
                           <p className="text-[11px] text-slate-500">
-                            {settingsForm.publicLogoUrl ? '✓ কাস্টম পাবলিক লগো কনফিগার করা রয়েছে।' : 'তথ্য: কোনো ডিফল্ট লগো নেই। আপনার কাঙ্ক্ষিত লগোটি আপলোড করুন।'}
+                            {settingsForm.publicLogoUrl ? '✓ Custom public logo is active.' : 'Note: Upload your custom logo above to brand the public site.'}
                           </p>
                           <button
                             type="button"
@@ -2468,7 +2563,7 @@ export default function App() {
                             className="w-full sm:w-auto px-6 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center justify-center gap-2 transition-all active:scale-95"
                           >
                             <Save className="w-4 h-4" />
-                            Save Branding & Logos (লগো সেভ করুন)
+                            Save Branding & Logos
                           </button>
                         </div>
                       </div>

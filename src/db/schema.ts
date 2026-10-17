@@ -5,10 +5,10 @@ export const users = pgTable('users', {
   id: text('id').primaryKey().notNull(),
   uid: text('uid').unique(),
   email: text('email').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow(),
 });
 
-// Products / Inventory table
+// Products / Inventory table (ERP / Invoices / Warehouse)
 export const products = pgTable('products', {
   id: text('id').primaryKey().notNull(),
   name: text('name').notNull(),
@@ -22,7 +22,25 @@ export const products = pgTable('products', {
   description: text('description').default(''),
   specs: jsonb('specs').$type<{ label: string; value: string }[]>().default([]),
   imageUrl: text('image_url').default(''),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
+});
+
+// Dedicated Public Showcase Catalog Products table (Completely separate from Inventory)
+export const catalogProducts = pgTable('catalog_products', {
+  id: text('id').primaryKey().notNull(),
+  name: text('name').notNull(),
+  category: text('category').notNull(),
+  brand: text('brand').notNull(),
+  price: real('price').notNull().default(0),
+  callForPrice: integer('call_for_price').default(0), // 1 if call for price, 0 if numeric price
+  badge: text('badge').default(''),
+  description: text('description').default(''),
+  specs: jsonb('specs').$type<{ label: string; value: string }[]>().default([]),
+  imageUrl: text('image_url').default(''),
+  status: text('status').default('active'), // 'active' | 'hidden'
+  displayOrder: integer('display_order').default(0),
+  createdAt: text('created_at').default(''),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Customers table
@@ -35,7 +53,7 @@ export const customers = pgTable('customers', {
   email: text('email').default(''),
   address: text('address').default(''),
   notes: text('notes').default(''),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Documents table (Invoices, Quotations, Offer Letters, Bills)
@@ -82,7 +100,7 @@ export const documents = pgTable('documents', {
   signatureLabel: text('signature_label').default('Authorized Signature'),
   signatureName: text('signature_name').default('Hitachi Air Solution Center'),
   vatEnabled: integer('vat_enabled').default(1),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Staff Users table
@@ -97,7 +115,7 @@ export const staffUsers = pgTable('staff_users', {
   status: text('status').notNull(), // Active, Inactive
   permissions: jsonb('permissions').$type<string[]>().default([]),
   createdAt: text('created_at').notNull(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Business Settings table
@@ -125,7 +143,11 @@ export const settings = pgTable('settings', {
   challanPrefix: text('challan_prefix').default('JM/CH/2026/'),
   watermarkOpacity: real('watermark_opacity').default(0.04),
   showWatermark: integer('show_watermark').default(1),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  whatsapp: text('whatsapp').default(''),
+  messengerUrl: text('messenger_url').default(''),
+  facebookUrl: text('facebook_url').default(''),
+  telegramUrl: text('telegram_url').default(''),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Field Service & Work Records table
@@ -159,7 +181,7 @@ export const fieldDispatches = pgTable('field_dispatches', {
   dispatchDate: text('dispatch_date').default(''),
   returnDate: text('return_date'),
   items: jsonb('items').$type<any[]>().default([]),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Suppliers / Vendors table
@@ -174,7 +196,7 @@ export const suppliers = pgTable('suppliers', {
   contactPerson: text('contact_person').default(''),
   notes: text('notes').default(''),
   createdAt: text('created_at').default(''),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Purchases / Stock Inward table
@@ -213,7 +235,7 @@ export const purchases = pgTable('purchases', {
   status: text('status').notNull(), // 'Received' | 'Ordered' | 'Pending' | 'Cancelled'
   notes: text('notes').default(''),
   createdAt: text('created_at').default(''),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Sales Returns / Restock table
@@ -240,7 +262,7 @@ export const salesReturns = pgTable('sales_returns', {
   reason: text('reason').default(''),
   notes: text('notes').default(''),
   createdAt: text('created_at').default(''),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });
 
 // Expenses table
@@ -258,5 +280,5 @@ export const expenses = pgTable('expenses', {
   notes: text('notes').default(''),
   receiptUrl: text('receipt_url').default(''),
   createdAt: text('created_at').default(''),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow(),
 });

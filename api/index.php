@@ -35,13 +35,38 @@ if (file_exists(__DIR__ . '/config.php')) {
 
 $pdo = function_exists('getDbConnection') ? getDbConnection() : null;
 
-// Ensure public_logo_url and challan_prefix columns exist in MySQL on cPanel
+// Ensure columns exist in MySQL on cPanel
 if ($pdo) {
     try {
         $pdo->query("ALTER TABLE `settings` ADD `public_logo_url` LONGTEXT");
     } catch (Exception $e) {}
     try {
         $pdo->query("ALTER TABLE `settings` ADD `challan_prefix` VARCHAR(100) DEFAULT 'JM/CH/2026/'");
+    } catch (Exception $e) {}
+    try {
+        $pdo->query("ALTER TABLE `settings` ADD `whatsapp` VARCHAR(100) DEFAULT ''");
+        $pdo->query("ALTER TABLE `settings` ADD `messenger_url` VARCHAR(255) DEFAULT ''");
+        $pdo->query("ALTER TABLE `settings` ADD `facebook_url` VARCHAR(255) DEFAULT ''");
+        $pdo->query("ALTER TABLE `settings` ADD `telegram_url` VARCHAR(255) DEFAULT ''");
+    } catch (Exception $e) {}
+    try {
+        $pdo->query("CREATE TABLE IF NOT EXISTS `catalog_products` (
+            `id` VARCHAR(128) NOT NULL,
+            `name` VARCHAR(255) NOT NULL,
+            `category` VARCHAR(100) NOT NULL,
+            `brand` VARCHAR(100) NOT NULL,
+            `price` DOUBLE NOT NULL DEFAULT 0,
+            `call_for_price` INT DEFAULT 0,
+            `badge` VARCHAR(100) DEFAULT '',
+            `description` TEXT,
+            `specs` LONGTEXT,
+            `image_url` LONGTEXT,
+            `status` VARCHAR(50) DEFAULT 'active',
+            `display_order` INT DEFAULT 0,
+            `created_at` VARCHAR(50) DEFAULT '',
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     } catch (Exception $e) {}
 }
 
@@ -61,7 +86,7 @@ if (empty($endpoint)) {
             $endpoint = $seg1;
             $seg2 = isset($pathSegments[$apiIndex + 2]) ? $pathSegments[$apiIndex + 2] : null;
             if ($seg2) {
-                if ($seg1 === 'products' || $seg1 === 'customers' || $seg1 === 'documents' || $seg1 === 'staff' || $seg1 === 'dispatches' || $seg1 === 'suppliers' || $seg1 === 'purchases' || $seg1 === 'returns' || $seg1 === 'expenses') {
+                if ($seg1 === 'products' || $seg1 === 'catalog-products' || $seg1 === 'catalog_products' || $seg1 === 'customers' || $seg1 === 'documents' || $seg1 === 'staff' || $seg1 === 'dispatches' || $seg1 === 'suppliers' || $seg1 === 'purchases' || $seg1 === 'returns' || $seg1 === 'expenses') {
                     $id = $seg2;
                 } else {
                     $endpoint = $seg1 . '/' . $seg2;
@@ -267,6 +292,14 @@ function mapDbToJs($row) {
 
 // Table schema column definitions map
 $tablesMap = [
+    'catalog-products' => [
+        'table' => 'catalog_products',
+        'fields' => ['id', 'name', 'category', 'brand', 'price', 'call_for_price', 'badge', 'description', 'specs', 'image_url', 'status', 'display_order', 'created_at']
+    ],
+    'catalog_products' => [
+        'table' => 'catalog_products',
+        'fields' => ['id', 'name', 'category', 'brand', 'price', 'call_for_price', 'badge', 'description', 'specs', 'image_url', 'status', 'display_order', 'created_at']
+    ],
     'products' => [
         'table' => 'products',
         'fields' => ['id', 'name', 'sku', 'category', 'brand', 'price', 'cost_price', 'stock', 'unit', 'description', 'specs', 'image_url']
@@ -293,7 +326,7 @@ $tablesMap = [
     ],
     'settings' => [
         'table' => 'settings',
-        'fields' => ['id', 'name', 'slogan', 'address', 'phone1', 'phone2', 'email', 'website', 'invoice_prefix', 'quote_prefix', 'offer_prefix', 'bill_prefix', 'tax_rate', 'terms', 'signature_name', 'signature_label', 'logo_url', 'public_logo_url', 'watermark_url', 'favicon_url', 'challan_prefix', 'watermark_opacity', 'show_watermark']
+        'fields' => ['id', 'name', 'slogan', 'address', 'phone1', 'phone2', 'email', 'website', 'invoice_prefix', 'quote_prefix', 'offer_prefix', 'bill_prefix', 'tax_rate', 'terms', 'signature_name', 'signature_label', 'logo_url', 'public_logo_url', 'watermark_url', 'favicon_url', 'challan_prefix', 'watermark_opacity', 'show_watermark', 'whatsapp', 'messenger_url', 'facebook_url', 'telegram_url']
     ],
     'dispatches' => [
         'table' => 'field_dispatches',
