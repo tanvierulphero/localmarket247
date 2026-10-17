@@ -1130,8 +1130,8 @@ export default function CustomerList({
       {/* 5. ADD / EDIT CUSTOMER MODAL */}
       {/* ========================================================================= */}
       {isAddEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 overflow-y-auto no-print">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto no-print">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-xl w-full max-h-[85vh] sm:max-h-[88vh] flex flex-col p-5 sm:p-6 shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -1161,7 +1161,7 @@ export default function CustomerList({
               </div>
             )}
 
-            <form onSubmit={handleFormSubmit} className="space-y-4 mt-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4 mt-4 flex-1 overflow-y-auto pr-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Customer ID */}
                 <div>
@@ -1291,8 +1291,8 @@ export default function CustomerList({
       {/* 6. CUSTOMER FULL STATEMENT & LEDGER MODAL */}
       {/* ========================================================================= */}
       {selectedCustomerForLedger && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-3 md:p-6 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 max-h-[92vh] flex flex-col justify-between overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[85vh] sm:max-h-[88vh] flex flex-col justify-between overflow-hidden my-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-4 no-print">
               <div className="flex items-center gap-3">

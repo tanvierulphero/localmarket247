@@ -1212,8 +1212,8 @@ export default function FieldDispatchManager({
 
       {/* 8. ENTRY & EDIT MODAL (Entry & Edit Form) */}
       {isEntryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-6 flex justify-between items-center">
               <div className="flex items-center gap-3">
@@ -1238,7 +1238,7 @@ export default function FieldDispatchManager({
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSaveForm} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleSaveForm} className="p-4 sm:p-6 space-y-5 flex-1 overflow-y-auto">
               {/* Row 1: Date & Bill No */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -1577,7 +1577,7 @@ export default function FieldDispatchManager({
       {/* 10. PRINTABLE SERVICE VOUCHER / RECEIPT SLIP MODAL */}
       {voucherToPrint && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs print:bg-transparent print:p-0 no-print-backdrop">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
             {/* Modal Actions Header */}
             <div className="bg-slate-950 text-white px-4 py-3 flex justify-between items-center gap-4 flex-shrink-0 border-b border-slate-800 no-print">
               <span className="font-bold text-xs sm:text-sm flex items-center gap-2">
@@ -1717,7 +1717,7 @@ export default function FieldDispatchManager({
       {/* 11. PRINTABLE COMPREHENSIVE FULL PERIOD STATEMENT MODAL */}
       {isPrintingFullReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-xs print:bg-transparent print:p-0 no-print-backdrop">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
             
             {/* Modal Actions Header */}
             <div className="bg-slate-950 text-white px-4 py-3 flex justify-between items-center gap-4 flex-shrink-0 border-b border-slate-800 no-print">

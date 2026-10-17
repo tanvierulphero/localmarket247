@@ -585,8 +585,8 @@ export default function InventoryManager({
 
       {/* FORM MODAL (Add & Edit details) */}
       {isFormOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto">
             <div className="bg-blue-900 text-white p-5 flex justify-between items-center">
               <h3 className="font-bold font-display text-base">
                 {editingId ? 'Edit Catalog Product Details' : 'Register New Machinery Catalog Product'}
@@ -930,8 +930,8 @@ export default function InventoryManager({
 
       {/* LIFETIME PRODUCT HISTORY & PROFIT/LOSS ANALYTICS MODAL */}
       {historyProduct && productAnalytics && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto">
             
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-blue-900 text-white p-5 flex justify-between items-center">

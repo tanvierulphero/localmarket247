@@ -169,7 +169,7 @@ export default function SqlExportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden">
+      <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden">
         
         {/* Header */}
         <div className="px-5 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">

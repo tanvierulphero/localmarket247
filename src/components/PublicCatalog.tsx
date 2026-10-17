@@ -992,8 +992,8 @@ export default function PublicCatalog({
 
       {/* 9. PRODUCT DETAILS & 1-CLICK SOCIAL CONTACT MODAL */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[85vh] sm:max-h-[88vh] flex flex-col">
             {/* Modal Header */}
             <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
               <div>

@@ -709,8 +709,8 @@ export default function DocumentList({
       {paymentModalDoc && (() => {
         const fin = getDocFinancials(paymentModalDoc);
         return (
-          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden my-8">
+          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto">
               {/* Modal Header */}
               <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -745,8 +745,8 @@ export default function DocumentList({
                 </button>
               </div>
 
-              {/* Client & Financial Snapshot */}
-              <div className="p-5 space-y-4">
+              {/* Client & Financial Snapshot & Form */}
+              <div className="p-4 sm:p-5 space-y-4 flex-1 overflow-y-auto">
                 {paymentModalDoc.type === 'CHALLAN' && (
                   <div className="bg-blue-50 border border-blue-200 text-blue-900 px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2 font-medium">
                     <Truck className="w-4 h-4 text-blue-700 flex-shrink-0" />

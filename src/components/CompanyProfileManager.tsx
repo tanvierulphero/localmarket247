@@ -702,9 +702,9 @@ export default function CompanyProfileManager({
 
       {/* REGISTER NEW COMPANY MODAL */}
       {isRegistering && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
-            <div className="bg-blue-900 text-white p-5 flex justify-between items-center">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto">
+            <div className="bg-blue-900 text-white p-5 flex justify-between items-center flex-shrink-0">
               <div>
                 <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest block">Client Profile Registration</span>
                 <h3 className="text-base font-bold font-display">Create New Company Profile</h3>
@@ -714,7 +714,7 @@ export default function CompanyProfileManager({
               </button>
             </div>
 
-            <form onSubmit={handleRegisterSubmit} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleRegisterSubmit} className="p-4 sm:p-6 space-y-4 text-xs flex-1 overflow-y-auto">
               
               {/* Generated Unique Company ID */}
               <div className="space-y-1">

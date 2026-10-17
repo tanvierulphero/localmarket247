@@ -682,8 +682,8 @@ export default function PurchasesView({
 
       {/* 4. Quick Pay Modal */}
       {quickPayPurchase && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-4 max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-y-auto my-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-emerald-600" /> Pay Supplier Due
@@ -795,8 +795,8 @@ function SupplierModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-4 max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-y-auto my-auto">
         <div className="flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800">
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Building2 className="w-5 h-5 text-emerald-600" />

@@ -2870,10 +2870,10 @@ export default function App() {
 
       {/* DATABASE HEALTH DIAGNOSTICS MODAL */}
       {isDbHealthModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden border border-slate-200 my-auto animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <Database className="w-5 h-5 text-emerald-400" />
                 <div>
@@ -2890,7 +2890,7 @@ export default function App() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
               {isCheckingDb ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
                   <RefreshCw className="w-10 h-10 text-blue-600 animate-spin" />

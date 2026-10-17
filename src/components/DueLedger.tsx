@@ -2097,8 +2097,8 @@ export default function DueLedger({
 
       {/* MODAL 1: SINGLE DOCUMENT PAYMENT COLLECTION */}
       {collectingDoc && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-md overflow-hidden animate-slide-up">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-md max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto animate-slide-up">
             <div className="bg-slate-950 text-white p-5 flex justify-between items-center">
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Payment Desk</span>
@@ -2112,7 +2112,7 @@ export default function DueLedger({
               </button>
             </div>
 
-            <form onSubmit={handleCollectPaymentSubmit} className="p-6 space-y-4 text-xs font-semibold">
+            <form onSubmit={handleCollectPaymentSubmit} className="p-4 sm:p-6 space-y-4 text-xs font-semibold flex-1 overflow-y-auto">
               <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl space-y-1.5">
                 <div className="flex justify-between text-slate-500 font-semibold">
                   <span>Document #</span>
@@ -2254,9 +2254,9 @@ export default function DueLedger({
 
       {/* MODAL 2: COMPANY TOTAL CONSOLIDATED PAYMENT */}
       {collectingCompany && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
-            <div className="bg-gradient-to-r from-slate-950 to-blue-950 text-white p-5 flex justify-between items-center">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto animate-slide-up">
+            <div className="bg-gradient-to-r from-slate-950 to-blue-950 text-white p-5 flex justify-between items-center flex-shrink-0">
               <div>
                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block mb-0.5">
                   Consolidated Customer Due Collection
@@ -2276,7 +2276,7 @@ export default function DueLedger({
               </button>
             </div>
 
-            <form onSubmit={handleCompanyPaySubmit} className="p-6 space-y-4 text-xs font-semibold">
+            <form onSubmit={handleCompanyPaySubmit} className="p-4 sm:p-6 space-y-4 text-xs font-semibold flex-1 overflow-y-auto">
               {/* Balance Card */}
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-2">
                 <div className="flex justify-between items-center">
@@ -2434,9 +2434,9 @@ export default function DueLedger({
 
       {/* MODAL 3: SUPPLIER DUE PAYMENT (PAY ACCOUNTS PAYABLE) */}
       {payingSupplier && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up">
-            <div className="bg-gradient-to-r from-slate-950 to-amber-950 text-white p-5 flex justify-between items-center">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] flex flex-col overflow-hidden my-auto animate-slide-up">
+            <div className="bg-gradient-to-r from-slate-950 to-amber-950 text-white p-5 flex justify-between items-center flex-shrink-0">
               <div>
                 <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block mb-0.5">
                   Supplier Due Payment Desk
@@ -2456,7 +2456,7 @@ export default function DueLedger({
               </button>
             </div>
 
-            <form onSubmit={handleSupplierPaySubmit} className="p-6 space-y-4 text-xs font-semibold">
+            <form onSubmit={handleSupplierPaySubmit} className="p-4 sm:p-6 space-y-4 text-xs font-semibold flex-1 overflow-y-auto">
               <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500 font-bold uppercase text-[10px]">Total Supplier Due Payable</span>
@@ -2567,7 +2567,7 @@ export default function DueLedger({
       {/* MODAL 4: PRINTABLE OFFICIAL MONEY RECEIPT */}
       {recentReceipt && (
         <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[92vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
             {/* Header Control Panel (no-print) */}
             <div className="bg-slate-950 text-white px-5 py-3.5 flex justify-between items-center gap-4 no-print shrink-0 border-b border-slate-800">
               <div className="flex items-center gap-2">
@@ -2733,7 +2733,7 @@ export default function DueLedger({
       {/* MODAL 5: PRINTABLE SUPPLIER PAYMENT VOUCHER */}
       {recentVoucher && (
         <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[92vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
             <div className="bg-slate-950 text-white px-5 py-3.5 flex justify-between items-center gap-4 no-print shrink-0 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-amber-400 shrink-0" />
@@ -2904,7 +2904,7 @@ export default function DueLedger({
 
         return (
           <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[94vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
               
               {/* Modal Top Control Bar (no-print) */}
               <div className="bg-slate-950 text-white px-5 py-3.5 flex flex-wrap justify-between items-center gap-3 no-print shrink-0 border-b border-slate-800">
@@ -3258,7 +3258,7 @@ export default function DueLedger({
       {/* MODAL 7: INDIVIDUAL SUPPLIER STATEMENT */}
       {viewingSupplierReport && (
         <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[94vh] overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
             <div className="bg-slate-950 text-white px-5 py-3.5 flex justify-between items-center gap-4 no-print shrink-0 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-amber-400 shrink-0" />
