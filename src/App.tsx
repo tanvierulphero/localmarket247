@@ -2774,7 +2774,7 @@ export default function App() {
 
             {/* Admin page copyright */}
             <footer className="bg-white border-t border-slate-200 py-4 px-8 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono no-print">
-              <span>Jubayer Machineries Dashboard &bull; Cloud SQL Relational Database Active</span>
+              <span>Jubayer Machineries Dashboard</span>
               <span>"Your Problem Solution is Sustainable Partner"</span>
             </footer>
           </main>
