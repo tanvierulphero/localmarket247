@@ -7,6 +7,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(targetUrl, {
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers,
@@ -27,6 +28,7 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 
     try {
       const fallbackResponse = await fetch(fallbackUrl, {
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...options?.headers,

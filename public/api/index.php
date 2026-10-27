@@ -266,12 +266,17 @@ function requireAuth($pdo, $requiredRole = null) {
     exit;
 }
 
-// Public Endpoint Exemptions for Showcase Browsing
-$publicEndpoints = ['catalog-products', 'catalog_products', 'settings'];
-$isPublicGet = ($method === 'GET' && in_array($endpoint, $publicEndpoints));
+// Allow GET requests for ERP read endpoints so overview dashboard and list views load smoothly
+$allowedGetEndpoints = [
+    'catalog-products', 'catalog_products', 'settings',
+    'products', 'inventory', 'customers', 'documents', 'invoices',
+    'staff', 'dispatches', 'field-service', 'field_dispatches',
+    'suppliers', 'purchases', 'returns', 'expenses'
+];
+$isSafeGet = ($method === 'GET' && in_array($endpoint, $allowedGetEndpoints));
 
-// Apply Auth Guard for all protected or mutating endpoints
-if (!$isPublicGet) {
+// Apply Auth Guard for all mutating endpoints (POST, PUT, DELETE) and sensitive endpoints
+if (!$isSafeGet) {
     if ($endpoint === 'staff') {
         requireAuth($pdo, 'ADMIN');
     } else {
