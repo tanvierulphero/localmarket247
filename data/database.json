@@ -209,9 +209,215 @@
       "createdAt": "2026-01-22"
     }
   ],
-  "products": [],
-  "customers": [],
-  "documents": [],
+  "products": [
+    {
+      "id": "prod-1",
+      "name": "Hitachi Screw Air Compressor 15 HP",
+      "sku": "HIT-15HP-01",
+      "category": "Screw Air Compressor",
+      "brand": "Hitachi",
+      "price": 450000,
+      "costPrice": 380000,
+      "stock": 5,
+      "unit": "Sets",
+      "description": "15 HP High-efficiency rotary screw air compressor designed for continuous industrial operations.",
+      "specs": [
+        {
+          "label": "Power",
+          "value": "15 HP (11 kW)"
+        },
+        {
+          "label": "Pressure",
+          "value": "0.85 MPa (8.5 Bar)"
+        },
+        {
+          "label": "Flow Rate",
+          "value": "1.65 m³/min"
+        }
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      "id": "prod-2",
+      "name": "Sullair Industrial Air Dryer 20 HP",
+      "sku": "SUL-DRY-20",
+      "category": "Air Dryer",
+      "brand": "Sullair",
+      "price": 120000,
+      "costPrice": 95000,
+      "stock": 8,
+      "unit": "Pcs",
+      "description": "Refrigerated compressed air dryer with ultra-low pressure drop and eco-friendly R410a refrigerant.",
+      "specs": [
+        {
+          "label": "Capacity",
+          "value": "2.5 m³/min"
+        },
+        {
+          "label": "Refrigerant",
+          "value": "R410A Eco"
+        },
+        {
+          "label": "Voltage",
+          "value": "220V / 50Hz"
+        }
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      "id": "prod-3",
+      "name": "Atlas Copco Oil Filter Element",
+      "sku": "ATL-FLT-88",
+      "category": "Spare Parts",
+      "brand": "Atlas Copco",
+      "price": 8500,
+      "costPrice": 5500,
+      "stock": 25,
+      "unit": "Pcs",
+      "description": "Genuine spin-on oil filter element for Atlas Copco GA series compressors.",
+      "specs": [
+        {
+          "label": "Part Number",
+          "value": "1622 3142 00"
+        },
+        {
+          "label": "Filtration",
+          "value": "10 Micron"
+        }
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=800&q=80"
+    }
+  ],
+  "customers": [
+    {
+      "id": "cust_1790958174665_krgb",
+      "companyId": "COMP-1001",
+      "name": "test",
+      "company": "test",
+      "phone": "01840684615",
+      "email": "tanvierul@gmail.com",
+      "address": "",
+      "notes": "Website Contact Inquiry: vvvvv",
+      "createdAt": "2026-10-02T16:22:55.493Z"
+    },
+    {
+      "id": "cust_1791015181330_njq8",
+      "companyId": "COMP-1002",
+      "name": "শিউলী আক্তার",
+      "company": "শিউলী আক্তার",
+      "phone": "01753459755",
+      "email": "mst.sheulyakter21@gmail.com",
+      "address": "",
+      "notes": "Website Contact Inquiry: fdfff",
+      "createdAt": "2026-10-03T08:13:01.392Z"
+    },
+    {
+      "id": "cust-1001",
+      "companyId": "COMP-1001",
+      "name": "Engr. Atiqur Rahman",
+      "company": "Apex Textile & Spinning Mills Ltd.",
+      "phone": "01700-112233",
+      "email": "atiqur@apexspinning.com",
+      "address": "Plot 42, Konabari Industrial Area, Gazipur",
+      "notes": "Key VIP Client for Hitachi screw compressor spares"
+    },
+    {
+      "id": "cust-1002",
+      "companyId": "COMP-1002",
+      "name": "Mr. Shah Alam",
+      "company": "Square Pharmaceuticals Ltd.",
+      "phone": "01800-445566",
+      "email": "s.alam@squarepharma.org",
+      "address": "Salna, Gazipur Sadar, Gazipur",
+      "notes": "Quarterly maintenance contract client"
+    }
+  ],
+  "documents": [
+    {
+      "id": "doc-1791868437684",
+      "type": "INVOICE",
+      "docNumber": "HSC/INV/2026/1826",
+      "date": "2026-10-13",
+      "dueDate": "2026-11-13",
+      "customerId": "cust_1791015181330_njq8",
+      "customerName": "শিউলী আক্তার",
+      "customerCompany": "শিউলী আক্তার",
+      "customerPhone": "01753459755",
+      "customerEmail": "mst.sheulyakter21@gmail.com",
+      "customerAddress": "",
+      "subject": "Sales Invoice for Delivery Challan JM/CH/2026/7353",
+      "salutation": "Dear Sir,",
+      "openingParagraph": "Please find our commercial sales invoice for the supplied machinery, spare parts, and associated services.",
+      "closingParagraph": "Thank you for your business. Please settle the invoice as per the agreed payment terms.",
+      "items": [
+        {
+          "id": "item-1791125456640-0.19139627648557878",
+          "name": "ff",
+          "unit": "Pcs",
+          "brand": "ffd",
+          "price": 100,
+          "total": 100,
+          "quantity": 1,
+          "productId": ""
+        }
+      ],
+      "subtotal": 100,
+      "taxRate": 0,
+      "taxAmount": 0,
+      "discount": 0,
+      "total": 100,
+      "paidAmount": 0,
+      "dueAmount": 100,
+      "status": "Unpaid",
+      "terms": "1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50% advance with work order & 50% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.",
+      "notes": "Generated against Delivery Challan: JM/CH/2026/7353",
+      "signatureLabel": "Managing Director & Owner",
+      "signatureName": "MD MAHI UDDIN",
+      "vatEnabled": 0
+    },
+    {
+      "id": "doc-1791125466306",
+      "type": "CHALLAN",
+      "docNumber": "JM/CH/2026/7353",
+      "date": "2026-10-04",
+      "dueDate": "",
+      "customerId": "cust_1791015181330_njq8",
+      "customerName": "শিউলী আক্তার",
+      "customerCompany": "শিউলী আক্তার",
+      "customerPhone": "01753459755",
+      "customerEmail": "mst.sheulyakter21@gmail.com",
+      "customerAddress": "",
+      "subject": "",
+      "salutation": "Dear Sir,",
+      "openingParagraph": "",
+      "closingParagraph": "",
+      "items": [
+        {
+          "id": "item-1791125456640-0.19139627648557878",
+          "name": "ff",
+          "unit": "Pcs",
+          "brand": "ffd",
+          "price": 100,
+          "total": 100,
+          "quantity": 1,
+          "productId": ""
+        }
+      ],
+      "subtotal": 100,
+      "taxRate": 5,
+      "taxAmount": 5,
+      "discount": 0,
+      "total": 105,
+      "paidAmount": 0,
+      "dueAmount": 105,
+      "status": "Active",
+      "terms": "1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50% advance with work order & 50% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this offer is 30 days.",
+      "notes": "",
+      "signatureLabel": "Managing Director",
+      "signatureName": "MD MAHI UDDIN",
+      "vatEnabled": 1
+    }
+  ],
   "staffUsers": [
     {
       "id": "staff-admin-1",
