@@ -1,0 +1,24 @@
+# ========================================================
+# cPanel Routing Configuration for Hitachi Solution Center
+# Routes API requests to PHP API and all other routes to React SPA index.html
+# ========================================================
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Allow direct access to uploaded files in /uploads/
+  RewriteRule ^uploads/(.*)$ uploads/$1 [L]
+
+  # 2. Allow direct access to existing files and directories (Prevents internal loops)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 3. Route /api/* requests to PHP API router
+  RewriteRule ^api/(.*)$ api/index.php?endpoint=$1 [QSA,L]
+
+  # 4. Fallback all React SPA page routes to index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+

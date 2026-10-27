@@ -1,0 +1,21 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Database Configuration (Skip private credentials on git push)
+config.php
+api/config.php
+public/api/config.php
+dist/api/config.php
+!api/config.example.php
+!public/api/config.example.php
+
+# Uploaded Files & Media
+uploads/
+public/uploads/
+dist/uploads/

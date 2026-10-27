@@ -1,0 +1,47 @@
+name: Auto Deploy to cPanel / Hosting
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  web-deploy:
+    name: Build & Deploy via FTP
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 📦 Install dependencies
+        run: npm install
+
+      - name: 🏗️ Build Project
+        run: npm run build
+
+      - name: 📁 Prepare upload directory
+        run: |
+          mkdir -p deploy_dist
+          cp -r dist/. deploy_dist/
+          if [ -d "api" ]; then
+            cp -r api deploy_dist/
+          fi
+          if [ -f ".htaccess" ]; then
+            cp .htaccess deploy_dist/
+          fi
+
+      - name: 🚀 Sync files to cPanel Hosting via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER || 'ftp.localmarket247.top' }}
+          username: ${{ secrets.FTP_USERNAME || 'hitachiairsolutioncenter@localmarket247.top' }}
+          password: ${{ secrets.FTP_PASSWORD || 'hitachiairsolutioncenter' }}
+          server-dir: ${{ secrets.FTP_TARGET_DIR || './' }}
+          local-dir: ./deploy_dist/
+          state-name: .ftp-deploy-sync-state.json

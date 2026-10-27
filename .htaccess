@@ -1,0 +1,29 @@
+# ========================================================
+# cPanel Routing Configuration for Hitachi Solution Center
+# Routes API requests to PHP API and all other routes to React SPA index.html
+# ========================================================
+
+DirectoryIndex index.html index.php
+# Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Do NOT rewrite direct PHP script files (e.g. /api/test_db.php, /api/upload.php, /api/index.php)
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  RewriteCond %{REQUEST_URI} \.php$ [NC]
+  RewriteRule ^ - [L]
+
+  # 2. Do NOT rewrite existing directories or files
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 3. Route REST API requests /api/... to PHP API router
+  RewriteRule ^api/(.*)$ api/index.php?endpoint=$1 [QSA,L]
+
+  # 4. Fallback all React SPA frontend routes to index.html
+  RewriteRule ^ index.html [L]
+</IfModule>

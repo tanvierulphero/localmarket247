@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Outfit", sans-serif;
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0mm !important;
+}
+
+@layer utilities {
+  @media print {
+    /* Hide specific navigation/interactive blocks on all printed views */
+    .no-print, nav, header, aside, footer, button, input, select, textarea, .action-buttons, .search-bar, .modal-backdrop, [role="tablist"], .tab-buttons {
+      display: none !important;
+    }
+
+    /* Force exact color/background rendering in print dialogs */
+    html, body {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Page setup for A4 with 0 margin so browser headers (site title, URL, timestamp) are suppressed */
+    @page {
+      size: A4 portrait;
+      margin: 0 !important;
+    }
+
+    /* IF PRINTING A SPECIFIC DOCUMENT LETTERHEAD (#printable-area exists) */
+    body:has(#printable-area) {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 210mm !important;
+    }
+
+    body:has(#printable-area) * {
+      visibility: hidden !important;
+    }
+
+    body:has(#printable-area) #printable-area,
+    body:has(#printable-area) #printable-area * {
+      visibility: visible !important;
+    }
+
+    body:has(#printable-area) #printable-area {
+      visibility: visible !important;
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 210mm !important;
+      min-height: 297mm !important;
+      max-width: 210mm !important;
+      box-sizing: border-box !important;
+      padding: 10mm 12mm !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      background: white !important;
+      overflow: visible !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* IF PRINTING REGULAR DASHBOARD (no #printable-area) */
+    body:not(:has(#printable-area)) {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 10px !important;
+    }
+
+    body:not(:has(#printable-area)) * {
+      visibility: visible !important;
+    }
+
+    body:not(:has(#printable-area)) main {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    body:not(:has(#printable-area)) .p-6,
+    body:not(:has(#printable-area)) .p-8 {
+      padding: 0 !important;
+    }
+
+    /* Ensure tables print beautifully */
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1 !important;
+      padding: 6px 10px !important;
+      font-size: 11px !important;
+      color: #000000 !important;
+    }
+
+    /* Prevent breaking inside tables and signature blocks */
+    tr, table, .signature-block, .totals-block, .print-card {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* Custom Watermark & Printable Document Styles */
+#printable-area {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+#printable-area *, #printable-area *::before, #printable-area *::after {
+  /* Prevent oklch inheritance for html2canvas parsing */
+  box-sizing: border-box;
+}
+
+.watermark-container {
+  position: relative;
+}
+
+.watermark-bg::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 320px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' opacity='0.04' fill='%231e3a8a'><path d='M50,15A35,35 0 1,0 85,50A35,35 0 0,0 50,15 M50,30 A20,20 0 1,1 30,50 A20,20 0 0,1 50,30' /><path d='M50,5 L46,15 L54,15 Z M50,95 L46,85 L54,85 Z M5,50 L15,46 L15,54 Z M95,50 L85,46 L85,54 Z M18,18 L25,25 L21,29 Z M82,82 L75,75 L79,71 Z M18,82 L25,75 L21,71 Z M82,18 L75,25 L79,29 Z' /></svg>");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
