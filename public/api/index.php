@@ -31,11 +31,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-if (file_exists(__DIR__ . '/config.php')) {
-    require_once __DIR__ . '/config.php';
+// 1. Locate and load config.php from multiple possible cPanel paths
+$configPaths = [
+    __DIR__ . '/config.php',
+    dirname(__DIR__) . '/config.php',
+    dirname(__DIR__) . '/api/config.php',
+    __DIR__ . '/../config.php'
+];
+
+foreach ($configPaths as $cp) {
+    if (file_exists($cp)) {
+        require_once $cp;
+        break;
+    }
 }
 
-$pdo = function_exists('getDbConnection') ? getDbConnection() : null;
+// 2. Initialize PDO Database connection (Works with both getDbConnection() AND raw define() constants)
+$pdo = null;
+$pdoError = null;
+
+if (function_exists('getDbConnection')) {
+    $pdo = getDbConnection();
+} elseif (defined('DB_NAME') && DB_NAME !== '' && defined('DB_USER') && DB_USER !== '') {
+    $dbHost = defined('DB_HOST') && DB_HOST !== '' ? DB_HOST : '127.0.0.1';
+    $dbPort = defined('DB_PORT') && DB_PORT !== '' ? ';port=' . DB_PORT : '';
+    $dbName = DB_NAME;
+    $dbUser = DB_USER;
+    $dbPass = defined('DB_PASS') ? DB_PASS : '';
+    $dsn = "mysql:host={$dbHost}{$dbPort};dbname={$dbName};charset=utf8mb4";
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
+    try {
+        $pdo = new PDO($dsn, $dbUser, $dbPass, $options);
+    } catch (PDOException $e) {
+        $pdoError = $e->getMessage();
+    }
+}
 
 // Parse request URI and determine endpoint, method, and ID
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';

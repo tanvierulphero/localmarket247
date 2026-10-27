@@ -4,10 +4,10 @@
 // Copy this file to config.php and fill in your DB credentials
 // ========================================================
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', ''); // e.g. 'cpaneluser_machinerydb'
+define('DB_HOST', '127.0.0.1');
+define('DB_NAME', ''); // e.g. 'cpaneluser_hitachidb'
 define('DB_USER', ''); // e.g. 'cpaneluser_dbuser'
-define('DB_PASS', ''); // e.g. 'YOUR_STRONG_DATABASE_PASSWORD_CHANGE_ME'
+define('DB_PASS', ''); // e.g. 'YourStrongPassword123'
 
 function getDbConnection() {
     static $pdo = null;
