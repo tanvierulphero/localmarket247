@@ -7,11 +7,15 @@ coverage/
 .env*
 !.env.example
 
-# Database Configuration (Skip private credentials on git push)
+# Database Configuration (NEVER track, commit or overwrite live cPanel credentials)
 config.php
 api/config.php
 public/api/config.php
 dist/api/config.php
+*/config.php
+**/config.php
+config.local.php
+api/config.local.php
 !api/config.example.php
 !public/api/config.example.php
 
@@ -19,3 +23,8 @@ dist/api/config.php
 uploads/
 public/uploads/
 dist/uploads/
+**/uploads/
+-e 
+data/cloudsql_dump.json
+*.tmp
+

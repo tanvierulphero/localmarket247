@@ -32,6 +32,9 @@ jobs:
           if [ -d "api" ]; then
             cp -r api deploy_dist/
           fi
+          # Ensure config.php is never in deploy_dist so it will never overwrite cPanel live config
+          rm -f deploy_dist/api/config.php
+          rm -f deploy_dist/config.php
           if [ -f ".htaccess" ]; then
             cp .htaccess deploy_dist/
           fi
@@ -45,3 +48,13 @@ jobs:
           server-dir: ${{ secrets.FTP_TARGET_DIR || './' }}
           local-dir: ./deploy_dist/
           state-name: .ftp-deploy-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/config.php
+            config.php
+            api/config.php
+            public/api/config.php
+            dist/api/config.php
+            **/uploads/**
+            uploads/**
