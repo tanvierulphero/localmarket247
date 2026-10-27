@@ -62,12 +62,56 @@ if (function_exists('getDbConnection')) {
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::ATTR_EMULATE_PREPARES   => true,
+        PDO::MYSQL_ATTR_MULTI_STATEMENTS => true,
     ];
     try {
         $pdo = new PDO($dsn, $dbUser, $dbPass, $options);
     } catch (PDOException $e) {
         $pdoError = $e->getMessage();
+    }
+}
+
+// 3. Self-Healing Auto-Restore: If customers or products tables are empty or missing, populate from database.sql
+if ($pdo) {
+    $shouldRestore = false;
+    try {
+        $cCheck = $pdo->query("SELECT COUNT(*) FROM `customers`");
+        $count = (int)$cCheck->fetchColumn();
+        if ($count === 0) {
+            $shouldRestore = true;
+        }
+    } catch (Exception $eCheck) {
+        $shouldRestore = true;
+    }
+
+    if ($shouldRestore) {
+        $candidates = [
+            __DIR__ . '/database.sql',
+            __DIR__ . '/../database.sql',
+            dirname(__DIR__) . '/database.sql',
+            __DIR__ . '/../public/database.sql'
+        ];
+        foreach ($candidates as $cand) {
+            if (file_exists($cand)) {
+                $raw = file_get_contents($cand);
+                if (!empty($raw)) {
+                    try {
+                        $pdo->exec($raw);
+                        break;
+                    } catch (Exception $eExec) {
+                        $stmts = explode(";\n", $raw);
+                        foreach ($stmts as $st) {
+                            $t = trim($st);
+                            if (!empty($t) && !str_starts_with($t, '--')) {
+                                try { $pdo->exec($t); } catch (Exception $eSub) {}
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 
