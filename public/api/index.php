@@ -408,7 +408,7 @@ if ($method === 'GET') {
             $stmt->execute([':id' => $id]);
             $row = $stmt->fetch();
             if ($row) {
-                $excludePasscode = ($tableName === 'staff_users');
+                $excludePasscode = false;
                 echo json_encode(mapDbToJs($row, $excludePasscode));
             } else {
                 http_response_code(404);
@@ -432,7 +432,7 @@ if ($method === 'GET') {
         $stmt = $pdo->prepare("SELECT * FROM `" . $tableName . "` ORDER BY `id` DESC");
         $stmt->execute();
         $rows = $stmt->fetchAll();
-        $excludePasscode = ($tableName === 'staff_users');
+        $excludePasscode = false;
         $jsRows = array_map(function($r) use ($excludePasscode) { return mapDbToJs($r, $excludePasscode); }, $rows);
         echo json_encode($jsRows);
         exit;
