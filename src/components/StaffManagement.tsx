@@ -636,7 +636,12 @@ export default function StaffManagement({
 
                 <div className="space-y-4">
                   {permissionCategories.map((category) => {
-                    const categoryPerms = ALL_PERMISSIONS.filter(p => p.category === category);
+                    const categoryPerms = ALL_PERMISSIONS.filter(p => {
+                      if (p.category !== category) return false;
+                      if ((p.key === 'view_owner_draw' || p.key === 'manage_owner_draw') && formData.role !== 'ADMIN') return false;
+                      return true;
+                    });
+                    if (categoryPerms.length === 0) return null;
                     return (
                       <div key={category} className="border border-slate-200 rounded-xl p-3.5 space-y-2 bg-slate-50/50">
                         <span className="text-[10px] font-black uppercase text-blue-900 tracking-wider block">

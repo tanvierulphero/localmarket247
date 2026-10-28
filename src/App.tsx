@@ -552,6 +552,14 @@ export default function App() {
     else if (user.permissions.includes('manage_settings')) setActiveTab('settings');
   };
 
+  // Security Guard: Prevent non-admin users from viewing or remaining on Owner's Draw
+  useEffect(() => {
+    if ((activeTab === 'owner_draw' || activeTab === 'owner_drawings') && currentUser && currentUser.role !== 'ADMIN') {
+      const fallbackTab = currentUser.permissions?.includes('view_overview') ? 'overview' : 'inventory';
+      setActiveTab(fallbackTab);
+    }
+  }, [activeTab, currentUser]);
+
   // Clear All Data Handler (for fresh entry)
   const handleClearAllData = async () => {
     if (currentUser?.role !== 'ADMIN') {
@@ -1536,8 +1544,8 @@ export default function App() {
                   </button>
                 )}
 
-                {/* Tab: Owner's Personal Drawings */}
-                {(currentUser?.role === 'ADMIN' || hasPermission('view_owner_draw') || hasPermission('view_expenses')) && (
+                {/* Tab: Owner's Personal Drawings - Strictly Admin Only */}
+                {currentUser?.role === 'ADMIN' && (
                   <button
                     onClick={() => { setActiveTab('owner_draw'); setEditingDocument(null); setIsCreatingDoc(null); }}
                     className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-lg transition-all text-left cursor-pointer ${
@@ -1846,8 +1854,8 @@ export default function App() {
                     />
                   )}
 
-                  {/* TAB PANEL 4c2: Owner's Personal Expenses & Drawings */}
-                  {(activeTab === 'owner_draw' || activeTab === 'owner_drawings') && (
+                  {/* TAB PANEL 4c2: Owner's Personal Expenses & Drawings - Strictly Admin Only */}
+                  {(activeTab === 'owner_draw' || activeTab === 'owner_drawings') && currentUser?.role === 'ADMIN' && (
                     <OwnerDrawManager 
                       expenses={expenses}
                       documents={documents}
