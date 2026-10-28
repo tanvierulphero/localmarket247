@@ -518,34 +518,6 @@ export default function DocumentList({
                     {/* Option Triggers */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                        {/* INVOICE / BILL / CHALLAN: Dedicated "Mark Paid" / "Paid" Action */}
-                        {(doc.type === 'INVOICE' || doc.type === 'BILL' || doc.type === 'CHALLAN') && (
-                          doc.status === 'Paid' ? (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenPaymentModal(doc)}
-                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg cursor-pointer flex items-center gap-1 text-[11px] font-bold transition-all shadow-2xs"
-                              title="Paid in full. Click to view payment details or adjust"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Paid</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenPaymentModal(doc)}
-                              className={`px-2.5 py-1 rounded-lg transition-all border cursor-pointer flex items-center gap-1 text-[11px] font-bold shadow-xs hover:scale-[1.02] ${
-                                doc.type === 'CHALLAN'
-                                  ? 'bg-blue-50 hover:bg-emerald-50 text-blue-900 hover:text-emerald-800 border-blue-200 hover:border-emerald-300'
-                                  : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white border-emerald-700'
-                              }`}
-                              title={doc.type === 'CHALLAN' ? 'Click to record payment if collected for this challan (optional)' : 'Click to settle or record payment'}
-                            >
-                              <Coins className={`w-3.5 h-3.5 ${doc.type === 'CHALLAN' ? 'text-blue-700' : 'text-emerald-100'}`} />
-                              <span>{doc.type === 'CHALLAN' ? 'Paid (Optional)' : 'Mark Paid'}</span>
-                            </button>
-                          )
-                        )}
 
                         {/* If Challan: If invoice already created, hide Create Invoice and show Invoiced badge */}
                         {doc.type === 'CHALLAN' && (() => {
