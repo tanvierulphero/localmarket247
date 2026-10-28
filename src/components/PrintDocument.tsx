@@ -485,13 +485,12 @@ Content-Location: document.html
       </td>
       <td style="vertical-align: middle;">
         <h1 class="company-name" style="font-size: 20pt; font-weight: 900; margin: 0; color: #0f172a; text-transform: uppercase;">${settings.name || 'Jubayer Machineries'}</h1>
-        <p class="slogan" style="margin: 2px 0 0 0; color: #1e3a8a; font-style: italic; font-size: 9.5pt;">${settings.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
       </td>
       <td class="contact-details" style="vertical-align: middle; text-align: right;">
         <p style="margin: 0; font-size: 15pt; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">${settings.name || 'Jubayer Machineries'}</p>
         <p style="margin: 4px 0 0 0; font-weight: bold; color: #1e293b; font-size: 10pt;">${settings.address}</p>
         <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Hotline: ${settings.phone1}, ${settings.phone2}</p>
-        <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Email: ${settings.email}</p>
+        <p style="margin: 3px 0 0 0; font-size: 9pt; color: #475569;">Email: ${settings.email || 'jubayermachineries@gmail.com'}${settings.website ? ` &bull; Web: ${settings.website}` : ' &bull; Web: www.hitachiairsolutioncenter.com'}</p>
       </td>
     </tr>
   </table>
@@ -1041,7 +1040,7 @@ ${rawBase64Logo}
                   <MapPin className="w-3.5 h-3.5 text-blue-900 flex-shrink-0 mt-0.5" />
                   <span className="font-extrabold text-slate-900">{(settings.address || '').replace(/corporate\s*office:?\s*/gi, '').trim()}</span>
                 </div>
-                <div className="flex items-center justify-end gap-2 text-[11px] sm:text-xs text-slate-600 font-medium">
+                <div className="flex items-center justify-end gap-2 text-[11px] sm:text-xs text-slate-600 font-medium flex-wrap">
                   <span className="flex items-center gap-1">
                     <Phone className="w-3 h-3 text-blue-800 flex-shrink-0" />
                     {settings.phone1}, {settings.phone2}
@@ -1049,7 +1048,12 @@ ${rawBase64Logo}
                   <span>&bull;</span>
                   <span className="flex items-center gap-1">
                     <Mail className="w-3 h-3 text-blue-800 flex-shrink-0" />
-                    {settings.email}
+                    {settings.email || 'jubayermachineries@gmail.com'}
+                  </span>
+                  <span>&bull;</span>
+                  <span className="flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-blue-800 flex-shrink-0" />
+                    {settings.website || 'www.hitachiairsolutioncenter.com'}
                   </span>
                 </div>
               </div>

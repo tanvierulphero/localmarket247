@@ -239,7 +239,7 @@ function generateCustomerLedgerTransactions(
       date: doc.date,
       refNo: doc.docNumber,
       type: 'INVOICE',
-      particulars: `${doc.type}: ${itemsDescription}`,
+      particulars: itemsDescription,
       billed: total,
       paid: 0
     });
@@ -2606,14 +2606,11 @@ export default function DueLedger({
                   <div className="text-2xl font-black tracking-tight text-slate-900 font-display uppercase">
                     {settings?.name || 'Jubayer Machineries'}
                   </div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
-                    "{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}"
-                  </div>
                   <div className="text-[9px] text-slate-600 font-semibold">
                     {(settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.').replace(/corporate\s*office:?\s*/gi, '').trim()}
                   </div>
                   <div className="text-[9px] text-slate-500 font-medium">
-                    Contact: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'} &bull; Email: {settings?.email || 'support@jubayermachineries.com'}
+                    Contact: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'} &bull; Email: {settings?.email || 'jubayermachineries@gmail.com'} &bull; Web: {settings?.website || 'www.hitachiairsolutioncenter.com'}
                   </div>
                 </div>
 
@@ -2769,11 +2766,11 @@ export default function DueLedger({
                   <div className="text-2xl font-black tracking-tight text-slate-900 font-display uppercase">
                     {settings?.name || 'Jubayer Machineries'}
                   </div>
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">
-                    "{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}"
-                  </div>
                   <div className="text-[9px] text-slate-600 font-semibold">
                     {(settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.').replace(/corporate\s*office:?\s*/gi, '').trim()}
+                  </div>
+                  <div className="text-[9px] text-slate-500 font-medium">
+                    Contact: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'} &bull; Email: {settings?.email || 'jubayermachineries@gmail.com'} &bull; Web: {settings?.website || 'www.hitachiairsolutioncenter.com'}
                   </div>
                 </div>
 
@@ -3033,9 +3030,9 @@ export default function DueLedger({
                       <h1 className="text-base sm:text-lg font-black text-slate-900 font-display tracking-tight leading-snug">
                         {settings?.name || 'Jubayer Machineries'}
                       </h1>
-                      <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{settings?.slogan || 'Your Problem Solution is Sustainable Partner'}</p>
                       <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">{(settings?.address || 'Hazi Siddik Complex, Molla Market, Bason Sharok, Gazipur City.').replace(/corporate\s*office:?\s*/gi, '').trim()}</p>
                       <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Hotline: {settings?.phone1 || '01715-994956'}, {settings?.phone2 || '01799-498199'}</p>
+                      <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Email: {settings?.email || 'jubayermachineries@gmail.com'} &bull; Web: {settings?.website || 'www.hitachiairsolutioncenter.com'}</p>
                     </div>
                   </div>
                   <div className="text-left sm:text-right shrink-0">
