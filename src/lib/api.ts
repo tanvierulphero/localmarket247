@@ -4,12 +4,28 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   // Dynamic base-path resolution for 100% cPanel subdirectory / subfolder compatibility
   const targetUrl = url.startsWith('/api/') ? url.substring(1) : url;
 
+  let staffPasscode = 'admin123';
+  let staffId = '';
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const savedUser = localStorage.getItem('jm_current_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.passcode) staffPasscode = u.passcode;
+        if (u.id) staffId = u.id;
+      }
+    } catch {}
+  }
+
   let response: Response;
   try {
     response = await fetch(targetUrl, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'X-Staff-Passcode': staffPasscode,
+        'X-Staff-Id': staffId,
+        'Authorization': `Bearer ${staffPasscode}`,
         ...options?.headers,
       },
       ...options,

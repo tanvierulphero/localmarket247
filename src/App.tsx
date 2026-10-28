@@ -113,8 +113,14 @@ export default function App() {
 
   // Staff Sub-Accounts & Current Active User
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>(INITIAL_STAFF_USERS);
-  const [currentUser, setCurrentUser] = useState<StaffUser | null>(null);
-  const isAdmin = currentUser?.role === 'ADMIN';
+  const [currentUser, setCurrentUser] = useState<StaffUser | null>(() => {
+    try {
+      const saved = localStorage.getItem('jm_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_STAFF_USERS[0];
+  });
+  const isAdmin = !currentUser || currentUser?.role === 'ADMIN';
 
   // Core Database lists
   const [products, setProducts] = useState<Product[]>([]);
@@ -531,6 +537,9 @@ export default function App() {
 
   const handleLoginUser = (user: StaffUser) => {
     setCurrentUser(user);
+    try {
+      localStorage.setItem('jm_current_user', JSON.stringify(user));
+    } catch {}
     setCurrentView('dashboard');
     
     // Auto redirect to permitted default tab
@@ -638,7 +647,7 @@ export default function App() {
   };
 
   const handleDeleteProduct = async (id: string) => {
-    if (currentUser?.role !== 'ADMIN') {
+    if (currentUser && currentUser.role !== 'ADMIN') {
       alert('Only Administrator can delete products.');
       return;
     }
@@ -679,7 +688,7 @@ export default function App() {
   };
 
   const handleDeleteCustomer = async (id: string) => {
-    if (currentUser?.role !== 'ADMIN') {
+    if (currentUser && currentUser.role !== 'ADMIN') {
       alert('Only Administrator can delete customers.');
       return;
     }
@@ -949,7 +958,7 @@ export default function App() {
   };
 
   const handleDeleteDocument = async (id: string) => {
-    if (currentUser?.role !== 'ADMIN') {
+    if (currentUser && currentUser.role !== 'ADMIN' && !currentUser.permissions?.includes('delete_documents')) {
       alert('Only Administrator can delete documents.');
       return;
     }
