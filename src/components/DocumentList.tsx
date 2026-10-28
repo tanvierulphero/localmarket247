@@ -398,17 +398,6 @@ export default function DocumentList({
           >
             Sales Invoices ({typeCounts.INVOICE})
           </button>
-
-          <button
-            onClick={() => setSelectedType('BILL')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              selectedType === 'BILL' 
-                ? 'bg-rose-600 text-white shadow-xs' 
-                : 'bg-slate-100 text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Supplier Bills ({typeCounts.BILL})
-          </button>
         </div>
       </div>
 

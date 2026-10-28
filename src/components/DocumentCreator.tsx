@@ -500,7 +500,6 @@ export default function DocumentCreator({
                   <option value="QUOTATION">Quotation</option>
                   <option value="CHALLAN">Delivery Challan</option>
                   <option value="INVOICE">Sales Invoice</option>
-                  <option value="BILL">Sales Bill</option>
                 </select>
               </div>
 
@@ -1034,12 +1033,12 @@ export default function DocumentCreator({
                           <tr key={item.id} className="hover:bg-slate-50/50">
                             {/* Name description */}
                             <td className="py-2 px-2.5">
-                              <input
-                                type="text"
-                                placeholder="e.g. Hitachi Air Filter element"
+                              <textarea
+                                rows={2}
+                                placeholder="Description of Goods / Full specifications (No length limit, write as much as needed)"
                                 value={item.name}
                                 onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded p-1.5 text-xs font-semibold"
+                                className="w-full bg-white border border-slate-200 rounded p-2 text-xs font-semibold focus:outline-hidden focus:border-blue-700 resize-y min-h-[50px] leading-relaxed break-words"
                                 required
                               />
                             </td>

@@ -419,6 +419,10 @@ Content-Location: document.html
     .item-name {
       font-weight: bold;
       color: #0f172a;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      line-height: 1.5;
     }
     .totals-table {
       width: 100%;
@@ -1133,7 +1137,7 @@ ${rawBase64Logo}
                     {document.items.map((item, index) => (
                       <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3.5 px-1 sm:px-2 text-center font-bold text-slate-500">{index + 1}</td>
-                        <td className="py-3.5 px-3 font-extrabold text-slate-950 whitespace-normal leading-normal break-words text-sm sm:text-[15px]">
+                        <td className="py-3.5 px-3 font-extrabold text-slate-950 whitespace-pre-wrap leading-relaxed break-words text-sm sm:text-[15px]">
                           {item.name}
                         </td>
                         <td className="py-3.5 px-1 sm:px-2 text-center">

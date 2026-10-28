@@ -1568,17 +1568,6 @@ export default function CustomerList({
                 <span className="text-[10px] text-slate-500 group-hover:text-indigo-100 block">Price estimate</span>
               </button>
 
-              <button
-                onClick={() => {
-                  onCreateDocumentForCustomer(quickDocCustomer, 'BILL');
-                  setQuickDocCustomer(null);
-                }}
-                className="p-3.5 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-900 border border-emerald-200 rounded-xl text-left transition-all group cursor-pointer"
-              >
-                <DollarSign className="w-5 h-5 text-emerald-600 group-hover:text-white mb-2" />
-                <span className="font-black text-xs block">Cash Bill</span>
-                <span className="text-[10px] text-slate-500 group-hover:text-emerald-100 block">Immediate billing</span>
-              </button>
 
               <button
                 onClick={() => {
