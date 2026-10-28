@@ -117,6 +117,23 @@ export default function FieldDispatchManager({
   const [expandedStaff, setExpandedStaff] = useState<string | null>(null);
   const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
 
+  // Modal Company Search & Autocomplete State
+  const [modalCompanySearch, setModalCompanySearch] = useState('');
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+
+  // Filter registered customers for modal search
+  const filteredModalCustomers = useMemo(() => {
+    if (!modalCompanySearch.trim()) return customers;
+    const q = modalCompanySearch.toLowerCase();
+    return customers.filter(c =>
+      (c.company && c.company.toLowerCase().includes(q)) ||
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.phone && c.phone.toLowerCase().includes(q)) ||
+      (c.companyId && c.companyId.toLowerCase().includes(q)) ||
+      (c.address && c.address.toLowerCase().includes(q))
+    );
+  }, [customers, modalCompanySearch]);
+
   // Helper: Open Modal for New Entry
   const handleOpenNewEntry = () => {
     // Generate next Bill No recommendation
@@ -145,6 +162,8 @@ export default function FieldDispatchManager({
       status: 'Completed',
       notes: '',
     });
+    setModalCompanySearch('');
+    setIsCompanyDropdownOpen(false);
     setIsEntryModalOpen(true);
   };
 
@@ -172,6 +191,8 @@ export default function FieldDispatchManager({
       status: entry.status || 'Completed',
       notes: entry.notes || '',
     });
+    setModalCompanySearch(entry.companyName || entry.customerCompany || '');
+    setIsCompanyDropdownOpen(false);
     setIsEntryModalOpen(true);
   };
 
@@ -1307,20 +1328,126 @@ export default function FieldDispatchManager({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      Select Registered Company
-                    </label>
-                    <select
-                      value={formData.customerId}
-                      onChange={e => handleCompanySelect(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500"
-                    >
-                      <option value="">Type New Company</option>
-                      {customers.map(c => (
-                        <option key={c.id} value={c.id}>{c.company || c.name}</option>
-                      ))}
-                    </select>
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700">
+                        Search & Select Registered Company ({customers.length})
+                      </label>
+                      {formData.customerId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleCompanySelect('');
+                            setModalCompanySearch('');
+                          }}
+                          className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Search Input with Search Icon */}
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Search company name, contact, phone, ID..."
+                        value={modalCompanySearch}
+                        onFocus={() => setIsCompanyDropdownOpen(true)}
+                        onChange={e => {
+                          setModalCompanySearch(e.target.value);
+                          setIsCompanyDropdownOpen(true);
+                        }}
+                        className="w-full pl-9 pr-8 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 shadow-2xs"
+                      />
+                      {modalCompanySearch ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModalCompanySearch('');
+                            handleCompanySelect('');
+                            setIsCompanyDropdownOpen(false);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      )}
+                    </div>
+
+                    {/* Autocomplete Dropdown List */}
+                    {isCompanyDropdownOpen && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-blue-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-100">
+                        {/* Option: Type New Company */}
+                        <div
+                          onClick={() => {
+                            handleCompanySelect('');
+                            setModalCompanySearch('');
+                            setIsCompanyDropdownOpen(false);
+                          }}
+                          className="p-2.5 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-xs text-blue-700 font-bold border-b border-slate-100 bg-slate-50/50"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Plus className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Type New Company / Manual Entry</span>
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-normal">Custom</span>
+                        </div>
+
+                        {filteredModalCustomers.length > 0 ? (
+                          filteredModalCustomers.map(c => {
+                            const isSelected = c.id === formData.customerId;
+                            return (
+                              <div
+                                key={c.id}
+                                onClick={() => {
+                                  handleCompanySelect(c.id);
+                                  setModalCompanySearch(c.company || c.name);
+                                  setIsCompanyDropdownOpen(false);
+                                }}
+                                className={`p-2.5 hover:bg-blue-50 cursor-pointer transition-colors text-xs ${
+                                  isSelected ? 'bg-blue-50/80 font-bold' : ''
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-slate-900 truncate">
+                                    {c.company || c.name}
+                                  </span>
+                                  {c.companyId && (
+                                    <span className="text-[10px] font-mono text-blue-700 bg-blue-100/60 px-1.5 py-0.5 rounded ml-2 shrink-0 font-bold">
+                                      {c.companyId}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-500 flex items-center gap-2 mt-0.5">
+                                  {c.name && c.name !== c.company && <span>{c.name}</span>}
+                                  {c.phone && <span className="font-mono text-slate-700">{c.phone}</span>}
+                                  {c.address && <span className="truncate max-w-[160px]">&bull; {c.address}</span>}
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="p-3 text-center text-xs text-slate-500">
+                            No registered company matching "{modalCompanySearch}".
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleCompanySelect('');
+                                setFormData(prev => ({ ...prev, companyName: modalCompanySearch }));
+                                setIsCompanyDropdownOpen(false);
+                              }}
+                              className="block mx-auto mt-1 text-blue-600 font-bold hover:underline cursor-pointer"
+                            >
+                              Use "{modalCompanySearch}" as Company Name &rarr;
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>
