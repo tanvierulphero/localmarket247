@@ -459,13 +459,6 @@ if ($method === 'POST' || $method === 'PUT') {
         }
         $inputData['id'] = $idVal;
 
-        // Hash Passcodes for Staff Users using password_hash(PASSWORD_BCRYPT)
-        if ($tableName === 'staff_users' && !empty($inputData['passcode'])) {
-            $rawPass = trim($inputData['passcode']);
-            if (!str_starts_with($rawPass, '$2y$') && !str_starts_with($rawPass, '$2b$')) {
-                $inputData['passcode'] = password_hash($rawPass, PASSWORD_BCRYPT);
-            }
-        }
 
         $dbItem = mapJsToDb($inputData, $fieldsList);
 

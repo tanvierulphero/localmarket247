@@ -1380,7 +1380,12 @@ export default function FieldDispatchManager({
 
                     {/* Autocomplete Dropdown List */}
                     {isCompanyDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-blue-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-100">
+                      <>
+                        <div
+                          className="fixed inset-0 z-40 bg-transparent"
+                          onClick={() => setIsCompanyDropdownOpen(false)}
+                        />
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-blue-200 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-100">
                         {/* Option: Type New Company */}
                         <div
                           onClick={() => {
@@ -1447,6 +1452,7 @@ export default function FieldDispatchManager({
                           </div>
                         )}
                       </div>
+                      </>
                     )}
                   </div>
 
