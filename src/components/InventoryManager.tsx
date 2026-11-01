@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Product, ProductSpec, Document, FieldDispatch, StaffUser } from '../types';
+import { Product, ProductSpec, Document, FieldDispatch, StaffUser, Purchase } from '../types';
 import { 
   Search, 
   Plus, 
@@ -37,6 +37,7 @@ interface InventoryManagerProps {
   products: Product[];
   documents?: Document[];
   dispatches?: FieldDispatch[];
+  purchases?: Purchase[];
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
   onDeleteProduct?: (id: string) => void;
@@ -48,6 +49,7 @@ export default function InventoryManager({
   products,
   documents = [],
   dispatches = [],
+  purchases = [],
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
@@ -172,73 +174,78 @@ export default function InventoryManager({
       doc: Document;
     }[] = [];
 
+    // 1. Process customer sales from documents (INVOICE, BILL, QUOTATION, OFFER_LETTER)
+    // CRITICAL: Custom items (without valid inventory productId or marked isCustom) must NEVER match or affect inventory!
     (documents || []).forEach(doc => {
       if (!doc || !Array.isArray(doc.items)) return;
 
       doc.items.forEach(it => {
         if (!it) return;
+        // Strict match: Custom items have NO inventory effect and must NEVER match
+        if (it.isCustom || !it.productId) return;
+        
         const itProdId = String(it.productId || '');
-        const itName = String(it.name || '').toLowerCase();
+        if (itProdId !== hpId) return;
 
-        // Match by productId or SKU/name
-        const isMatch = (itProdId && itProdId === hpId) ||
-                        (itName && hpSku && itName.includes(hpSku)) ||
-                        (itName && hpName && itName.includes(hpName));
+        salesRecords.push({
+          docId: String(doc.id || ''),
+          docNumber: String(doc.docNumber || 'DOC-000'),
+          docType: String(doc.type || 'INVOICE'),
+          date: String(doc.date || ''),
+          customerId: String(doc.customerId || ''),
+          customerName: String(doc.customerName || 'Customer'),
+          customerCompany: String(doc.customerCompany || doc.customerName || 'Client Company'),
+          customerPhone: String(doc.customerPhone || ''),
+          quantity: Number(it.quantity) || 1,
+          unitPrice: Number(it.price) || 0,
+          lineTotal: Number(it.total) || 0,
+          unit: String(it.unit || historyProduct.unit || 'Pcs'),
+          status: String(doc.status || 'Active'),
+          doc
+        });
+      });
+    });
 
-        if (isMatch) {
-          if (doc.type === 'INVOICE' || doc.type === 'QUOTATION' || doc.type === 'OFFER_LETTER') {
-            salesRecords.push({
-              docId: String(doc.id || ''),
-              docNumber: String(doc.docNumber || 'DOC-000'),
-              docType: String(doc.type || 'INVOICE'),
-              date: String(doc.date || ''),
-              customerId: String(doc.customerId || ''),
-              customerName: String(doc.customerName || 'Customer'),
-              customerCompany: String(doc.customerCompany || doc.customerName || 'Client Company'),
-              customerPhone: String(doc.customerPhone || ''),
-              quantity: Number(it.quantity) || 1,
-              unitPrice: Number(it.price) || 0,
-              lineTotal: Number(it.total) || 0,
-              unit: String(it.unit || historyProduct.unit || 'Pcs'),
-              status: String(doc.status || 'Active'),
-              doc
-            });
-          } else if (doc.type === 'BILL') {
-            purchaseRecords.push({
-              docId: String(doc.id || ''),
-              docNumber: String(doc.docNumber || 'BILL-000'),
-              date: String(doc.date || ''),
-              supplierName: String(doc.customerCompany || doc.customerName || 'Vendor Supplier'),
-              quantity: Number(it.quantity) || 1,
-              buyPrice: Number(it.price) || 0,
-              lineTotal: Number(it.total) || 0,
-              doc
-            });
-          }
+    // 2. Process authentic supplier purchases from purchases table ONLY (NEVER from customer bills/challans)
+    (purchases || []).forEach(p => {
+      if (!p || !Array.isArray(p.items)) return;
+      p.items.forEach(it => {
+        if (!it) return;
+        const itProdId = String(it.productId || '');
+        if (itProdId && itProdId === hpId) {
+          purchaseRecords.push({
+            docId: String(p.id || ''),
+            docNumber: String(p.purchaseNumber || 'PUR-000'),
+            date: String(p.purchaseDate || ''),
+            supplierName: String(p.supplierCompany || p.supplierName || 'Vendor Supplier'),
+            quantity: Number(it.quantity) || 1,
+            buyPrice: Number(it.unitCost) || 0,
+            lineTotal: Number(it.totalCost ?? (it.quantity * it.unitCost)) || 0,
+            doc: p as any
+          });
         }
       });
     });
 
-    // 3. Find field dispatches containing this product
+    // 3. Find field dispatches containing this inventory product (Strict productId match only)
     const dispatchRecords = (dispatches || []).filter(d => 
       d && Array.isArray(d.items) && d.items.some(it => {
         if (!it) return false;
         const itProdId = String(it.productId || '');
-        const itProdName = String((it as any).productName || (it as any).name || '').toLowerCase();
-        return (itProdId && itProdId === hpId) || (itProdName && hpName && itProdName.includes(hpName));
+        return itProdId && itProdId === hpId;
       })
     );
 
     // Sum total quantities & financial revenue
-    const invoiceSales = salesRecords.filter(r => r.docType === 'INVOICE');
+    const invoiceSales = salesRecords.filter(r => r.docType === 'INVOICE' || r.docType === 'BILL');
     const totalQtySold = invoiceSales.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
     const totalSalesRevenue = invoiceSales.reduce((s, r) => s + (Number(r.lineTotal) || 0), 0);
 
     const currentStock = Number(historyProduct.stock) || 0;
     const currentPrice = Number(historyProduct.price) || 0;
 
-    const totalQtyPurchased = purchaseRecords.reduce((s, r) => s + (Number(r.quantity) || 0), 0) + currentStock + totalQtySold;
-    const totalPurchaseCostEstimate = totalQtySold * (currentPrice * 0.70); // Estimated 30% margin cost if bill price missing
+    const totalQtyPurchased = purchaseRecords.reduce((s, r) => s + (Number(r.quantity) || 0), 0) + currentStock;
+    const totalPurchaseCostEstimate = totalQtySold * (currentPrice * 0.70); // Estimated 30% margin cost if purchase price missing
     const totalPurchaseCostActual = purchaseRecords.reduce((s, r) => s + (Number(r.lineTotal) || 0), 0) || totalPurchaseCostEstimate;
 
     // Profit or Loss
@@ -260,7 +267,7 @@ export default function InventoryManager({
       marginPercent,
       isProfit: netProfitLoss >= 0
     };
-  }, [historyProduct, documents, dispatches]);
+  }, [historyProduct, documents, dispatches, purchases]);
 
   // User-created Custom Categories and Brands (Persistent)
   const [customCategories, setCustomCategories] = useState<string[]>(() => {

@@ -756,10 +756,11 @@ export default function App() {
     
     // Inventory Stock Management for Goods Sales:
     // Creating a challan does not deduct inventory stock.
-    // Stock is deducted only when a Bill or Invoice is created.
+    // Stock is deducted only when a Bill or Invoice is created for registered inventory products.
+    // Custom items (isCustom or without registered productId) have ZERO inventory impact.
     if ((cleanDoc.type === 'BILL' || cleanDoc.type === 'INVOICE') && !exists) {
       const updatedProducts = products.map(prod => {
-        const itemInDoc = doc.items.find(it => it.productId === prod.id);
+        const itemInDoc = doc.items.find(it => !it.isCustom && it.productId && it.productId === prod.id);
         if (itemInDoc) {
           const updatedProd = {
             ...prod,
@@ -795,10 +796,13 @@ export default function App() {
   const handleCreateInvoiceFromChallan = (challan: Document) => {
     const nextInvoiceDocNumber = generateNextDocNumber('INVOICE', documents, settings);
     const mappedItems = challan.items.map(it => {
-      const prod = products.find(p => p.id === it.productId);
+      const isCustomItem = Boolean(it.isCustom || !it.productId);
+      const prod = isCustomItem ? null : products.find(p => p.id === it.productId);
       const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
       return {
         ...it,
+        productId: isCustomItem ? '' : (it.productId || ''),
+        isCustom: isCustomItem,
         price: unitPrice,
         total: unitPrice * it.quantity
       };
@@ -856,10 +860,13 @@ export default function App() {
   const handleCreateBillFromChallan = (challan: Document) => {
     const nextBillDocNumber = generateNextDocNumber('BILL', documents, settings);
     const mappedItems = challan.items.map(it => {
-      const prod = products.find(p => p.id === it.productId);
+      const isCustomItem = Boolean(it.isCustom || !it.productId);
+      const prod = isCustomItem ? null : products.find(p => p.id === it.productId);
       const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
       return {
         ...it,
+        productId: isCustomItem ? '' : (it.productId || ''),
+        isCustom: isCustomItem,
         price: unitPrice,
         total: unitPrice * it.quantity
       };
@@ -1723,6 +1730,7 @@ export default function App() {
                         products={products}
                         documents={documents}
                         dispatches={dispatches}
+                        purchases={purchases}
                         onAddProduct={handleAddProduct}
                         onUpdateProduct={handleUpdateProduct}
                         onDeleteProduct={isAdmin ? handleDeleteProduct : undefined}

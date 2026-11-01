@@ -127,7 +127,7 @@ export default function ReportsHub({
       .filter(d => d.type === 'INVOICE' && d.status === 'Paid')
       .forEach(doc => {
         doc.items.forEach(item => {
-          if (item.productId) {
+          if (item.productId && !item.isCustom) {
             soldQuantities[item.productId] = (soldQuantities[item.productId] || 0) + item.quantity;
             soldAmounts[item.productId] = (soldAmounts[item.productId] || 0) + item.total;
           }

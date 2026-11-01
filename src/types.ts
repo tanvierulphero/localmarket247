@@ -261,6 +261,7 @@ export interface DocumentItem {
   unit: string;
   warrantyMonths?: number; // e.g. 12, 18, 24
   warrantyExpiryDate?: string; // e.g. "2027-09-25"
+  isCustom?: boolean; // If true, custom spare part or item row with zero inventory and zero purchase impact
 }
 
 export interface Document {

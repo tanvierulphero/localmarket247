@@ -179,10 +179,13 @@ export default function DocumentCreator({
     
     // Populate items with prices from catalog or existing price
     const mappedItems: DocumentItem[] = ch.items.map(it => {
-      const prod = products.find(p => p.id === it.productId);
+      const isCustomItem = Boolean(it.isCustom || !it.productId);
+      const prod = isCustomItem ? null : products.find(p => p.id === it.productId);
       const unitPrice = it.price > 0 ? it.price : (prod?.price || 0);
       return {
         ...it,
+        productId: isCustomItem ? '' : (it.productId || ''),
+        isCustom: isCustomItem,
         price: unitPrice,
         total: unitPrice * it.quantity
       };
@@ -236,9 +239,11 @@ export default function DocumentCreator({
 
   // Add Item Line
   const handleAddItem = (productId?: string) => {
+    const isCustom = !productId;
     const newItem: DocumentItem = {
       id: `item-${Date.now()}-${Math.random()}`,
       productId: productId || '',
+      isCustom: isCustom,
       name: '',
       brand: '',
       quantity: 1,
@@ -255,6 +260,7 @@ export default function DocumentCreator({
         newItem.price = p.price;
         newItem.unit = p.unit;
         newItem.total = p.price * 1;
+        newItem.isCustom = false;
       }
     }
 
@@ -274,11 +280,17 @@ export default function DocumentCreator({
         item.brand = p.sku || p.brand; // Parts Number
         item.price = p.price;
         item.unit = p.unit;
+        item.isCustom = false;
       } else {
         item.productId = '';
+        item.isCustom = true;
       }
     } else {
       (item as any)[field] = val;
+      // If item has no valid productId, mark as custom
+      if (!item.productId) {
+        item.isCustom = true;
+      }
     }
 
     // Recalculate line total
@@ -1041,6 +1053,19 @@ export default function DocumentCreator({
                                 className="w-full bg-white border border-slate-200 rounded p-2 text-xs font-semibold focus:outline-hidden focus:border-blue-700 resize-y min-h-[50px] leading-relaxed break-words"
                                 required
                               />
+                              <div className="flex items-center gap-1.5 mt-1">
+                                {item.isCustom || !item.productId ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    Custom Item &bull; No inventory or purchase impact
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    Inventory Product ({products.find(p => p.id === item.productId)?.sku || 'Catalog'})
+                                  </span>
+                                )}
+                              </div>
                             </td>
 
                             {/* Parts Number / Brand */}
