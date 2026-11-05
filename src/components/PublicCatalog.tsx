@@ -323,17 +323,6 @@ export default function PublicCatalog({
               <span className="hidden sm:inline">WhatsApp</span>
             </a>
 
-            <a
-              href={messengerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition-all shadow-2xs"
-              title="Contact on Facebook Messenger"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Messenger</span>
-            </a>
-
             <button 
               onClick={onAdminClick}
               className="flex items-center gap-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer border border-slate-700 ml-1"
@@ -428,16 +417,6 @@ export default function PublicCatalog({
               >
                 <MessageCircle className="w-4 h-4" />
                 Chat on WhatsApp
-              </a>
-
-              <a
-                href={messengerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <Send className="w-4 h-4" />
-                Facebook Messenger
               </a>
 
               <a
@@ -662,7 +641,7 @@ export default function PublicCatalog({
 
                 {/* 1-CLICK SOCIAL MEDIA CONTACT ACTIONS ON CARD */}
                 <div className="p-4 pt-2 border-t border-slate-100 bg-slate-50/60 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2">
                     {/* 1-Click WhatsApp Button */}
                     <a
                       href={waUrl}
@@ -673,18 +652,6 @@ export default function PublicCatalog({
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>WhatsApp</span>
-                    </a>
-
-                    {/* 1-Click Messenger Button */}
-                    <a
-                      href={messengerUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-2xs hover:shadow-blue-500/25 cursor-pointer"
-                      title="Contact on Facebook Messenger"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Messenger</span>
                     </a>
                   </div>
 
@@ -825,28 +792,6 @@ export default function PublicCatalog({
                 <MessageCircle className="w-4 h-4" />
                 WhatsApp Chat
               </a>
-
-              <a
-                href={messengerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all"
-              >
-                <Send className="w-4 h-4" />
-                Facebook Messenger
-              </a>
-
-              {settings?.telegramUrl && (
-                <a
-                  href={settings.telegramUrl.startsWith('http') ? settings.telegramUrl : `https://t.me/${settings.telegramUrl.replace('@', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                  Telegram
-                </a>
-              )}
             </div>
           </div>
 
@@ -948,12 +893,6 @@ export default function PublicCatalog({
             <a href={generalWhatsAppUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
               WhatsApp
             </a>
-            <a href={messengerUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
-              Messenger
-            </a>
-            <button onClick={onAdminClick} className="text-slate-400 hover:text-white transition-colors cursor-pointer">
-              Admin Login
-            </button>
           </div>
         </div>
       </footer>
@@ -970,17 +909,6 @@ export default function PublicCatalog({
         >
           <MessageCircle className="w-5 h-5 animate-bounce" />
           <span className="hidden sm:inline font-bold">WhatsApp Chat</span>
-        </a>
-
-        {/* Messenger Floating Action Button */}
-        <a
-          href={messengerUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-11 h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all"
-          title="Facebook Messenger"
-        >
-          <Send className="w-5 h-5" />
         </a>
       </div>
 
