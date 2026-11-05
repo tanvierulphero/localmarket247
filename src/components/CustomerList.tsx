@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Customer, Document, FieldDispatch, BusinessSettings, DocumentType } from '../types';
 import { getDocFinancials } from './DueLedger';
+import { formatDateDMY } from '../lib/dateFormat';
 import { 
   Users, 
   Search, 
@@ -1428,7 +1429,7 @@ export default function CustomerList({
 
                           return (
                             <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-2.5 px-3 font-mono font-medium text-slate-600">{doc.date}</td>
+                              <td className="py-2.5 px-3 font-mono font-medium text-slate-600">{formatDateDMY(doc.date)}</td>
                               <td className="py-2.5 px-3 font-mono font-bold text-blue-700">{doc.docNumber || (doc as any).number || doc.id}</td>
                               <td className="py-2.5 px-3">
                                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
@@ -1491,7 +1492,7 @@ export default function CustomerList({
                       <tbody className="divide-y divide-slate-100">
                         {selectedCustomerDispatches.map(dsp => (
                           <tr key={dsp.id} className="hover:bg-slate-50">
-                            <td className="py-2 px-3 font-mono">{dsp.dispatchDate}</td>
+                            <td className="py-2 px-3 font-mono">{formatDateDMY(dsp.dispatchDate)}</td>
                             <td className="py-2 px-3 font-mono font-bold text-amber-700">{dsp.dispatchNumber}</td>
                             <td className="py-2 px-3 font-medium">{dsp.staffName}</td>
                             <td className="py-2 px-3 text-slate-600">{dsp.purpose}</td>

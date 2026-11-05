@@ -1,6 +1,8 @@
 import { useState, useMemo, Fragment } from 'react';
 import { Document, Customer, DocumentStatus, BusinessSettings, StaffUser, Supplier, Purchase } from '../types';
 import Logo from './Logo';
+import { formatDateDMY } from '../lib/dateFormat';
+import DateInput from './DateInput';
 import { 
   DollarSign, 
   Search, 
@@ -326,7 +328,7 @@ function downloadCustomerStatementCSV(
   csvContent += "Date,Ref / Memo No,Particulars / Description,Billed Amount (BDT),Paid Amount (BDT),Running Balance Due (BDT)\n";
 
   transactions.forEach(t => {
-    csvContent += `"${t.date}","${t.refNo}","${t.particulars.replace(/"/g, '""')}",${t.billed},${t.paid},${t.runningDue}\n`;
+    csvContent += `"${formatDateDMY(t.date)}","${t.refNo}","${t.particulars.replace(/"/g, '""')}",${t.billed},${t.paid},${t.runningDue}\n`;
   });
 
   const encodedUri = encodeURI(csvContent);
@@ -1437,8 +1439,8 @@ export default function DueLedger({
                                                       </div>
                                                     )}
                                                   </td>
-                                                  <td className="py-3 px-4 font-mono text-[11px]">{doc.date}</td>
-                                                  <td className="py-3 px-4 font-mono text-[11px]">{doc.dueDate || '--'}</td>
+                                                  <td className="py-3 px-4 font-mono text-[11px]">{formatDateDMY(doc.date)}</td>
+                                                  <td className="py-3 px-4 font-mono text-[11px]">{formatDateDMY(doc.dueDate, '--')}</td>
                                                   <td className="py-3 px-4 text-right text-slate-900 font-bold font-mono">Tk. {docTotal.toLocaleString()}</td>
                                                   <td className="py-3 px-4 text-right text-emerald-600 font-mono">Tk. {paidAmt.toLocaleString()}</td>
                                                   <td className="py-3 px-4 text-right text-rose-600 font-bold font-mono">Tk. {dueAmt.toLocaleString()}</td>
@@ -1579,8 +1581,8 @@ export default function DueLedger({
                                 <span className="font-bold text-slate-900 block">{doc.customerName}</span>
                                 <span className="text-[10px] text-slate-400 font-semibold block">{doc.customerCompany}</span>
                               </td>
-                              <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{doc.date}</td>
-                              <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{doc.dueDate || '--'}</td>
+                              <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{formatDateDMY(doc.date)}</td>
+                              <td className="py-4 px-4 font-mono text-[11px] text-slate-500">{formatDateDMY(doc.dueDate, '--')}</td>
                               <td className="py-4 px-4 text-right font-bold text-slate-900 font-mono">Tk. {docTotal.toLocaleString()}</td>
                               <td className="py-4 px-4 text-right font-bold text-emerald-600 font-mono">Tk. {paidAmt.toLocaleString()}</td>
                               <td className="py-4 px-4 text-right font-bold text-rose-600 font-mono">
@@ -1751,7 +1753,7 @@ export default function DueLedger({
                               <span className="text-[10px] text-slate-400">{doc.customerCompany}</span>
                             </td>
                             <td className="py-3 px-4 font-mono text-[11px]">{doc.customerPhone}</td>
-                            <td className="py-3 px-4 font-mono text-[11px]">{doc.date}</td>
+                            <td className="py-3 px-4 font-mono text-[11px]">{formatDateDMY(doc.date)}</td>
                             <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">Tk. {total.toLocaleString()}</td>
                             <td className="py-3 px-4 text-right font-mono font-black text-rose-700">Tk. {due.toLocaleString()}</td>
                             <td className="py-3 px-4 text-center">
@@ -2071,7 +2073,7 @@ export default function DueLedger({
                             <strong className="text-slate-900 block">{p.supplierName}</strong>
                             <span className="text-[10px] text-slate-400">{p.supplierCompany}</span>
                           </td>
-                          <td className="py-3 px-4 font-mono text-[11px]">{p.purchaseDate}</td>
+                          <td className="py-3 px-4 font-mono text-[11px]">{formatDateDMY(p.purchaseDate)}</td>
                           <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">Tk. {(p.grandTotal || 0).toLocaleString()}</td>
                           <td className="py-3 px-4 text-right font-mono text-emerald-700">Tk. {(p.paidAmount || 0).toLocaleString()}</td>
                           <td className="py-3 px-4 text-right font-mono font-black text-amber-700">
@@ -2198,8 +2200,7 @@ export default function DueLedger({
 
                 <div className="space-y-1">
                   <label className="text-slate-700 font-bold block">Payment Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     required
                     value={singlePaymentDate}
                     onChange={(e) => setSinglePaymentDate(e.target.value)}
@@ -2379,8 +2380,7 @@ export default function DueLedger({
 
                 <div className="space-y-1">
                   <label className="text-slate-700 font-bold block">Payment Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     required
                     value={companyPayDate}
                     onChange={(e) => setCompanyPayDate(e.target.value)}
@@ -2511,8 +2511,7 @@ export default function DueLedger({
 
                 <div className="space-y-1">
                   <label className="text-slate-700 font-bold block">Payment Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     required
                     value={supplierPayDate}
                     onChange={(e) => setSupplierPayDate(e.target.value)}
@@ -2629,7 +2628,7 @@ export default function DueLedger({
                   </div>
                   <div className="text-right">
                     <span className="text-slate-400 text-[10px] uppercase font-bold block">Date of Payment:</span>
-                    <strong className="text-slate-900 font-mono text-xs">{recentReceipt.date}</strong>
+                    <strong className="text-slate-900 font-mono text-xs">{formatDateDMY(recentReceipt.date)}</strong>
                   </div>
                   <div className="col-span-2">
                     <span className="text-slate-400 text-[10px] uppercase font-bold block">Received From:</span>
@@ -2787,7 +2786,7 @@ export default function DueLedger({
                   </div>
                   <div className="text-right">
                     <span className="text-slate-400 text-[10px] uppercase font-bold block">Date of Payment:</span>
-                    <strong className="text-slate-900 font-mono text-xs">{recentVoucher.date}</strong>
+                    <strong className="text-slate-900 font-mono text-xs">{formatDateDMY(recentVoucher.date)}</strong>
                   </div>
                   <div className="col-span-2">
                     <span className="text-slate-400 text-[10px] uppercase font-bold block">Paid To (Supplier):</span>
@@ -2998,15 +2997,13 @@ export default function DueLedger({
 
                 {statementDateFilter === 'custom' && (
                   <div className="flex items-center gap-2">
-                    <input
-                      type="date"
+                    <DateInput
                       value={statementStartDate}
                       onChange={(e) => setStatementStartDate(e.target.value)}
                       className="bg-white border border-slate-200 rounded-lg p-1 text-xs font-mono"
                     />
                     <span className="text-slate-400 font-bold">&rarr;</span>
-                    <input
-                      type="date"
+                    <DateInput
                       value={statementEndDate}
                       onChange={(e) => setStatementEndDate(e.target.value)}
                       className="bg-white border border-slate-200 rounded-lg p-1 text-xs font-mono"
@@ -3113,7 +3110,7 @@ export default function DueLedger({
                           <div>
                             <div className="flex justify-between items-center">
                               <span className="font-mono font-bold text-blue-900 text-[11px]">{rcpt.receiptNo}</span>
-                              <span className="text-[9px] font-mono text-slate-400">{rcpt.date}</span>
+                              <span className="text-[9px] font-mono text-slate-400">{formatDateDMY(rcpt.date)}</span>
                             </div>
                             <div className="text-sm font-black text-emerald-700 font-mono mt-0.5">
                               Tk. {rcpt.amount.toLocaleString()}
@@ -3174,7 +3171,7 @@ export default function DueLedger({
                       <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
                         {openingBalance > 0 && (
                           <tr className="bg-slate-50 font-bold">
-                            <td className="py-2 px-3 font-mono text-[10px]">{startFilter || '--'}</td>
+                            <td className="py-2 px-3 font-mono text-[10px]">{formatDateDMY(startFilter, '--')}</td>
                             <td className="py-2 px-3 font-mono text-[10px]">--</td>
                             <td className="py-2 px-3 text-slate-600 italic">Opening Balance Brought Forward</td>
                             <td className="py-2 px-3 text-right font-mono">--</td>
@@ -3189,7 +3186,7 @@ export default function DueLedger({
                           const isPayment = tx.type === 'PAYMENT';
                           return (
                             <tr key={tx.id} className={isPayment ? 'bg-emerald-50/40 font-semibold' : 'hover:bg-slate-50/50'}>
-                              <td className="py-2.5 px-3 font-mono text-[10px] font-bold text-slate-600 whitespace-nowrap">{tx.date}</td>
+                              <td className="py-2.5 px-3 font-mono text-[10px] font-bold text-slate-600 whitespace-nowrap">{formatDateDMY(tx.date)}</td>
                               <td className="py-2.5 px-3 font-mono font-bold text-blue-900 text-[10px] whitespace-nowrap">{tx.refNo}</td>
                               <td className="py-2.5 px-3 max-w-xs">
                                 <span className="block leading-tight text-[11px]">{tx.particulars}</span>
@@ -3344,7 +3341,7 @@ export default function DueLedger({
                   <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
                     {viewingSupplierReport.purchases.map(p => (
                       <tr key={p.id}>
-                        <td className="py-2.5 px-3 font-mono">{p.purchaseDate}</td>
+                        <td className="py-2.5 px-3 font-mono">{formatDateDMY(p.purchaseDate)}</td>
                         <td className="py-2.5 px-3 font-mono font-bold text-blue-900">{p.purchaseNumber}</td>
                         <td className="py-2.5 px-3 font-mono">{p.supplierInvoiceNo || '--'}</td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold">Tk. {(p.grandTotal || 0).toLocaleString()}</td>

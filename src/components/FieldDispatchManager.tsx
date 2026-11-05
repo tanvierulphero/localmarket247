@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FieldDispatch, Customer, StaffUser, BusinessSettings, FieldPaymentStatus, FieldDispatchStatus } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
+import DateInput from './DateInput';
 import { 
   Search, 
   Plus, 
@@ -554,7 +556,7 @@ export default function FieldDispatchManager({
     ];
 
     const rows = filteredDispatches.map(d => [
-      `"${d.date || d.dispatchDate || ''}"`,
+      `"${formatDateDMY(d.date || d.dispatchDate || '')}"`,
       `"${d.billNo || d.dispatchNumber || ''}"`,
       `"${d.staffName || ''}"`,
       `"${(d.companyName || d.customerCompany || '').replace(/"/g, '""')}"`,
@@ -741,8 +743,7 @@ export default function FieldDispatchManager({
             <div className="flex items-center gap-2 text-xs font-bold">
               <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
                 <span className="text-slate-400 text-[10px]">Start:</span>
-                <input
-                  type="date"
+                <DateInput
                   value={customStartDate}
                   onChange={e => setCustomStartDate(e.target.value)}
                   className="bg-transparent text-slate-800 text-xs font-bold outline-none cursor-pointer"
@@ -751,8 +752,7 @@ export default function FieldDispatchManager({
               <span className="text-slate-300">—</span>
               <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
                 <span className="text-slate-400 text-[10px]">End:</span>
-                <input
-                  type="date"
+                <DateInput
                   value={customEndDate}
                   onChange={e => setCustomEndDate(e.target.value)}
                   className="bg-transparent text-slate-800 text-xs font-bold outline-none cursor-pointer"
@@ -895,7 +895,7 @@ export default function FieldDispatchManager({
                         {/* Date & Bill No */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="font-bold text-slate-900 font-mono">
-                            {item.date || item.dispatchDate}
+                            {formatDateDMY(item.date || item.dispatchDate)}
                           </div>
                           <span className="inline-block font-mono text-[10px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 mt-0.5">
                             {item.billNo || item.dispatchNumber || 'N/A'}
@@ -1128,7 +1128,7 @@ export default function FieldDispatchManager({
                           <div key={e.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] space-y-1">
                             <div className="flex justify-between items-center font-bold">
                               <span className="text-slate-800">{e.companyName || e.customerCompany}</span>
-                              <span className="text-slate-400 font-mono text-[10px]">{e.date || e.dispatchDate}</span>
+                              <span className="text-slate-400 font-mono text-[10px]">{formatDateDMY(e.date || e.dispatchDate)}</span>
                             </div>
                             <p className="text-slate-600 text-[10px] line-clamp-1">{e.description || e.purpose}</p>
                             <div className="flex justify-between items-center text-[10px] font-mono pt-1 text-slate-500">
@@ -1215,7 +1215,7 @@ export default function FieldDispatchManager({
                           <div key={e.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] space-y-1">
                             <div className="flex justify-between items-center font-bold">
                               <span className="text-blue-900 font-mono text-[10px]">{e.billNo || e.dispatchNumber}</span>
-                              <span className="text-slate-400 font-mono text-[10px]">{e.date || e.dispatchDate}</span>
+                              <span className="text-slate-400 font-mono text-[10px]">{formatDateDMY(e.date || e.dispatchDate)}</span>
                             </div>
                             <p className="text-slate-700 font-semibold">{e.staffName} (Staff)</p>
                             <p className="text-slate-500 text-[10px]">{e.description || e.purpose}</p>
@@ -1266,8 +1266,7 @@ export default function FieldDispatchManager({
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Date <span className="text-rose-500">*</span>
                   </label>
-                  <input
-                    type="date"
+                  <DateInput
                     required
                     value={formData.date}
                     onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
@@ -1756,7 +1755,7 @@ export default function FieldDispatchManager({
                     Bill No: {voucherToPrint.billNo || voucherToPrint.dispatchNumber}
                   </p>
                   <p className="text-[11px] font-bold text-slate-600">
-                    Date: {voucherToPrint.date || voucherToPrint.dispatchDate}
+                    Date: {formatDateDMY(voucherToPrint.date || voucherToPrint.dispatchDate)}
                   </p>
                 </div>
               </div>
@@ -1941,7 +1940,7 @@ export default function FieldDispatchManager({
                   {filteredDispatches.map(item => (
                     <tr key={item.id}>
                       <td className="p-2 whitespace-nowrap">
-                        <div>{item.date || item.dispatchDate}</div>
+                        <div>{formatDateDMY(item.date || item.dispatchDate)}</div>
                         <span className="text-[9px] text-blue-900 font-bold">{item.billNo || item.dispatchNumber}</span>
                       </td>
                       <td className="p-2 font-sans font-bold">{item.staffName}</td>

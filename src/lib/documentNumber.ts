@@ -1,4 +1,4 @@
-import { Document, DocumentType, BusinessSettings } from '../types';
+import { Document, DocumentType, BusinessSettings, Purchase } from '../types';
 
 /**
  * Generates sequential document numbers for Challan, Invoice, Quotation, Bill, and Offer Letter.
@@ -61,3 +61,44 @@ export function generateNextDocNumber(
 
   return `${prefix}${numStr}`;
 }
+
+/**
+ * Generates sequential Purchase serial numbers (e.g., PUR/2026/0001, PUR/2026/0002...)
+ * incrementing by 1 (+1) sequentially based on existing purchases.
+ */
+export function generateNextPurchaseNumber(purchases: Purchase[] = []): string {
+  const currentYear = new Date().getFullYear();
+  const prefix = `PUR/${currentYear}/`;
+
+  const numbers: number[] = [];
+  for (const p of purchases || []) {
+    if (!p || !p.purchaseNumber) continue;
+    const match = p.purchaseNumber.match(/(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > 0) {
+        numbers.push(num);
+      }
+    }
+  }
+
+  let nextNum = 1;
+  const sequentialNumbers = numbers.filter(n => n < 1000);
+  if (sequentialNumbers.length > 0) {
+    nextNum = Math.max(...sequentialNumbers) + 1;
+  } else if (numbers.length > 0) {
+    if ((purchases || []).length < 50) {
+      nextNum = (purchases || []).length + 1;
+    } else {
+      nextNum = Math.max(...numbers) + 1;
+    }
+  } else {
+    nextNum = 1;
+  }
+
+  const padLength = Math.max(4, String(nextNum).length);
+  const numStr = String(nextNum).padStart(padLength, '0');
+
+  return `${prefix}${numStr}`;
+}
+

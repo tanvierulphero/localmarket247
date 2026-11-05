@@ -4,6 +4,7 @@ import { Mail, Phone, Globe, MapPin, Printer, Download, ArrowLeft, Loader2, Chec
 import Logo from './Logo';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
+import { formatDateDMY } from '../lib/dateFormat';
 
 interface PrintDocumentProps {
   document: Document;
@@ -504,7 +505,7 @@ Content-Location: document.html
       </td>
       <td style="text-align: right; font-weight: bold; color: #0f172a; font-size: 10pt; vertical-align: middle; line-height: 1.4;">
         Doc No: ${document.docNumber}<br/>
-        Doc Date: ${document.date}
+        Doc Date: ${formatDateDMY(document.date)}
       </td>
     </tr>
   </table>
@@ -1073,7 +1074,7 @@ ${rawBase64Logo}
               </div>
               <div className="text-right text-xs sm:text-sm space-y-0.5 font-bold">
                 <div><span className="font-semibold text-slate-500">Document No:</span> <span className="font-black text-slate-900">{document.docNumber}</span></div>
-                <div><span className="font-semibold text-slate-500">Document Date:</span> <span className="font-black text-slate-900">{document.date}</span></div>
+                <div><span className="font-semibold text-slate-500">Document Date:</span> <span className="font-black text-slate-900">{formatDateDMY(document.date)}</span></div>
               </div>
             </div>
 

@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Document, Product, Customer, SalesReturn, Expense, Purchase, FieldDispatch } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
+import DateInput from './DateInput';
 import { 
   Download, 
   Users, 
@@ -972,7 +974,7 @@ export default function ReportsHub({
                             <span className="font-extrabold text-slate-900 block font-mono text-xs">{ret.returnNumber}</span>
                             <span className="text-[10px] text-slate-400 flex items-center gap-1">
                               <Calendar className="w-3 h-3 text-slate-400" />
-                              {ret.returnDate}
+                              {formatDateDMY(ret.returnDate)}
                             </span>
                           </div>
                         </td>
@@ -1128,7 +1130,7 @@ export default function ReportsHub({
                     <option value="">-- Direct Return (No Invoice Attached) --</option>
                     {salesInvoices.map(inv => (
                       <option key={inv.id} value={inv.id}>
-                        {inv.docNumber} ({inv.date}) - {inv.customerName}
+                        {inv.docNumber} ({formatDateDMY(inv.date)}) - {inv.customerName}
                       </option>
                     ))}
                   </select>
@@ -1136,8 +1138,7 @@ export default function ReportsHub({
 
                 <div className="space-y-1">
                   <label className="font-bold text-slate-700">Return Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={returnDate}
                     onChange={(e) => setReturnDate(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold"

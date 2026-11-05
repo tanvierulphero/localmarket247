@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Customer, Document, FieldDispatch, Product } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
 import { 
   Building2, 
   Search, 
@@ -508,7 +509,7 @@ export default function CompanyProfileManager({
                                 <span className="font-mono font-bold text-blue-900 text-[11px] bg-blue-50 px-2 py-0.5 rounded">
                                   {it.docNumber}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-semibold">Purchase Date: {it.purchaseDate}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold">Purchase Date: {formatDateDMY(it.purchaseDate)}</span>
                               </div>
                               <h5 className="font-bold text-slate-900 text-sm">{it.productName}</h5>
                               <p className="text-[11px] text-slate-500">
@@ -526,11 +527,11 @@ export default function CompanyProfileManager({
                               ) : (
                                 <div className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 border border-slate-200 font-bold px-3 py-1 rounded-full text-[11px]">
                                   <AlertCircle className="w-4 h-4 text-slate-400" />
-                                  Warranty Expired ({it.warrantyExpiryDate})
+                                  Warranty Expired ({formatDateDMY(it.warrantyExpiryDate)})
                                 </div>
                               )}
                               <span className="text-[10px] text-slate-400 block">
-                                Expiry Date: {it.warrantyExpiryDate}
+                                Expiry Date: {formatDateDMY(it.warrantyExpiryDate)}
                               </span>
                             </div>
                           </div>
@@ -563,7 +564,7 @@ export default function CompanyProfileManager({
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-blue-900 text-xs">{doc.docNumber}</span>
-                                <span className="text-[10px] text-slate-500">Date: {doc.date}</span>
+                                <span className="text-[10px] text-slate-500">Date: {formatDateDMY(doc.date)}</span>
                                 <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-rose-100 text-rose-800 border border-rose-200">
                                   {doc.status}
                                 </span>
@@ -612,7 +613,7 @@ export default function CompanyProfileManager({
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-blue-900 text-xs">{disp.billNo || disp.dispatchNumber}</span>
-                                <span className="text-[10px] text-slate-500">Date: {disp.date || disp.dispatchDate}</span>
+                                <span className="text-[10px] text-slate-500">Date: {formatDateDMY(disp.date || disp.dispatchDate)}</span>
                               </div>
                               <p className="text-xs font-bold text-slate-800">Responsible Staff: {disp.staffName}</p>
                               <p className="text-[11px] text-slate-600">{disp.description || disp.purpose}</p>
@@ -665,7 +666,7 @@ export default function CompanyProfileManager({
                                 <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-700">
                                   {doc.type}
                                 </span>
-                                <span className="text-[10px] text-slate-500">{doc.date}</span>
+                                <span className="text-[10px] text-slate-500">{formatDateDMY(doc.date)}</span>
                               </div>
                               <p className="text-xs font-bold text-slate-800 mt-0.5">Total Amount: Tk. {doc.total.toLocaleString()}</p>
                             </div>

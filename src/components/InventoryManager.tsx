@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Product, ProductSpec, Document, FieldDispatch, StaffUser, Purchase } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
 import { 
   Search, 
   Plus, 
@@ -113,7 +114,12 @@ export default function InventoryManager({
   const [formData, setFormData] = useState<{
     name: string;
     sku: string;
-    category: string;
+    crossReference: string;
+    measurement: string;
+    warehouse: string;
+    rack: string;
+    shelf: string;
+    category?: string;
     brand: string;
     price: number;
     costPrice: number;
@@ -125,7 +131,12 @@ export default function InventoryManager({
   }>({
     name: '',
     sku: '',
-    category: 'Screw Air Compressor',
+    crossReference: '',
+    measurement: '',
+    warehouse: '',
+    rack: '',
+    shelf: '',
+    category: 'Spare Parts',
     brand: 'Hitachi',
     price: 0,
     costPrice: 0,
@@ -349,11 +360,24 @@ export default function InventoryManager({
       const pName = String(p.name || '').toLowerCase();
       const pSku = String(p.sku || '').toLowerCase();
       const pBrand = String(p.brand || '').toLowerCase();
+      const pCross = String(p.crossReference || '').toLowerCase();
+      const pMeasure = String(p.measurement || '').toLowerCase();
+      const pWarehouse = String(p.warehouse || '').toLowerCase();
+      const pRack = String(p.rack || '').toLowerCase();
+      const pShelf = String(p.shelf || '').toLowerCase();
       const query = String(searchQuery || '').toLowerCase().trim();
 
-      const matchSearch = !query || pName.includes(query) || pSku.includes(query) || pBrand.includes(query);
-      const matchCat = selectedCategory === 'All' || p.category === selectedCategory;
-      return matchSearch && matchCat;
+      const matchSearch = !query || 
+        pName.includes(query) || 
+        pSku.includes(query) || 
+        pBrand.includes(query) ||
+        pCross.includes(query) ||
+        pMeasure.includes(query) ||
+        pWarehouse.includes(query) ||
+        pRack.includes(query) ||
+        pShelf.includes(query);
+      const matchBrandOrCat = selectedCategory === 'All' || p.brand === selectedCategory || p.category === selectedCategory || p.warehouse === selectedCategory;
+      return matchSearch && matchBrandOrCat;
     });
   }, [products, searchQuery, selectedCategory]);
 
@@ -369,6 +393,11 @@ export default function InventoryManager({
     setFormData({
       name: '',
       sku: '',
+      crossReference: '',
+      measurement: '',
+      warehouse: '',
+      rack: '',
+      shelf: '',
       category: 'Spare Parts',
       brand: 'Hitachi',
       price: 0,
@@ -406,6 +435,11 @@ export default function InventoryManager({
     setFormData({
       name: String(product.name || ''),
       sku: String(product.sku || ''),
+      crossReference: String(product.crossReference || ''),
+      measurement: String(product.measurement || ''),
+      warehouse: String(product.warehouse || ''),
+      rack: String(product.rack || ''),
+      shelf: String(product.shelf || ''),
       category: product.category || 'Spare Parts',
       brand: product.brand || 'Hitachi',
       price: Number(product.price) || 0,
@@ -478,21 +512,21 @@ export default function InventoryManager({
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search products by SKU or Brand..."
+              placeholder="Search by SKU, Name, Cross Ref, Measurement, Brand..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:bg-white focus:border-blue-900"
             />
           </div>
 
-          {/* Category Dropdown */}
+          {/* Brand Filter Dropdown */}
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-semibold focus:outline-hidden cursor-pointer"
           >
-            <option value="All">All Categories</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            <option value="All">All Brands</option>
+            {brands.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
 
@@ -513,9 +547,10 @@ export default function InventoryManager({
             <thead>
               <tr className="bg-slate-50/75 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <th className="py-3 px-4">Item SKU / Name</th>
-                <th className="py-3 px-3">Category</th>
+                <th className="py-3 px-3">Cross Ref &amp; Measurement</th>
+                <th className="py-3 px-3">Warehouse / Rack / Shelf</th>
                 <th className="py-3 px-3">Brand</th>
-                <th className="py-3 px-3 text-right">Selling & Cost Price</th>
+                <th className="py-3 px-3 text-right">Selling &amp; Cost Price</th>
                 <th className="py-3 px-4 text-center">Stock Volume</th>
                 <th className="py-3 px-3 text-center">Status</th>
                 <th className="py-3 px-4 text-right">Operations</th>
@@ -557,9 +592,53 @@ export default function InventoryManager({
                         </div>
                       </td>
 
-                      {/* Category */}
+                      {/* Cross Reference & Measurement */}
                       <td className="py-3.5 px-3">
-                        <span className="text-slate-600 font-semibold">{product.category || 'General'}</span>
+                        {product.crossReference || product.measurement ? (
+                          <div className="space-y-0.5 max-w-[200px]">
+                            {product.crossReference && (
+                              <span className="block font-bold text-slate-800 text-[11px] truncate" title={`Cross Ref: ${product.crossReference}`}>
+                                <span className="text-slate-400 font-semibold text-[9px] uppercase">Ref:</span> {product.crossReference}
+                              </span>
+                            )}
+                            {product.measurement && (
+                              <span className="block font-medium text-slate-500 text-[10px] truncate" title={`Measurement: ${product.measurement}`}>
+                                <span className="text-slate-400 font-semibold text-[9px] uppercase">Dim:</span> {product.measurement}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 font-normal italic text-[11px]">-</span>
+                        )}
+                      </td>
+
+                      {/* Storage Location: Warehouse, Rack, Shelf/Cell */}
+                      <td className="py-3.5 px-3">
+                        {product.warehouse || product.rack || product.shelf ? (
+                          <div className="space-y-1 max-w-[210px]">
+                            {product.warehouse && (
+                              <span className="inline-block bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold px-2 py-0.5 rounded text-[10px] truncate max-w-full" title={`Warehouse: ${product.warehouse}`}>
+                                WH: {product.warehouse}
+                              </span>
+                            )}
+                            {(product.rack || product.shelf) && (
+                              <div className="flex flex-wrap items-center gap-1 text-[10px]">
+                                {product.rack && (
+                                  <span className="bg-slate-100 text-slate-700 border border-slate-200 font-bold px-1.5 py-0.5 rounded font-mono">
+                                    Rack: {product.rack}
+                                  </span>
+                                )}
+                                {product.shelf && (
+                                  <span className="bg-amber-50 text-amber-800 border border-amber-200 font-bold px-1.5 py-0.5 rounded font-mono">
+                                    Shelf: {product.shelf}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 font-normal italic text-[11px]">-</span>
+                        )}
                       </td>
 
                       {/* Brand */}
@@ -649,8 +728,8 @@ export default function InventoryManager({
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400 italic">
-                    No products matched your search or category filter.
+                  <td colSpan={8} className="text-center py-12 text-slate-400 italic">
+                    No products matched your search or filter.
                   </td>
                 </tr>
               )}
@@ -717,155 +796,159 @@ export default function InventoryManager({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Category dropdown & custom creation */}
+                {/* Cross Reference (Manual Input) */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-700 text-xs">Category Group</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAddingNewCategory(!isAddingNewCategory);
-                        setNewCategoryInput('');
-                      }}
-                      className="text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      {isAddingNewCategory ? 'Cancel' : '+ New Category'}
-                    </button>
-                  </div>
-
-                  {isAddingNewCategory ? (
-                    <div className="p-2.5 bg-blue-50/70 border border-blue-200 rounded-lg space-y-2 animate-in fade-in zoom-in-95 duration-100">
-                      <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
-                        Create & Save New Category
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="text"
-                          autoFocus
-                          value={newCategoryInput}
-                          onChange={(e) => setNewCategoryInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleSaveNewCategory();
-                            }
-                          }}
-                          placeholder="e.g. Air Receiver Tank, Piston..."
-                          className="flex-1 bg-white border border-blue-300 rounded-md px-2.5 py-1.5 text-xs text-slate-900 font-semibold focus:outline-hidden focus:ring-1 focus:ring-blue-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveNewCategory}
-                          disabled={!newCategoryInput.trim()}
-                          className="px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white rounded-md text-xs font-bold cursor-pointer disabled:opacity-40 transition-colors"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsAddingNewCategory(false)}
-                          className="px-2 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md text-xs font-bold cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <select
-                      value={formData.category}
-                      onChange={(e) => {
-                        if (e.target.value === '__NEW_CATEGORY__') {
-                          setIsAddingNewCategory(true);
-                          setNewCategoryInput('');
-                        } else {
-                          setFormData({ ...formData, category: e.target.value });
-                        }
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden cursor-pointer font-semibold text-slate-800"
-                    >
-                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                      <option value="__NEW_CATEGORY__" className="text-blue-700 font-bold bg-blue-50">
-                        + Create New Category...
-                      </option>
-                    </select>
-                  )}
+                  <label className="font-bold text-slate-700 text-xs">Cross Reference</label>
+                  <input
+                    type="text"
+                    placeholder="Enter Cross Reference (e.g. 55302021, 21114040, Ref Part #)"
+                    value={formData.crossReference}
+                    onChange={(e) => setFormData({ ...formData, crossReference: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden text-xs font-semibold text-slate-800"
+                  />
                 </div>
 
-                {/* Brand dropdown & custom creation */}
+                {/* Measurement (Manual Input) */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-700 text-xs">Brand Sourced</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAddingNewBrand(!isAddingNewBrand);
+                  <label className="font-bold text-slate-700 text-xs">Measurement</label>
+                  <input
+                    type="text"
+                    placeholder="Enter Measurement / Dimensions (e.g. 150x90x350 mm, Size)"
+                    value={formData.measurement}
+                    onChange={(e) => setFormData({ ...formData, measurement: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden text-xs font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+
+              {/* Warehouse, Rack & Shelf/Cell Storage Location (Manual Input) */}
+              <div className="p-3.5 bg-indigo-50/50 border border-indigo-200/80 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold text-indigo-950 uppercase tracking-wider">
+                    Storage Location (ওয়্যারহাউস, র‍্যাক ও সেলফ নম্বর)
+                  </span>
+                  <span className="text-[10px] font-semibold text-indigo-700">
+                    Manual Location Entry
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Warehouse */}
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 text-[11px] block">
+                      Warehouse (ওয়্যারহাউস)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Warehouse-1 / Main Store"
+                      value={formData.warehouse}
+                      onChange={(e) => setFormData({ ...formData, warehouse: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:outline-hidden focus:border-indigo-600 text-xs font-semibold text-slate-800"
+                    />
+                  </div>
+
+                  {/* Rack */}
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 text-[11px] block">
+                      Rack No. (র‍্যাক নম্বর)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Rack-A / Rack-02"
+                      value={formData.rack}
+                      onChange={(e) => setFormData({ ...formData, rack: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:outline-hidden focus:border-indigo-600 text-xs font-semibold text-slate-800"
+                    />
+                  </div>
+
+                  {/* Shelf / Cell */}
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 text-[11px] block">
+                      Shelf / Cell No. (সেলফ বা সেল নম্বর)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Shelf-03 / Cell-12"
+                      value={formData.shelf}
+                      onChange={(e) => setFormData({ ...formData, shelf: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:outline-hidden focus:border-indigo-600 text-xs font-semibold text-slate-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Brand dropdown & custom creation */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 text-xs">Brand Sourced</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingNewBrand(!isAddingNewBrand);
+                      setNewBrandInput('');
+                    }}
+                    className="text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {isAddingNewBrand ? 'Cancel' : '+ New Brand'}
+                  </button>
+                </div>
+
+                {isAddingNewBrand ? (
+                  <div className="p-2.5 bg-blue-50/70 border border-blue-200 rounded-lg space-y-2 animate-in fade-in zoom-in-95 duration-100">
+                    <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
+                      Create &amp; Save New Brand
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={newBrandInput}
+                        onChange={(e) => setNewBrandInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveNewBrand();
+                          }
+                        }}
+                        placeholder="e.g. Sullair, CompAir, Fusheng..."
+                        className="flex-1 bg-white border border-blue-300 rounded-md px-2.5 py-1.5 text-xs text-slate-900 font-semibold focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveNewBrand}
+                        disabled={!newBrandInput.trim()}
+                        className="px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white rounded-md text-xs font-bold cursor-pointer disabled:opacity-40 transition-colors"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingNewBrand(false)}
+                        className="px-2 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md text-xs font-bold cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <select
+                    value={formData.brand}
+                    onChange={(e) => {
+                      if (e.target.value === '__NEW_BRAND__') {
+                        setIsAddingNewBrand(true);
                         setNewBrandInput('');
-                      }}
-                      className="text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      {isAddingNewBrand ? 'Cancel' : '+ New Brand'}
-                    </button>
-                  </div>
-
-                  {isAddingNewBrand ? (
-                    <div className="p-2.5 bg-blue-50/70 border border-blue-200 rounded-lg space-y-2 animate-in fade-in zoom-in-95 duration-100">
-                      <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
-                        Create & Save New Brand
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <input
-                          type="text"
-                          autoFocus
-                          value={newBrandInput}
-                          onChange={(e) => setNewBrandInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleSaveNewBrand();
-                            }
-                          }}
-                          placeholder="e.g. Sullair, CompAir, Fusheng..."
-                          className="flex-1 bg-white border border-blue-300 rounded-md px-2.5 py-1.5 text-xs text-slate-900 font-semibold focus:outline-hidden focus:ring-1 focus:ring-blue-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveNewBrand}
-                          disabled={!newBrandInput.trim()}
-                          className="px-3 py-1.5 bg-blue-900 hover:bg-blue-950 text-white rounded-md text-xs font-bold cursor-pointer disabled:opacity-40 transition-colors"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsAddingNewBrand(false)}
-                          className="px-2 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md text-xs font-bold cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <select
-                      value={formData.brand}
-                      onChange={(e) => {
-                        if (e.target.value === '__NEW_BRAND__') {
-                          setIsAddingNewBrand(true);
-                          setNewBrandInput('');
-                        } else {
-                          setFormData({ ...formData, brand: e.target.value });
-                        }
-                      }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden cursor-pointer font-semibold text-slate-800"
-                    >
-                      {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                      <option value="__NEW_BRAND__" className="text-blue-700 font-bold bg-blue-50">
-                        + Create New Brand...
-                      </option>
-                    </select>
-                  )}
-                </div>
+                      } else {
+                        setFormData({ ...formData, brand: e.target.value });
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden cursor-pointer font-semibold text-slate-800"
+                  >
+                    {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                    <option value="__NEW_BRAND__" className="text-blue-700 font-bold bg-blue-50">
+                      + Create New Brand...
+                    </option>
+                  </select>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1102,7 +1185,9 @@ export default function InventoryManager({
                     {productAnalytics.historyProduct.sku}
                   </span>
                   <span className="text-[10px] uppercase font-bold text-blue-300">
-                    {productAnalytics.historyProduct.brand} &bull; {productAnalytics.historyProduct.category}
+                    {productAnalytics.historyProduct.brand}
+                    {productAnalytics.historyProduct.crossReference ? ` • Ref: ${productAnalytics.historyProduct.crossReference}` : ''}
+                    {productAnalytics.historyProduct.measurement ? ` • Dim: ${productAnalytics.historyProduct.measurement}` : ''}
                   </span>
                 </div>
                 <h3 className="text-base font-black font-display text-white">
@@ -1217,7 +1302,7 @@ export default function InventoryManager({
                           <tr key={i} className="hover:bg-slate-50/60 transition-colors">
                             <td className="py-2.5 px-3 font-semibold">
                               <span className="font-mono font-bold text-blue-900 block">{sale.docNumber}</span>
-                              <span className="text-[10px] text-slate-400">{sale.date}</span>
+                              <span className="text-[10px] text-slate-400">{formatDateDMY(sale.date)}</span>
                             </td>
 
                             <td className="py-2.5 px-3">
@@ -1294,7 +1379,7 @@ export default function InventoryManager({
                           <tr key={i} className="hover:bg-slate-50/60">
                             <td className="py-2.5 px-3">
                               <span className="font-mono font-bold text-slate-900 block">{pRec.docNumber}</span>
-                              <span className="text-[10px] text-slate-400">{pRec.date}</span>
+                              <span className="text-[10px] text-slate-400">{formatDateDMY(pRec.date)}</span>
                             </td>
 
                             <td className="py-2.5 px-3 font-bold text-slate-800">

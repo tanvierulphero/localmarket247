@@ -15,11 +15,14 @@ import {
   PackagePlus,
   HelpCircle
 } from 'lucide-react';
+import { generateNextPurchaseNumber } from '../lib/documentNumber';
+import DateInput from './DateInput';
 
 interface PurchaseEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (purchase: Purchase, updateStock: boolean) => Promise<void>;
+  purchases?: Purchase[];
   suppliers: Supplier[];
   products: Product[];
   onAddSupplier: (supplier: Supplier) => Promise<void>;
@@ -30,6 +33,7 @@ export default function PurchaseEntryModal({
   isOpen,
   onClose,
   onSave,
+  purchases = [],
   suppliers,
   products,
   onAddSupplier,
@@ -67,7 +71,7 @@ export default function PurchaseEntryModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Auto-generate Purchase Number or populate for edit
+  // Auto-generate sequential Purchase Number (+1) or populate for edit
   useEffect(() => {
     if (isOpen) {
       if (initialPurchase) {
@@ -90,9 +94,7 @@ export default function PurchaseEntryModal({
         setNotes(initialPurchase.notes || '');
         setUpdateStock(false); // Don't double add stock on edit unless desired
       } else {
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        const currentYear = new Date().getFullYear();
-        setPurchaseNumber(`PUR/${currentYear}/${randomNum}`);
+        setPurchaseNumber(generateNextPurchaseNumber(purchases));
         setSupplierInvoiceNo('');
         setSelectedSupplierId('');
         setSupplierName('');
@@ -126,7 +128,7 @@ export default function PurchaseEntryModal({
       setIsQuickAddingSupplier(false);
       setErrorMsg('');
     }
-  }, [isOpen, initialPurchase, products]);
+  }, [isOpen, initialPurchase, products, purchases]);
 
   // Handle Supplier Selection
   const handleSupplierSelect = (supId: string) => {
@@ -151,9 +153,10 @@ export default function PurchaseEntryModal({
       setErrorMsg('Please enter at least Supplier Name and Phone Number.');
       return;
     }
+    const nextSupNum = 1001 + (suppliers?.length || 0);
     const newSup: Supplier = {
       id: `sup-${Date.now()}`,
-      supplierId: `SUP-${Math.floor(1000 + Math.random() * 9000)}`,
+      supplierId: `SUP-${nextSupNum}`,
       name: newSupName.trim(),
       company: newSupCompany.trim(),
       phone: newSupPhone.trim(),
@@ -405,16 +408,12 @@ export default function PurchaseEntryModal({
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Purchase Date *
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    required
-                    value={purchaseDate}
-                    onChange={(e) => setPurchaseDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <Calendar className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
-                </div>
+                <DateInput
+                  required
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500"
+                />
               </div>
             </div>
 

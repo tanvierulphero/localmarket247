@@ -7,7 +7,12 @@ export interface Product {
   id: string;
   name: string;
   sku: string;
-  category: string;
+  category?: string;
+  crossReference?: string;
+  measurement?: string;
+  warehouse?: string;
+  rack?: string;
+  shelf?: string;
   brand: string;
   price: number;
   costPrice?: number; // Cost Price / Buying Cost

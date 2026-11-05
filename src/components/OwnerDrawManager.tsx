@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Expense, StaffUser, BusinessSettings, ExpensePaymentMethod, Document, FieldDispatch, Purchase } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
+import DateInput from './DateInput';
 import { 
   UserCheck, 
   PlusCircle, 
@@ -263,7 +265,7 @@ export default function OwnerDrawManager({
     csvContent += "Voucher No,Date,Withdrawal Purpose / Title,Amount (BDT),Payment Method,Drawn By,Reference,Notes\n";
 
     filteredDrawings.forEach(exp => {
-      csvContent += `"${exp.expenseNumber}","${exp.date}","${String(exp.title || '').replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${String(exp.notes || '').replace(/"/g, '""')}"\n`;
+      csvContent += `"${exp.expenseNumber}","${formatDateDMY(exp.date)}","${String(exp.title || '').replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${String(exp.notes || '').replace(/"/g, '""')}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -532,7 +534,7 @@ export default function OwnerDrawManager({
                         </span>
                         <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
                           <Calendar className="w-3 h-3 text-slate-400" />
-                          {exp.date}
+                          {formatDateDMY(exp.date)}
                         </span>
                       </div>
                     </td>
@@ -678,9 +680,8 @@ export default function OwnerDrawManager({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Date</label>
-                  <input
-                    type="date"
+                  <label className="font-bold text-slate-700">Date (DD/MM/YYYY)</label>
+                  <DateInput
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
@@ -846,7 +847,7 @@ export default function OwnerDrawManager({
                     {filteredDrawings.map((exp) => (
                       <tr key={exp.id} className="hover:bg-slate-50/50">
                         <td className="py-2 px-3 font-mono font-bold text-slate-500 text-[10px]">{exp.expenseNumber}</td>
-                        <td className="py-2 px-3 font-mono text-[10px]">{exp.date}</td>
+                        <td className="py-2 px-3 font-mono text-[10px]">{formatDateDMY(exp.date)}</td>
                         <td className="py-2 px-3 font-bold text-slate-900">{exp.title}</td>
                         <td className="py-2 px-3 text-slate-600 font-semibold">{exp.paymentMethod}</td>
                         <td className="py-2 px-3 text-slate-600">{exp.paidBy}</td>

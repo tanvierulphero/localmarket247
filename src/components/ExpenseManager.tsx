@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Expense, StaffUser, BusinessSettings, ExpensePaymentMethod } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
+import DateInput from './DateInput';
 import { 
   DollarSign, 
   PlusCircle, 
@@ -251,7 +253,7 @@ export default function ExpenseManager({
     csvContent += "Voucher No,Date,Category,Expense Description,Amount (BDT),Payment Method,Paid By,Reference / Memo No,Notes\n";
 
     filteredExpenses.forEach(exp => {
-      csvContent += `"${exp.expenseNumber}","${exp.date}","${exp.category}","${String(exp.title || '').replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${String(exp.notes || '').replace(/"/g, '""')}"\n`;
+      csvContent += `"${exp.expenseNumber}","${formatDateDMY(exp.date)}","${exp.category}","${String(exp.title || '').replace(/"/g, '""')}",${exp.amount},"${exp.paymentMethod}","${exp.paidBy || ''}","${exp.referenceNo || ''}","${String(exp.notes || '').replace(/"/g, '""')}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -523,7 +525,7 @@ export default function ExpenseManager({
                         </span>
                         <span className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
                           <Calendar className="w-3 h-3 text-slate-400" />
-                          {exp.date}
+                          {formatDateDMY(exp.date)}
                         </span>
                       </div>
                     </td>
@@ -695,9 +697,8 @@ export default function ExpenseManager({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">Date (Date)</label>
-                  <input
-                    type="date"
+                  <label className="font-bold text-slate-700">Date (DD/MM/YYYY)</label>
+                  <DateInput
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
@@ -885,7 +886,7 @@ export default function ExpenseManager({
                     {filteredExpenses.map((exp) => (
                       <tr key={exp.id} className="hover:bg-slate-50/50">
                         <td className="py-2 px-3 font-mono font-bold text-slate-500 text-[10px]">{exp.expenseNumber}</td>
-                        <td className="py-2 px-3 font-mono text-[10px]">{exp.date}</td>
+                        <td className="py-2 px-3 font-mono text-[10px]">{formatDateDMY(exp.date)}</td>
                         <td className="py-2 px-3 font-bold text-slate-900">{exp.category}</td>
                         <td className="py-2 px-3 text-slate-600">{exp.title}</td>
                         <td className="py-2 px-3 text-slate-600 font-semibold">{exp.paymentMethod}</td>

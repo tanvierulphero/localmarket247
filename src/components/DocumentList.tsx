@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Document, DocumentType, DocumentStatus } from '../types';
 import { getDocFinancials } from './DueLedger';
+import { formatDateDMY } from '../lib/dateFormat';
+import DateInput from './DateInput';
 import { 
   Search, 
   SlidersHorizontal, 
@@ -434,9 +436,9 @@ export default function DocumentList({
 
                     {/* Dates */}
                     <td className="py-3.5 px-3 text-slate-500 font-medium">
-                      <div>Issued: <span className="font-bold text-slate-700">{doc.date}</span></div>
+                      <div>Issued: <span className="font-bold text-slate-700">{formatDateDMY(doc.date)}</span></div>
                       {doc.dueDate && (
-                        <div className="text-[10px] text-rose-500">Due: <span className="font-bold">{doc.dueDate}</span></div>
+                        <div className="text-[10px] text-rose-500">Due: <span className="font-bold">{formatDateDMY(doc.dueDate)}</span></div>
                       )}
                     </td>
 
@@ -860,8 +862,7 @@ export default function DocumentList({
                           <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
                             Payment Date
                           </label>
-                          <input
-                            type="date"
+                          <DateInput
                             value={paymentDate}
                             onChange={(e) => setPaymentDate(e.target.value)}
                             className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-semibold text-slate-800 focus:bg-white focus:outline-hidden text-xs"

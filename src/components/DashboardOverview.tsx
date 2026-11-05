@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Document, Product, Customer, Expense, Purchase, FieldDispatch } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
 import { 
   TrendingUp, 
   FileText, 
@@ -582,7 +583,7 @@ export default function DashboardOverview({
                         {String(doc.type || '').replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="py-3.5 px-3 text-slate-500 font-medium">{doc.date}</td>
+                    <td className="py-3.5 px-3 text-slate-500 font-medium">{formatDateDMY(doc.date)}</td>
                     <td className="py-3.5 px-3 font-semibold text-slate-700">{doc.customerCompany || doc.customerName}</td>
                     <td className="py-3.5 px-3 text-right font-extrabold text-slate-900">Tk. {doc.total.toLocaleString()}</td>
                     <td className="py-3.5 px-3 text-center">

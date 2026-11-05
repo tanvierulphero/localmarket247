@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Product, Customer, Document, DocumentItem, DocumentType, DocumentStatus, BusinessSettings, StaffUser } from '../types';
 import { generateNextDocNumber } from '../lib/documentNumber';
+import { formatDateDMY } from '../lib/dateFormat';
+import DateInput from './DateInput';
 import { Plus, Trash2, Save, FileText, UserPlus, Calculator, Truck, Receipt, Package, UserCheck, Coins, Search, X, CheckCircle2, AlertCircle, CreditCard } from 'lucide-react';
 
 interface DocumentCreatorProps {
@@ -320,8 +322,10 @@ export default function DocumentCreator({
     const sku = String(p.sku || '').toLowerCase();
     const name = String(p.name || '').toLowerCase();
     const brand = String(p.brand || '').toLowerCase();
+    const crossRef = String(p.crossReference || '').toLowerCase();
+    const measurement = String(p.measurement || '').toLowerCase();
     const category = String(p.category || '').toLowerCase();
-    return sku.includes(term) || name.includes(term) || brand.includes(term) || category.includes(term);
+    return sku.includes(term) || name.includes(term) || brand.includes(term) || crossRef.includes(term) || measurement.includes(term) || category.includes(term);
   }).slice(0, 15);
 
   // Quick Unique Company ID Search auto-select
@@ -614,7 +618,7 @@ export default function DocumentCreator({
                       );
                       return (
                         <option key={ch.id} value={ch.id} disabled={alreadyInvoiced} className={alreadyInvoiced ? 'text-slate-400 bg-slate-100' : ''}>
-                          [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; Date: {ch.date} &bull; ({ch.items.length} items){alreadyInvoiced ? ' [Already Invoiced]' : ''}
+                          [{ch.docNumber}] {ch.customerCompany || ch.customerName} &bull; Date: {formatDateDMY(ch.date)} &bull; ({ch.items.length} items){alreadyInvoiced ? ' [Already Invoiced]' : ''}
                         </option>
                       );
                     })}
@@ -830,11 +834,10 @@ export default function DocumentCreator({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b border-slate-100 pb-4">
               <div className="space-y-1.5">
                 <label className="font-bold text-slate-700">Issue Date</label>
-                <input
-                  type="date"
+                <DateInput
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden font-mono font-bold text-slate-800"
                 />
               </div>
 
@@ -842,11 +845,10 @@ export default function DocumentCreator({
               {(docType === 'INVOICE' || docType === 'BILL') && (
                 <div className="space-y-1.5 animate-fade-in">
                   <label className="font-bold text-slate-700">Due Date</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden font-mono font-bold text-slate-800"
                   />
                 </div>
               )}
@@ -995,9 +997,14 @@ export default function DocumentCreator({
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
-                                <span>Category: <strong className="text-slate-700">{p.category || 'Spares'}</strong></span>
-                                <span>&bull;</span>
+                              <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500 flex-wrap">
+                                {p.crossReference && <span>Ref: <strong className="text-slate-700">{p.crossReference}</strong> &bull;</span>}
+                                {p.measurement && <span>Dim: <strong className="text-slate-700">{p.measurement}</strong> &bull;</span>}
+                                {(p.warehouse || p.rack || p.shelf) && (
+                                  <span className="text-indigo-700 font-bold">
+                                    Loc: {[p.warehouse && `WH:${p.warehouse}`, p.rack && `Rack:${p.rack}`, p.shelf && `Shelf:${p.shelf}`].filter(Boolean).join(' / ')} &bull;
+                                  </span>
+                                )}
                                 <span>Unit: <strong className="text-slate-700">{p.unit || 'Pcs'}</strong></span>
                                 <span>&bull;</span>
                                 <span className={p.stock > 0 ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold'}>

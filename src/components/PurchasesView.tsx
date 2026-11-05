@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Purchase, Supplier, Product, StaffUser, BusinessSettings } from '../types';
+import { formatDateDMY } from '../lib/dateFormat';
 import { 
   Plus, 
   Search, 
@@ -143,7 +144,7 @@ export default function PurchasesView({
     const rows = filteredPurchases.map(p => [
       `"${p.purchaseNumber}"`,
       `"${p.supplierInvoiceNo || ''}"`,
-      `"${p.purchaseDate}"`,
+      `"${formatDateDMY(p.purchaseDate)}"`,
       `"${p.supplierName}"`,
       `"${p.supplierCompany || ''}"`,
       `"${p.supplierPhone}"`,
@@ -408,7 +409,7 @@ export default function PurchasesView({
 
                         {/* Date */}
                         <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-300 font-medium">
-                          {p.purchaseDate}
+                          {formatDateDMY(p.purchaseDate)}
                         </td>
 
                         {/* Supplier */}
@@ -652,6 +653,7 @@ export default function PurchasesView({
           setEditingPurchase(null);
         }}
         onSave={onSavePurchase}
+        purchases={purchases}
         suppliers={suppliers}
         products={products}
         onAddSupplier={onSaveSupplier}
@@ -667,6 +669,7 @@ export default function PurchasesView({
             setEditingSupplier(null);
           }}
           onSave={onSaveSupplier}
+          suppliers={suppliers}
           initialSupplier={editingSupplier}
         />
       )}
@@ -753,11 +756,13 @@ function SupplierModal({
   isOpen,
   onClose,
   onSave,
+  suppliers = [],
   initialSupplier
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSave: (supplier: Supplier) => Promise<void>;
+  suppliers?: Supplier[];
   initialSupplier?: Supplier | null;
 }) {
   const [name, setName] = useState(initialSupplier?.name || '');
@@ -775,9 +780,10 @@ function SupplierModal({
 
     setIsSubmitting(true);
     try {
+      const nextSupNum = 1001 + (suppliers?.length || 0);
       const data: Supplier = {
         id: initialSupplier?.id || `sup-${Date.now()}`,
-        supplierId: initialSupplier?.supplierId || `SUP-${Math.floor(1000 + Math.random() * 9000)}`,
+        supplierId: initialSupplier?.supplierId || `SUP-${nextSupNum}`,
         name: name.trim(),
         company: company.trim(),
         phone: phone.trim(),
@@ -954,7 +960,7 @@ function PurchasePrintModal({
                 STOCK INWARD VOUCHER
               </span>
               <p className="text-sm font-bold font-mono text-slate-900 mt-1">{purchase.purchaseNumber}</p>
-              <p className="text-xs text-slate-500">Date: {purchase.purchaseDate}</p>
+              <p className="text-xs text-slate-500">Date: {formatDateDMY(purchase.purchaseDate)}</p>
               {purchase.supplierInvoiceNo && (
                 <p className="text-xs text-slate-500">Supplier Bill: {purchase.supplierInvoiceNo}</p>
               )}
