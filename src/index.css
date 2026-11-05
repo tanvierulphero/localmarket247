@@ -101,6 +101,14 @@
       color: #000000 !important;
     }
 
+    #printable-area thead th,
+    #printable-area thead tr {
+      background-color: #1e3a8a !important;
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
     /* Prevent breaking inside tables and signature blocks */
     tr, table, .signature-block, .totals-block, .print-card {
       page-break-inside: avoid !important;

@@ -545,12 +545,12 @@ Content-Location: document.html
     <table class="items-table">
       <thead>
         <tr>
-          <th width="8%" style="text-align: center;">SL</th>
-          <th width="${isChallan ? '52%' : '42%'}">Description of Goods / Spare Parts</th>
-          <th width="${isChallan ? '20%' : '15%'}" style="text-align: center;">Parts Number / Brand</th>
-          <th width="10%" style="text-align: center;">Qty</th>
-          <th width="10%" style="text-align: center;">Unit</th>
-          ${!isChallan ? `<th width="15%" style="text-align: right;">Price (BDT)</th>` : ''}
+          <th width="8%" style="text-align: center; color: #ffffff; background-color: #1e3a8a;">SL</th>
+          <th width="${isChallan ? '52%' : '42%'}" style="color: #ffffff; background-color: #1e3a8a;">Description of Goods / Spare Parts</th>
+          <th width="${isChallan ? '20%' : '15%'}" style="text-align: center; color: #ffffff; background-color: #1e3a8a;">Parts Number / Brand</th>
+          <th width="10%" style="text-align: center; color: #ffffff; background-color: #1e3a8a;">Qty</th>
+          <th width="10%" style="text-align: center; color: #ffffff; background-color: #1e3a8a;">Unit</th>
+          ${!isChallan ? `<th width="15%" style="text-align: right; color: #ffffff; background-color: #1e3a8a;">Price (BDT)</th>` : ''}
         </tr>
       </thead>
       <tbody>
@@ -1128,14 +1128,14 @@ ${rawBase64Logo}
               <div className="w-full relative z-10 overflow-hidden my-3">
                 <table className="w-full text-left text-sm sm:text-[15px] border-collapse table-fixed">
                   <thead>
-                    <tr className="text-white uppercase text-xs sm:text-xs tracking-wider font-extrabold bg-[#1e3a8a]">
-                      <th className="py-3 px-1 sm:px-2 text-center rounded-l w-[8%]">SL</th>
-                      <th className={`py-3 px-3 text-left ${isChallan ? 'w-[52%]' : 'w-[36%]'}`}>Description of Goods / Spare Parts</th>
-                      <th className={`py-3 px-1 sm:px-2 text-center ${isChallan ? 'w-[20%]' : 'w-[16%]'}`}>Parts Number</th>
-                      <th className="py-3 px-1 sm:px-2 text-center w-[10%]">Qty</th>
-                      <th className={`py-3 px-1 sm:px-2 text-center ${isChallan ? 'rounded-r w-[10%]' : 'w-[10%]'}`}>Unit</th>
-                      {!isChallan && <th className="py-3 px-2 sm:px-3 text-right w-[13%]">Unit Price</th>}
-                      {!isChallan && <th className="py-3 px-2 sm:px-3 text-right rounded-r w-[13%]">Total</th>}
+                    <tr className="text-white print:!text-white uppercase text-xs sm:text-xs tracking-wider font-extrabold bg-[#1e3a8a]">
+                      <th className="py-3 px-1 sm:px-2 text-center rounded-l w-[8%] text-white print:!text-white">SL</th>
+                      <th className={`py-3 px-3 text-left text-white print:!text-white ${isChallan ? 'w-[52%]' : 'w-[36%]'}`}>Description of Goods / Spare Parts</th>
+                      <th className={`py-3 px-1 sm:px-2 text-center text-white print:!text-white ${isChallan ? 'w-[20%]' : 'w-[16%]'}`}>Parts Number</th>
+                      <th className="py-3 px-1 sm:px-2 text-center w-[10%] text-white print:!text-white">Qty</th>
+                      <th className={`py-3 px-1 sm:px-2 text-center text-white print:!text-white ${isChallan ? 'rounded-r w-[10%]' : 'w-[10%]'}`}>Unit</th>
+                      {!isChallan && <th className="py-3 px-2 sm:px-3 text-right w-[13%] text-white print:!text-white">Unit Price</th>}
+                      {!isChallan && <th className="py-3 px-2 sm:px-3 text-right rounded-r w-[13%] text-white print:!text-white">Total</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 text-sm sm:text-[15px]">
