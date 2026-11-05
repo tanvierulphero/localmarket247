@@ -383,16 +383,10 @@ export default function PublicCatalog({
               href={generalWhatsAppUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer"
             >
               <MessageCircle className="w-4 h-4" />
               Direct Chat
-            </a>
-            <a 
-              href="#contact"
-              className="px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer"
-            >
-              Request Quote
             </a>
           </div>
         </div>
@@ -1124,89 +1118,6 @@ export default function PublicCatalog({
                     Direct Hotline: <strong className="text-slate-900">{hotlinePhone}</strong>
                   </a>
                 </div>
-              </div>
-
-              {/* Tabs for Quote Request */}
-              <div className="border-t border-slate-200 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setActiveModalTab(activeModalTab === 'quote' ? 'contact' : 'quote')}
-                    className="text-xs font-extrabold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    {activeModalTab === 'quote' ? 'Hide Form' : 'Need an official quotation proposal? Click here to request'}
-                  </button>
-                </div>
-
-                {activeModalTab === 'quote' && (
-                  <form onSubmit={handleQuoteSubmit} className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Your Name *</label>
-                        <input
-                          type="text"
-                          required
-                          value={quoteRequest.name}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Your full name"
-                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Phone Number *</label>
-                        <input
-                          type="text"
-                          required
-                          value={quoteRequest.phone}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, phone: e.target.value }))}
-                          placeholder="017XXXXXXXX"
-                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Company / Organization</label>
-                        <input
-                          type="text"
-                          value={quoteRequest.company}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, company: e.target.value }))}
-                          placeholder="Company or facility name"
-                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Quantity</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={quoteRequest.quantity}
-                          onChange={(e) => setQuoteRequest(prev => ({ ...prev, quantity: Number(e.target.value) || 1 }))}
-                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    {isQuoteSubmitted && (
-                      <div className="p-3 bg-emerald-100 border border-emerald-300 text-emerald-800 rounded-lg font-bold flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        Quotation request received! Quotation Ref: {generatedQuoteNumber}
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={isSubmittingQuote}
-                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold uppercase tracking-wider text-xs transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      {isSubmittingQuote ? 'Submitting...' : 'Submit Quotation Request'}
-                    </button>
-                  </form>
-                )}
               </div>
             </div>
           </div>

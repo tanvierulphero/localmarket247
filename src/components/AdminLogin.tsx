@@ -14,9 +14,7 @@ interface AdminLoginProps {
 }
 
 export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog, logoUrl, companyName }: AdminLoginProps) {
-  const [selectedStaffId, setSelectedStaffId] = useState<string>(() => {
-    return staffUsers.length > 0 ? staffUsers[0].id : '';
-  });
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [error, setError] = useState('');
@@ -30,46 +28,38 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
 
     const inputPass = passcode.trim();
 
-    if (!inputPass) {
-      setError('Please enter password.');
+    if (!selectedStaffId) {
+      setError('দয়া করে আপনার একাউন্ট নির্বাচন করুন (Please select user account).');
       return;
     }
 
-    if (!selectedStaffId) {
-      setError('Please select user account.');
+    if (!inputPass) {
+      setError('পাসওয়ার্ড লিখুন (Please enter password).');
       return;
     }
 
     const staff = staffUsers.find(s => s.id === selectedStaffId);
     if (!staff) {
-      setError('Account not found.');
+      setError('একাউন্ট পাওয়া যায়নি (Account not found).');
       return;
     }
 
     if (staff.status === 'Inactive') {
-      setError('Account deactivated.');
+      setError('এই একাউন্টটি নিষ্ক্রিয় রয়েছে (Account deactivated).');
       return;
     }
 
-    const isPasscodeValid = 
-      Boolean(staff.passcode && staff.passcode === inputPass) || 
-      (staff.role === 'ADMIN' && (inputPass === 'admin123' || inputPass === '123456')) ||
-      (staff.role === 'MANAGER' && (inputPass === 'mgr123' || inputPass === '123456' || inputPass === 'admin123')) ||
-      (staff.role === 'SALESMAN' && (inputPass === 'sales123' || inputPass === '123456' || inputPass === '654321')) ||
-      (inputPass === 'admin123' || inputPass === '123456');
+    // STRICT PASSWORD VERIFICATION:
+    // Only the exact password assigned to THIS selected account is accepted.
+    // No hardcoded passwords, no role-based bypasses, no cross-user password acceptance.
+    const isPasscodeValid = Boolean(staff.passcode && staff.passcode.trim() === inputPass);
 
     if (!isPasscodeValid) {
-      setError(`Incorrect password for "${staff.name}". (Default: admin123 or 123456)`);
+      setError('ভুল পাসওয়ার্ড! দয়া করে সঠিক পাসওয়ার্ড দিন।');
       return;
     }
 
     onLoginSuccess(staff);
-  };
-
-  const handleQuickSelect = (staff: StaffUser) => {
-    setSelectedStaffId(staff.id);
-    setPasscode('');
-    setError('');
   };
 
   return (
@@ -105,42 +95,12 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
           </h2>
         </div>
 
-        {/* Quick Staff Account Selector Pills */}
-        {staffUsers.length > 0 && (
-          <div className="space-y-1">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
-              Quick Select User:
-            </span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {staffUsers.slice(0, 4).map((staff) => (
-                <button
-                  key={staff.id}
-                  type="button"
-                  onClick={() => handleQuickSelect(staff)}
-                  className={`px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between gap-1 ${
-                    selectedStaffId === staff.id
-                      ? 'bg-blue-900 text-white border-blue-900 shadow-2xs'
-                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-                  }`}
-                >
-                  <span className="font-extrabold text-[11px] truncate leading-none">{staff.name}</span>
-                  <span className={`text-[8px] font-black uppercase px-1 py-0.5 rounded ${
-                    selectedStaffId === staff.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
-                  }`}>
-                    {staff.role}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-2.5 text-xs" autoComplete="off">
+        <form onSubmit={handleSubmit} className="space-y-3 text-xs" autoComplete="off">
           {/* Sub-Account Selector Dropdown */}
           <div className="space-y-1">
             <div className="flex justify-between items-center text-[11px]">
-              <label className="font-bold text-slate-700">Account</label>
+              <label className="font-bold text-slate-700">ব্যবহারকারী একাউন্ট (User Account)</label>
               {selectedStaff && (
                 <span className="text-[9px] text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-bold">
                   {selectedStaff.role}
@@ -153,8 +113,8 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
               className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-900 rounded-lg px-2.5 py-2 text-slate-900 font-bold text-xs outline-none"
               required
             >
-              <option value="" disabled>Select User Account</option>
-              {staffUsers.map((staff) => (
+              <option value="">-- একাউন্ট নির্বাচন করুন (Select Account) --</option>
+              {staffUsers.filter(s => s.status !== 'Inactive').map((staff) => (
                 <option key={staff.id} value={staff.id}>
                   {staff.name} — {staff.designation || staff.role}
                 </option>
@@ -165,15 +125,15 @@ export default function AdminLogin({ staffUsers, onLoginSuccess, onBackToCatalog
           {/* Passcode Field */}
           <div className="space-y-1">
             <label className="font-bold text-slate-700 text-[11px] block">
-              {selectedStaff ? `Password for ${selectedStaff.name}` : 'Password'}
+              পাসওয়ার্ড (Password)
             </label>
             <div className="relative">
               <input
                 type={showPasscode ? 'text' : 'password'}
                 value={passcode}
                 onChange={(e) => { setPasscode(e.target.value); setError(''); }}
-                placeholder="Enter password"
-                autoComplete="new-password"
+                placeholder="পাসওয়ার্ড লিখুন"
+                autoComplete="current-password"
                 className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:border-blue-900 rounded-lg text-slate-900 font-mono font-bold text-xs transition-all"
                 required
               />

@@ -578,7 +578,7 @@ export default function StaffManagement({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 123456"
+                    placeholder="Enter secure password"
                     value={formData.passcode}
                     onChange={(e) => setFormData({ ...formData, passcode: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 font-mono font-bold text-blue-900 focus:bg-white focus:outline-hidden"
