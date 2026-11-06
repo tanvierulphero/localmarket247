@@ -755,16 +755,34 @@ export default function App() {
     }
     
     // Inventory Stock Management for Goods Sales:
-    // Creating a challan does not deduct inventory stock.
-    // Stock is deducted only when a Bill or Invoice is created for registered inventory products.
-    // Custom items (isCustom or without registered productId) have ZERO inventory impact.
-    if ((cleanDoc.type === 'BILL' || cleanDoc.type === 'INVOICE') && !exists) {
+    // Creating a challan/quotation/offer letter does not deduct inventory stock.
+    // Stock is deducted when a Bill or Invoice is created, and adjusted by delta if an existing document is edited or converted.
+    // Custom items (isCustom) have ZERO inventory impact.
+    const oldDoc = documents.find(d => d.id === cleanDoc.id);
+    const wasStockDeducted = Boolean(oldDoc && (oldDoc.type === 'BILL' || oldDoc.type === 'INVOICE'));
+    const isStockDeducted = Boolean(cleanDoc.type === 'BILL' || cleanDoc.type === 'INVOICE');
+
+    if (wasStockDeducted || isStockDeducted) {
+      const getProductQtyInDoc = (targetDoc: Document | undefined, prod: Product): number => {
+        if (!targetDoc || !Array.isArray(targetDoc.items)) return 0;
+        const prodSku = String(prod.sku || '').trim().toLowerCase();
+        return targetDoc.items.reduce((sum, it) => {
+          if (!it || it.isCustom) return sum;
+          const itProdId = String(it.productId || '').trim();
+          const itSku = String(it.brand || '').trim().toLowerCase();
+          const matched = (itProdId && itProdId === prod.id) || (!itProdId && prodSku && itSku === prodSku);
+          return matched ? sum + (Number(it.quantity) || 0) : sum;
+        }, 0);
+      };
+
       const updatedProducts = products.map(prod => {
-        const itemInDoc = doc.items.find(it => !it.isCustom && it.productId && it.productId === prod.id);
-        if (itemInDoc) {
+        const oldQty = wasStockDeducted ? getProductQtyInDoc(oldDoc, prod) : 0;
+        const newQty = isStockDeducted ? getProductQtyInDoc(cleanDoc, prod) : 0;
+        const deltaQty = newQty - oldQty;
+        if (deltaQty !== 0) {
           const updatedProd = {
             ...prod,
-            stock: Math.max(0, prod.stock - itemInDoc.quantity)
+            stock: Math.max(0, (Number(prod.stock) || 0) - deltaQty)
           };
           apiSaveProduct(updatedProd).catch(() => {});
           return updatedProd;
@@ -977,8 +995,35 @@ export default function App() {
       alert('Only Administrator can delete documents.');
       return;
     }
+    const deletedDoc = documents.find(d => d.id === id);
     const list = documents.filter(d => d.id !== id);
     setDocuments(list);
+
+    // If a Sales Invoice or Bill is deleted, restore its deducted inventory stock
+    if (deletedDoc && (deletedDoc.type === 'INVOICE' || deletedDoc.type === 'BILL') && Array.isArray(deletedDoc.items)) {
+      const updatedProducts = products.map(prod => {
+        const prodSku = String(prod.sku || '').trim().toLowerCase();
+        const restoredQty = deletedDoc.items.reduce((sum, it) => {
+          if (!it || it.isCustom) return sum;
+          const itProdId = String(it.productId || '').trim();
+          const itSku = String(it.brand || '').trim().toLowerCase();
+          const matched = (itProdId && itProdId === prod.id) || (!itProdId && prodSku && itSku === prodSku);
+          return matched ? sum + (Number(it.quantity) || 0) : sum;
+        }, 0);
+
+        if (restoredQty > 0) {
+          const updatedProd = {
+            ...prod,
+            stock: (Number(prod.stock) || 0) + restoredQty
+          };
+          apiSaveProduct(updatedProd).catch(() => {});
+          return updatedProd;
+        }
+        return prod;
+      });
+      setProducts(updatedProducts);
+    }
+
     try {
       await apiDeleteDocument(id);
     } catch (e) {
@@ -1070,16 +1115,29 @@ export default function App() {
         const itemQty = Number(item.quantity) || 1;
         const itemUnitCost = Number(item.unitCost) || 0;
         
-        // Find existing product by ID, SKU, or Name
-        const existingIdx = updatedProducts.findIndex(p => 
-          (item.productId && p.id === item.productId) ||
-          (item.sku && p.sku && p.sku.trim().toLowerCase() === item.sku.trim().toLowerCase()) ||
-          (p.name.trim().toLowerCase() === item.productName.trim().toLowerCase())
-        );
+        // Find existing product by exact SKU first, or by productId (when SKU matches or is not overridden), or by Name only if SKU is empty
+        const cleanItemSku = String(item.sku || '').trim().toLowerCase();
+        const cleanItemName = String(item.productName || '').trim().toLowerCase();
+        const existingIdx = updatedProducts.findIndex(p => {
+          const pSku = String(p.sku || '').trim().toLowerCase();
+          if (cleanItemSku && pSku && pSku === cleanItemSku) return true;
+          if (item.productId && p.id === item.productId && (!cleanItemSku || pSku === cleanItemSku)) return true;
+          if (!cleanItemSku && !pSku && p.name.trim().toLowerCase() === cleanItemName) return true;
+          return false;
+        });
 
         if (existingIdx >= 0) {
           const matchedProd = updatedProducts[existingIdx];
-          const newStock = matchedProd.stock + itemQty;
+          // Ensure purchase item always stores the matched inventory product's ID
+          item.productId = matchedProd.id;
+          const prevPurchase = existingIndex >= 0 ? purchases[existingIndex] : null;
+          const prevItemQty = (prevPurchase && prevPurchase.status === 'Received')
+            ? (prevPurchase.items || [])
+                .filter(pi => pi.productId === matchedProd.id || (cleanItemSku && String(pi.sku || '').trim().toLowerCase() === cleanItemSku))
+                .reduce((s, pi) => s + (Number(pi.quantity) || 0), 0)
+            : 0;
+          const deltaQty = itemQty - prevItemQty;
+          const newStock = Math.max(0, (Number(matchedProd.stock) || 0) + deltaQty);
           const updatedProd: Product = {
             ...matchedProd,
             stock: newStock,

@@ -251,6 +251,20 @@ export default function PurchaseEntryModal({
       current.unit = value;
     } else if (field === 'sku') {
       current.sku = value;
+      const cleanSku = String(value || '').trim().toLowerCase();
+      if (cleanSku) {
+        const matchedBySku = products.find(p => String(p.sku || '').trim().toLowerCase() === cleanSku);
+        if (matchedBySku) {
+          current.productId = matchedBySku.id;
+          if (!current.productName) current.productName = matchedBySku.name;
+          if (!current.brand) current.brand = matchedBySku.brand;
+          if (!current.unit) current.unit = matchedBySku.unit;
+        } else {
+          current.productId = '';
+        }
+      } else {
+        current.productId = '';
+      }
     } else if (field === 'brand') {
       current.brand = value;
     }

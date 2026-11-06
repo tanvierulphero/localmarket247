@@ -151,9 +151,9 @@ export default function InventoryManager({
   const productAnalytics = useMemo(() => {
     if (!historyProduct) return null;
 
-    const hpId = String(historyProduct.id || '');
-    const hpSku = String(historyProduct.sku || '').toLowerCase();
-    const hpName = String(historyProduct.name || '').toLowerCase();
+    const liveProduct = (products || []).find(p => p.id === historyProduct.id) || historyProduct;
+    const hpId = String(liveProduct.id || '');
+    const hpSku = String(liveProduct.sku || '').trim().toLowerCase();
 
     // 1. Find all Sales Invoices / Documents containing this product
     const salesRecords: {
@@ -186,17 +186,17 @@ export default function InventoryManager({
     }[] = [];
 
     // 1. Process customer sales from documents (INVOICE, BILL, QUOTATION, OFFER_LETTER)
-    // CRITICAL: Custom items (without valid inventory productId or marked isCustom) must NEVER match or affect inventory!
+    // CRITICAL: Custom items (marked isCustom) must NEVER match or affect inventory!
     (documents || []).forEach(doc => {
       if (!doc || !Array.isArray(doc.items)) return;
 
       doc.items.forEach(it => {
-        if (!it) return;
-        // Strict match: Custom items have NO inventory effect and must NEVER match
-        if (it.isCustom || !it.productId) return;
+        if (!it || it.isCustom) return;
         
-        const itProdId = String(it.productId || '');
-        if (itProdId !== hpId) return;
+        const itProdId = String(it.productId || '').trim();
+        const itSku = String(it.brand || '').trim().toLowerCase();
+        const isMatched = (itProdId && itProdId === hpId) || (!itProdId && hpSku && itSku === hpSku);
+        if (!isMatched) return;
 
         salesRecords.push({
           docId: String(doc.id || ''),
@@ -210,20 +210,22 @@ export default function InventoryManager({
           quantity: Number(it.quantity) || 1,
           unitPrice: Number(it.price) || 0,
           lineTotal: Number(it.total) || 0,
-          unit: String(it.unit || historyProduct.unit || 'Pcs'),
+          unit: String(it.unit || liveProduct.unit || 'Pcs'),
           status: String(doc.status || 'Active'),
           doc
         });
       });
     });
 
-    // 2. Process authentic supplier purchases from purchases table ONLY (NEVER from customer bills/challans)
+    // 2. Process authentic supplier purchases from purchases table ONLY (match by productId or exact SKU)
     (purchases || []).forEach(p => {
       if (!p || !Array.isArray(p.items)) return;
       p.items.forEach(it => {
         if (!it) return;
-        const itProdId = String(it.productId || '');
-        if (itProdId && itProdId === hpId) {
+        const itProdId = String(it.productId || '').trim();
+        const itSku = String(it.sku || '').trim().toLowerCase();
+        const isMatched = (itProdId && itProdId === hpId) || (hpSku && itSku === hpSku);
+        if (isMatched) {
           purchaseRecords.push({
             docId: String(p.id || ''),
             docNumber: String(p.purchaseNumber || 'PUR-000'),
@@ -238,7 +240,7 @@ export default function InventoryManager({
       });
     });
 
-    // 3. Find field dispatches containing this inventory product (Strict productId match only)
+    // 3. Find field dispatches containing this inventory product
     const dispatchRecords = (dispatches || []).filter(d => 
       d && Array.isArray(d.items) && d.items.some(it => {
         if (!it) return false;
@@ -252,19 +254,33 @@ export default function InventoryManager({
     const totalQtySold = invoiceSales.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
     const totalSalesRevenue = invoiceSales.reduce((s, r) => s + (Number(r.lineTotal) || 0), 0);
 
-    const currentStock = Number(historyProduct.stock) || 0;
-    const currentPrice = Number(historyProduct.price) || 0;
+    const currentStock = Number(liveProduct.stock) || 0;
+    const currentPrice = Number(liveProduct.price) || 0;
+    const productCostPrice = Number(liveProduct.costPrice) || 0;
 
-    const totalQtyPurchased = purchaseRecords.reduce((s, r) => s + (Number(r.quantity) || 0), 0) + currentStock;
-    const totalPurchaseCostEstimate = totalQtySold * (currentPrice * 0.70); // Estimated 30% margin cost if purchase price missing
-    const totalPurchaseCostActual = purchaseRecords.reduce((s, r) => s + (Number(r.lineTotal) || 0), 0) || totalPurchaseCostEstimate;
+    const purchasedFromBills = purchaseRecords.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+    // Total stock inward (Purchases + Initial Stock) always reconciles with Current Available Stock + Total Sold
+    const totalQtyPurchased = Math.max(purchasedFromBills, currentStock + totalQtySold);
 
-    // Profit or Loss
-    const netProfitLoss = totalSalesRevenue - totalPurchaseCostActual;
+    // Determine accurate unit purchase cost from Purchase Bills or Product's saved costPrice
+    const totalBillsCost = purchaseRecords.reduce((s, r) => s + (Number(r.lineTotal) || 0), 0);
+    const avgBillUnitCost = purchasedFromBills > 0 ? (totalBillsCost / purchasedFromBills) : 0;
+    const effectiveUnitCost = productCostPrice > 0
+      ? productCostPrice
+      : (avgBillUnitCost > 0 ? avgBillUnitCost : Math.round(currentPrice * 0.70));
+
+    // Cost of goods sold (for profit calculation against sales revenue)
+    const costOfGoodsSold = totalQtySold * effectiveUnitCost;
+    const totalPurchaseCostActual = totalQtySold > 0
+      ? Math.round(costOfGoodsSold)
+      : (totalBillsCost > 0 ? Math.round(totalBillsCost) : Math.round(currentStock * effectiveUnitCost));
+
+    // Profit or Loss on sold items
+    const netProfitLoss = totalQtySold > 0 ? Math.round(totalSalesRevenue - costOfGoodsSold) : 0;
     const marginPercent = totalSalesRevenue > 0 ? (netProfitLoss / totalSalesRevenue) * 100 : 0;
 
     return {
-      historyProduct,
+      historyProduct: liveProduct,
       salesRecords,
       invoiceSales,
       purchaseRecords,
@@ -278,7 +294,7 @@ export default function InventoryManager({
       marginPercent,
       isProfit: netProfitLoss >= 0
     };
-  }, [historyProduct, documents, dispatches, purchases]);
+  }, [historyProduct, products, documents, dispatches, purchases]);
 
   // User-created Custom Categories and Brands (Persistent)
   const [customCategories, setCustomCategories] = useState<string[]>(() => {
