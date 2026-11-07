@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- JUBAYER MACHINERIES ERP - FULL RECOVERY DUMP FOR CPANEL (PHPMYADMIN)
--- Generated: 2026-10-27T15:38:51.682Z
+-- Generated: 2026-11-07T10:39:15.306Z
 -- ==============================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -171,19 +171,36 @@ INSERT INTO `catalog_products` (`id`, `name`, `category`, `brand`, `price`, `cal
 DROP TABLE IF EXISTS `field_dispatches`;
 CREATE TABLE `field_dispatches` (
   `id` VARCHAR(128) NOT NULL PRIMARY KEY,
-  `dispatch_number` VARCHAR(100) NOT NULL,
-  `date` VARCHAR(50) NOT NULL,
+  `dispatch_number` VARCHAR(100) DEFAULT "",
+  `date` VARCHAR(50) DEFAULT "",
   `staff_id` VARCHAR(128) DEFAULT "",
   `staff_name` VARCHAR(255) DEFAULT "",
   `customer_id` VARCHAR(128) DEFAULT "",
   `customer_name` VARCHAR(255) DEFAULT "",
   `customer_company` VARCHAR(255) DEFAULT "",
+  `company_name` VARCHAR(255) DEFAULT "",
   `address` TEXT,
+  `customer_phone` VARCHAR(100) DEFAULT "",
   `phone` VARCHAR(100) DEFAULT "",
   `purpose` TEXT,
+  `description` TEXT,
+  `dispatch_date` VARCHAR(50) DEFAULT "",
+  `return_date` VARCHAR(50) DEFAULT NULL,
+  `bill_no` VARCHAR(100) DEFAULT "",
+  `bill_amount` DOUBLE DEFAULT 0,
+  `paid_amount` DOUBLE DEFAULT 0,
+  `due_amount` DOUBLE DEFAULT 0,
+  `expense_amount` DOUBLE DEFAULT 0,
+  `expense_details` TEXT,
+  `payment_status` VARCHAR(50) DEFAULT "Paid",
+  `payment_method` VARCHAR(50) DEFAULT "Cash",
   `status` VARCHAR(50) NOT NULL DEFAULT "Completed",
-  `items` LONGTEXT
+  `notes` TEXT,
+  `items` LONGTEXT,
+  `created_at` VARCHAR(50) DEFAULT ""
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `field_dispatches` (`id`, `dispatch_number`, `date`, `staff_id`, `staff_name`, `customer_id`, `customer_name`, `customer_company`, `company_name`, `address`, `customer_phone`, `phone`, `purpose`, `description`, `dispatch_date`, `return_date`, `bill_no`, `bill_amount`, `paid_amount`, `due_amount`, `expense_amount`, `expense_details`, `payment_status`, `payment_method`, `status`, `notes`, `items`, `created_at`) VALUES ('test-disp-1', 'BIL-2026-999', '2026-11-07', '', 'Test Staff', '', '', '', 'Test Co', '', '', '', '', '', '', NULL, 'BIL-2026-999', 1000, 500, 0, 0, '', 'Paid', 'Cash', 'Completed', '', '[]', '') ON DUPLICATE KEY UPDATE `bill_no`=VALUES(`bill_no`);
 
 DROP TABLE IF EXISTS `suppliers`;
 CREATE TABLE `suppliers` (
@@ -237,3 +254,4 @@ CREATE TABLE `expenses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+INSERT INTO `field_dispatches` (`id`, `date`, `staff_name`, `company_name`, `bill_no`, `bill_amount`, `paid_amount`, `due_amount`, `expense_amount`, `payment_status`, `payment_method`, `status`, `description`) VALUES ('disp-demo-test', '2026-11-07', 'Abdullah Al Kafi', 'Mim Design Ltd', 'BIL-2026-001', 5000, 5000, 0, 350, 'Paid', 'Cash', 'Completed', 'Compressor oil change and general inspection') ON DUPLICATE KEY UPDATE id=id;

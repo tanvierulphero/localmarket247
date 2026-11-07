@@ -424,7 +424,7 @@ export default function App() {
               setSettingsForm(s);
             }
           }).catch(() => {});
-        } else if (change.entity === 'dispatches') {
+        } else if (change.entity === 'dispatches' || change.entity === 'field_dispatches') {
           apiGetFieldDispatches().then(setDispatches).catch(() => {});
         } else if (change.entity === 'suppliers') {
           apiGetSuppliers().then(setSuppliers).catch(() => {});
@@ -1043,9 +1043,13 @@ export default function App() {
     setDispatches(list);
 
     try {
-      await apiSaveFieldDispatch(dispatch);
-    } catch (e) {
-      console.warn('Backend sync warning for dispatch:', e);
+      const saved = await apiSaveFieldDispatch(dispatch);
+      if (saved && saved.id) {
+        setDispatches(prev => prev.map(d => d.id === saved.id ? { ...d, ...saved } : d));
+      }
+    } catch (e: any) {
+      console.error('Backend sync warning for dispatch:', e);
+      throw e;
     }
   };
 

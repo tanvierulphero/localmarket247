@@ -155,32 +155,34 @@ CREATE TABLE `documents` (
 -- 7. Table: field_dispatches
 DROP TABLE IF EXISTS `field_dispatches`;
 CREATE TABLE `field_dispatches` (
-  `id` VARCHAR(128) NOT NULL,
+  `id` VARCHAR(128) NOT NULL PRIMARY KEY,
   `dispatch_number` VARCHAR(100) DEFAULT '',
-  `bill_no` VARCHAR(100) DEFAULT '',
-  `customer_id` VARCHAR(128) NOT NULL,
-  `customer_name` VARCHAR(255) NOT NULL,
+  `date` VARCHAR(50) DEFAULT '',
+  `staff_id` VARCHAR(128) DEFAULT '',
+  `staff_name` VARCHAR(255) DEFAULT '',
+  `customer_id` VARCHAR(128) DEFAULT '',
+  `customer_name` VARCHAR(255) DEFAULT '',
   `customer_company` VARCHAR(255) DEFAULT '',
+  `company_name` VARCHAR(255) DEFAULT '',
+  `address` TEXT,
   `customer_phone` VARCHAR(100) DEFAULT '',
-  `customer_address` TEXT,
-  `staff_id` VARCHAR(128) NOT NULL,
-  `staff_name` VARCHAR(255) NOT NULL,
-  `dispatch_date` VARCHAR(50) NOT NULL,
+  `phone` VARCHAR(100) DEFAULT '',
   `purpose` TEXT,
   `description` TEXT,
-  `bill_amount` DOUBLE NOT NULL DEFAULT 0,
-  `expense_amount` DOUBLE NOT NULL DEFAULT 0,
-  `paid_amount` DOUBLE NOT NULL DEFAULT 0,
-  `due_amount` DOUBLE NOT NULL DEFAULT 0,
-  `payment_status` VARCHAR(50) DEFAULT 'Unpaid',
-  `status` VARCHAR(50) NOT NULL DEFAULT 'Scheduled',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_dispatch_number` (`dispatch_number`),
-  KEY `idx_dispatch_customer` (`customer_id`),
-  KEY `idx_dispatch_staff` (`staff_id`),
-  CONSTRAINT `fk_dispatch_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `fk_dispatch_staff` FOREIGN KEY (`staff_id`) REFERENCES `staff_users` (`id`) ON DELETE RESTRICT
+  `dispatch_date` VARCHAR(50) DEFAULT '',
+  `return_date` VARCHAR(50) DEFAULT NULL,
+  `bill_no` VARCHAR(100) DEFAULT '',
+  `bill_amount` DOUBLE DEFAULT 0,
+  `paid_amount` DOUBLE DEFAULT 0,
+  `due_amount` DOUBLE DEFAULT 0,
+  `expense_amount` DOUBLE DEFAULT 0,
+  `expense_details` TEXT,
+  `payment_status` VARCHAR(50) DEFAULT 'Paid',
+  `payment_method` VARCHAR(50) DEFAULT 'Cash',
+  `status` VARCHAR(50) NOT NULL DEFAULT 'Completed',
+  `notes` TEXT,
+  `items` LONGTEXT,
+  `created_at` VARCHAR(50) DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 8. Table: sales_returns
@@ -267,3 +269,7 @@ CREATE TABLE `settings` (
 SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO products (id, name, sku, category, brand, price, costPrice, stock, unit, description, specs, imageUrl) VALUES ('prod-test-1', 'Hitachi 2000H Maintenance Service Kit', 'HIT-MK-2000', 'Service Kit', 'Hitachi', 45000, 32000, 15, 'Set', '', '[]', '') ON CONFLICT DO NOTHING;
 DELETE FROM products WHERE id = 'prod-test-1';
+INSERT INTO field_dispatches (id, date, staffName, companyName, billNo, billAmount, paidAmount) VALUES ('test-disp-1', '2026-11-07', 'Test Staff', 'Test Co', 'BIL-2026-999', 1000, 500) ON CONFLICT DO NOTHING;
+INSERT INTO `field_dispatches` (`id`, `date`, `staff_name`, `company_name`, `bill_no`, `bill_amount`, `paid_amount`, `due_amount`, `expense_amount`, `payment_status`, `payment_method`, `status`, `description`) VALUES ('disp-demo-test', '2026-11-07', 'Abdullah Al Kafi', 'Mim Design Ltd', 'BIL-2026-001', 5000, 5000, 0, 350, 'Paid', 'Cash', 'Completed', 'Compressor oil change and general inspection') ON DUPLICATE KEY UPDATE id=id;
+DELETE FROM field_dispatches WHERE id = 'test-disp-1';
+DELETE FROM field_dispatches WHERE id = 'disp-demo-test';

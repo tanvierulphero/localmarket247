@@ -21,20 +21,24 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+function camelToSnake(str: string): string {
+  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+}
+
 function appendSqlToFiles(table: string, data: any) {
   try {
-    const keys = Object.keys(data).filter(k => data[k] !== undefined);
-    const cols = keys.join(', ');
-    const vals = keys.map(k => {
+    const rawKeys = Object.keys(data).filter(k => data[k] !== undefined);
+    const cols = rawKeys.map(k => `\`${camelToSnake(k)}\``).join(', ');
+    const vals = rawKeys.map(k => {
       const v = data[k];
       if (v === null || v === undefined) return 'NULL';
       if (typeof v === 'number' || typeof v === 'boolean') return v;
       if (typeof v === 'object') return `'${JSON.stringify(v).replace(/'/g, "''")}'`;
       return `'${String(v).replace(/'/g, "''")}'`;
     }).join(', ');
-    const sqlStatement = `INSERT INTO ${table} (${cols}) VALUES (${vals}) ON CONFLICT DO NOTHING;\n`;
+    const sqlStatement = `INSERT INTO \`${table}\` (${cols}) VALUES (${vals}) ON DUPLICATE KEY UPDATE id=id;\n`;
     
-    ['database/schema.sql', 'public/schema.sql', 'schema.sql'].forEach(filePath => {
+    ['database/schema.sql', 'public/schema.sql', 'schema.sql', 'database.sql', 'public/database.sql'].forEach(filePath => {
       if (fs.existsSync(filePath)) {
         fs.appendFileSync(filePath, sqlStatement, 'utf8');
       }
@@ -359,6 +363,7 @@ app.post('/api/field-dispatches', (req, res) => {
     const saved = localDb.upsert('fieldDispatches', item);
     appendSqlToFiles('field_dispatches', item);
     notifyChange('field_dispatches', 'save', item);
+    notifyChange('dispatches', 'save', item);
     res.json(saved);
   } catch (err: any) {
     console.error('Failed to save field dispatch:', err);
@@ -372,6 +377,7 @@ app.delete('/api/field-dispatches/:id', (req, res) => {
     localDb.delete('fieldDispatches', id);
     appendDeleteSqlToFiles('field_dispatches', id);
     notifyChange('field_dispatches', 'delete', { id });
+    notifyChange('dispatches', 'delete', { id });
     res.json({ success: true });
   } catch (err: any) {
     console.error('Failed to delete field dispatch:', err);

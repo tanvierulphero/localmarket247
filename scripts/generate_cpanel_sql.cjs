@@ -182,23 +182,43 @@ sql += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n'
 });
 sql += '\n';
 
-// 7. Field Dispatches, Suppliers, Purchases, Sales Returns, Expenses Tables
+// 7. Field Dispatches Table
 sql += 'DROP TABLE IF EXISTS `field_dispatches`;\n';
 sql += 'CREATE TABLE `field_dispatches` (\n';
 sql += '  `id` VARCHAR(128) NOT NULL PRIMARY KEY,\n';
-sql += '  `dispatch_number` VARCHAR(100) NOT NULL,\n';
-sql += '  `date` VARCHAR(50) NOT NULL,\n';
+sql += '  `dispatch_number` VARCHAR(100) DEFAULT "",\n';
+sql += '  `date` VARCHAR(50) DEFAULT "",\n';
 sql += '  `staff_id` VARCHAR(128) DEFAULT "",\n';
 sql += '  `staff_name` VARCHAR(255) DEFAULT "",\n';
 sql += '  `customer_id` VARCHAR(128) DEFAULT "",\n';
 sql += '  `customer_name` VARCHAR(255) DEFAULT "",\n';
 sql += '  `customer_company` VARCHAR(255) DEFAULT "",\n';
+sql += '  `company_name` VARCHAR(255) DEFAULT "",\n';
 sql += '  `address` TEXT,\n';
+sql += '  `customer_phone` VARCHAR(100) DEFAULT "",\n';
 sql += '  `phone` VARCHAR(100) DEFAULT "",\n';
 sql += '  `purpose` TEXT,\n';
+sql += '  `description` TEXT,\n';
+sql += '  `dispatch_date` VARCHAR(50) DEFAULT "",\n';
+sql += '  `return_date` VARCHAR(50) DEFAULT NULL,\n';
+sql += '  `bill_no` VARCHAR(100) DEFAULT "",\n';
+sql += '  `bill_amount` DOUBLE DEFAULT 0,\n';
+sql += '  `paid_amount` DOUBLE DEFAULT 0,\n';
+sql += '  `due_amount` DOUBLE DEFAULT 0,\n';
+sql += '  `expense_amount` DOUBLE DEFAULT 0,\n';
+sql += '  `expense_details` TEXT,\n';
+sql += '  `payment_status` VARCHAR(50) DEFAULT "Paid",\n';
+sql += '  `payment_method` VARCHAR(50) DEFAULT "Cash",\n';
 sql += '  `status` VARCHAR(50) NOT NULL DEFAULT "Completed",\n';
-sql += '  `items` LONGTEXT\n';
+sql += '  `notes` TEXT,\n';
+sql += '  `items` LONGTEXT,\n';
+sql += '  `created_at` VARCHAR(50) DEFAULT ""\n';
 sql += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n';
+
+(db.fieldDispatches || []).forEach(fd => {
+  sql += `INSERT INTO \`field_dispatches\` (\`id\`, \`dispatch_number\`, \`date\`, \`staff_id\`, \`staff_name\`, \`customer_id\`, \`customer_name\`, \`customer_company\`, \`company_name\`, \`address\`, \`customer_phone\`, \`phone\`, \`purpose\`, \`description\`, \`dispatch_date\`, \`return_date\`, \`bill_no\`, \`bill_amount\`, \`paid_amount\`, \`due_amount\`, \`expense_amount\`, \`expense_details\`, \`payment_status\`, \`payment_method\`, \`status\`, \`notes\`, \`items\`, \`created_at\`) VALUES (${esc(fd.id)}, ${esc(fd.dispatchNumber || fd.billNo || '')}, ${esc(fd.date || '')}, ${esc(fd.staffId || '')}, ${esc(fd.staffName || '')}, ${esc(fd.customerId || '')}, ${esc(fd.customerName || '')}, ${esc(fd.customerCompany || '')}, ${esc(fd.companyName || '')}, ${esc(fd.address || '')}, ${esc(fd.customerPhone || '')}, ${esc(fd.phone || '')}, ${esc(fd.purpose || '')}, ${esc(fd.description || '')}, ${esc(fd.dispatchDate || '')}, ${esc(fd.returnDate || null)}, ${esc(fd.billNo || '')}, ${Number(fd.billAmount) || 0}, ${Number(fd.paidAmount) || 0}, ${Number(fd.dueAmount) || 0}, ${Number(fd.expenseAmount) || 0}, ${esc(fd.expenseDetails || '')}, ${esc(fd.paymentStatus || 'Paid')}, ${esc(fd.paymentMethod || 'Cash')}, ${esc(fd.status || 'Completed')}, ${esc(fd.notes || '')}, ${esc(fd.items || [])}, ${esc(fd.createdAt || '')}) ON DUPLICATE KEY UPDATE \`bill_no\`=VALUES(\`bill_no\`);\n`;
+});
+sql += '\n';
 
 sql += 'DROP TABLE IF EXISTS `suppliers`;\n';
 sql += 'CREATE TABLE `suppliers` (\n';

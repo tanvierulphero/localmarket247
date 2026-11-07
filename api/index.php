@@ -113,6 +113,31 @@ if ($pdo) {
             }
         }
     }
+    // Auto-migrate schema updates for field_dispatches table
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM `field_dispatches` LIKE 'bill_no'");
+        if ($colCheck && $colCheck->rowCount() === 0) {
+            $pdo->exec("ALTER TABLE `field_dispatches` 
+                ADD COLUMN `company_name` VARCHAR(255) DEFAULT '',
+                ADD COLUMN `customer_phone` VARCHAR(100) DEFAULT '',
+                ADD COLUMN `description` TEXT,
+                ADD COLUMN `dispatch_date` VARCHAR(50) DEFAULT '',
+                ADD COLUMN `return_date` VARCHAR(50) DEFAULT NULL,
+                ADD COLUMN `bill_no` VARCHAR(100) DEFAULT '',
+                ADD COLUMN `bill_amount` DOUBLE DEFAULT 0,
+                ADD COLUMN `paid_amount` DOUBLE DEFAULT 0,
+                ADD COLUMN `due_amount` DOUBLE DEFAULT 0,
+                ADD COLUMN `expense_amount` DOUBLE DEFAULT 0,
+                ADD COLUMN `expense_details` TEXT,
+                ADD COLUMN `payment_status` VARCHAR(50) DEFAULT 'Paid',
+                ADD COLUMN `payment_method` VARCHAR(50) DEFAULT 'Cash',
+                ADD COLUMN `notes` TEXT,
+                ADD COLUMN `created_at` VARCHAR(50) DEFAULT ''
+            ");
+        }
+    } catch (Exception $eCol) {
+        // Table might not exist or columns already present
+    }
 }
 
 // Parse request URI and determine endpoint, method, and ID
@@ -148,7 +173,7 @@ if (!empty($rawEndpoint)) {
 // Normalize Endpoint Aliases
 if ($endpoint === 'inventory') $endpoint = 'products';
 if ($endpoint === 'invoices') $endpoint = 'documents';
-if ($endpoint === 'field-service' || $endpoint === 'field_dispatches') $endpoint = 'dispatches';
+if ($endpoint === 'field-service' || $endpoint === 'field_dispatches' || $endpoint === 'field-dispatches') $endpoint = 'dispatches';
 
 // Router: Image Upload Endpoints (Calls upload.php directly)
 if ($endpoint === 'upload') {
@@ -271,7 +296,7 @@ function requireAuth($pdo, $requiredRole = null) {
 $allowedGetEndpoints = [
     'catalog-products', 'catalog_products', 'settings',
     'products', 'inventory', 'customers', 'documents', 'invoices',
-    'staff', 'dispatches', 'field-service', 'field_dispatches',
+    'staff', 'dispatches', 'field-service', 'field_dispatches', 'field-dispatches',
     'suppliers', 'purchases', 'returns', 'expenses'
 ];
 $isSafeGet = ($method === 'GET' && in_array($endpoint, $allowedGetEndpoints));
@@ -325,7 +350,15 @@ $tablesMap = [
     ],
     'dispatches' => [
         'table' => 'field_dispatches',
-        'fields' => ['id', 'dispatch_number', 'date', 'staff_id', 'staff_name', 'customer_id', 'customer_name', 'customer_company', 'company_name', 'address', 'customer_phone', 'phone', 'purpose', 'description', 'dispatch_date', 'return_date', 'bill_no', 'bill_amount', 'paid_amount', 'due_amount', 'expense_amount', 'expense_details', 'payment_status', 'payment_method', 'status', 'notes', 'items']
+        'fields' => ['id', 'dispatch_number', 'date', 'staff_id', 'staff_name', 'customer_id', 'customer_name', 'customer_company', 'company_name', 'address', 'customer_phone', 'phone', 'purpose', 'description', 'dispatch_date', 'return_date', 'bill_no', 'bill_amount', 'paid_amount', 'due_amount', 'expense_amount', 'expense_details', 'payment_status', 'payment_method', 'status', 'notes', 'items', 'created_at']
+    ],
+    'field-dispatches' => [
+        'table' => 'field_dispatches',
+        'fields' => ['id', 'dispatch_number', 'date', 'staff_id', 'staff_name', 'customer_id', 'customer_name', 'customer_company', 'company_name', 'address', 'customer_phone', 'phone', 'purpose', 'description', 'dispatch_date', 'return_date', 'bill_no', 'bill_amount', 'paid_amount', 'due_amount', 'expense_amount', 'expense_details', 'payment_status', 'payment_method', 'status', 'notes', 'items', 'created_at']
+    ],
+    'field_dispatches' => [
+        'table' => 'field_dispatches',
+        'fields' => ['id', 'dispatch_number', 'date', 'staff_id', 'staff_name', 'customer_id', 'customer_name', 'customer_company', 'company_name', 'address', 'customer_phone', 'phone', 'purpose', 'description', 'dispatch_date', 'return_date', 'bill_no', 'bill_amount', 'paid_amount', 'due_amount', 'expense_amount', 'expense_details', 'payment_status', 'payment_method', 'status', 'notes', 'items', 'created_at']
     ],
     'returns' => [
         'table' => 'sales_returns',
