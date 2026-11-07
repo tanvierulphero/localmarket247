@@ -11,19 +11,12 @@ import {
   AlertTriangle, 
   ChevronsUpDown, 
   Eye, 
-  Upload, 
-  UploadCloud,
-  Image as ImageIcon,
-  Link2,
-  Sparkles,
-  Loader2, 
   BarChart3, 
   Building2, 
   TrendingUp, 
   TrendingDown, 
   ShieldCheck, 
   X, 
-  Check,
   CheckCircle2, 
   FileText, 
   ShoppingBag, 
@@ -32,7 +25,6 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
-import { apiUploadImage } from '../lib/api';
 
 interface InventoryManagerProps {
   products: Product[];
@@ -63,53 +55,9 @@ export default function InventoryManager({
   // Modal / Form States
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
-  const [uploadError, setUploadError] = useState<string>('');
-  const [isDragOver, setIsDragOver] = useState(false);
 
   // Lifetime History Modal State
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
-
-  const processAndUploadFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setUploadStatus('error');
-      setUploadError('Please select a valid image file (PNG, JPG, JPEG, WEBP).');
-      return;
-    }
-
-    // Check size client-side (Max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadStatus('error');
-      setUploadError('File exceeds maximum 5MB limit.');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadStatus('uploading');
-    setUploadError('');
-    try {
-      const res = await apiUploadImage(file);
-      if (res && res.url) {
-        setFormData(prev => ({ ...prev, imageUrl: res.url }));
-        setUploadStatus('success');
-      } else {
-        throw new Error('No URL returned from server.');
-      }
-    } catch (err: any) {
-      setUploadStatus('error');
-      setUploadError(err.message || 'Could not process image');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await processAndUploadFile(file);
-    e.target.value = ''; // Reset input so same file can be re-uploaded
-  };
   
   const [formData, setFormData] = useState<{
     name: string;
@@ -1037,135 +985,6 @@ export default function InventoryManager({
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:outline-hidden"
                 />
-              </div>
-
-
-              {/* Product Image Upload & Presets Section */}
-              <div className="space-y-3 border-t border-slate-100 pt-4">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-                    <ImageIcon className="w-4 h-4 text-blue-600" />
-                    Product Image Selection & Upload
-                  </label>
-                  {formData.imageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
-                      className="text-[11px] text-rose-600 hover:text-rose-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Remove Image
-                    </button>
-                  )}
-                </div>
-
-                {/* Drag & Drop Upload Zone + Live Preview */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                  
-                  {/* Dropzone Box */}
-                  <div 
-                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragOver(false);
-                      const file = e.dataTransfer.files?.[0];
-                      if (file) processAndUploadFile(file);
-                    }}
-                    className={`md:col-span-8 border-2 border-dashed rounded-xl p-4 transition-all flex flex-col items-center justify-center text-center relative ${
-                      isDragOver ? 'border-blue-600 bg-blue-50/80 scale-[1.01]' : 'border-slate-300 hover:border-blue-400 bg-slate-50/70 hover:bg-slate-50'
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      id="product-image-file-input"
-                      accept="image/*"
-                      disabled={isUploading}
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-
-                    {isUploading ? (
-                      <div className="py-3 flex flex-col items-center gap-2">
-                        <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
-                        <span className="text-xs font-bold text-slate-700">Compressing & Uploading Photo...</span>
-                        <span className="text-[10px] text-slate-400">Processing image, please wait...</span>
-                      </div>
-                    ) : (
-                      <div className="w-full flex flex-col items-center">
-                        <label 
-                          htmlFor="product-image-file-input"
-                          className="w-full flex flex-col items-center cursor-pointer py-1"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mb-2 shadow-2xs">
-                            <UploadCloud className="w-5 h-5" />
-                          </div>
-                          <span className="text-xs font-bold text-slate-800 block">
-                            Click to browse device or Drag & Drop photo here
-                          </span>
-                          <span className="text-[11px] text-slate-500 mt-0.5 block">
-                            Choose image from device (PNG, JPG, WEBP, Max 5MB)
-                          </span>
-                        </label>
-
-                        {uploadStatus === 'success' && (
-                          <div className="mt-2 bg-emerald-50 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            Uploaded to cPanel server successfully!
-                          </div>
-                        )}
-
-                        {uploadStatus === 'error' && (
-                          <div className="mt-2 bg-rose-50 text-rose-800 text-[11px] font-bold px-3 py-1 rounded-lg border border-rose-200 flex items-center gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                            {uploadError}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Image Preview Box */}
-                  <div className="md:col-span-4 bg-white border border-slate-200 rounded-xl p-2 flex flex-col items-center justify-center min-h-[100px] relative overflow-hidden">
-                    {formData.imageUrl ? (
-                      <div className="relative w-full h-24 rounded-lg overflow-hidden bg-slate-100 group">
-                        <img 
-                          src={formData.imageUrl} 
-                          alt="Product Preview" 
-                          className="w-full h-full object-contain"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=60';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="text-[10px] text-white font-bold bg-slate-900/80 px-2 py-0.5 rounded">Preview</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-slate-400">
-                        <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-40" />
-                        <span className="text-[10px] font-semibold block">No image selected</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-
-
-                {/* Direct Image URL input */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
-                    <Link2 className="w-3 h-3 text-slate-400" />
-                    Or Paste Image URL directly:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. /uploads/prod_123.jpg or https://..."
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:bg-white focus:outline-hidden text-xs font-mono"
-                  />
-                </div>
               </div>
 
               <div className="border-t border-slate-100 pt-4 flex justify-end gap-3.5">
