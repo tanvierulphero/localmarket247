@@ -85,6 +85,11 @@ sql += '  `id` VARCHAR(128) NOT NULL PRIMARY KEY,\n';
 sql += '  `name` VARCHAR(255) NOT NULL,\n';
 sql += '  `sku` VARCHAR(100) NOT NULL,\n';
 sql += '  `category` VARCHAR(100) NOT NULL,\n';
+sql += '  `cross_reference` VARCHAR(255) DEFAULT "",\n';
+sql += '  `measurement` VARCHAR(100) DEFAULT "",\n';
+sql += '  `warehouse` VARCHAR(100) DEFAULT "",\n';
+sql += '  `rack` VARCHAR(100) DEFAULT "",\n';
+sql += '  `shelf` VARCHAR(100) DEFAULT "",\n';
 sql += '  `brand` VARCHAR(100) NOT NULL,\n';
 sql += '  `price` DOUBLE NOT NULL DEFAULT 0,\n';
 sql += '  `cost_price` DOUBLE NOT NULL DEFAULT 0,\n';
@@ -97,7 +102,7 @@ sql += '  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n';
 sql += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n';
 
 (db.products || []).forEach(p => {
-  sql += `INSERT INTO \`products\` (\`id\`, \`name\`, \`sku\`, \`category\`, \`brand\`, \`price\`, \`cost_price\`, \`stock\`, \`unit\`, \`description\`, \`specs\`, \`image_url\`) VALUES (${esc(p.id)}, ${esc(p.name)}, ${esc(p.sku)}, ${esc(p.category)}, ${esc(p.brand)}, ${Number(p.price) || 0}, ${Number(p.costPrice) || 0}, ${Number(p.stock) || 0}, ${esc(p.unit)}, ${esc(p.description)}, ${esc(p.specs)}, ${esc(p.imageUrl)}) ON DUPLICATE KEY UPDATE \`name\`=VALUES(\`name\`);\n`;
+  sql += `INSERT INTO \`products\` (\`id\`, \`name\`, \`sku\`, \`category\`, \`cross_reference\`, \`measurement\`, \`warehouse\`, \`rack\`, \`shelf\`, \`brand\`, \`price\`, \`cost_price\`, \`stock\`, \`unit\`, \`description\`, \`specs\`, \`image_url\`) VALUES (${esc(p.id)}, ${esc(p.name)}, ${esc(p.sku)}, ${esc(p.category)}, ${esc(p.crossReference || '')}, ${esc(p.measurement || '')}, ${esc(p.warehouse || '')}, ${esc(p.rack || '')}, ${esc(p.shelf || '')}, ${esc(p.brand)}, ${Number(p.price) || 0}, ${Number(p.costPrice) || 0}, ${Number(p.stock) || 0}, ${esc(p.unit)}, ${esc(p.description)}, ${esc(p.specs)}, ${esc(p.imageUrl)}) ON DUPLICATE KEY UPDATE \`name\`=VALUES(\`name\`), \`cross_reference\`=VALUES(\`cross_reference\`), \`warehouse\`=VALUES(\`warehouse\`);\n`;
 });
 sql += '\n';
 

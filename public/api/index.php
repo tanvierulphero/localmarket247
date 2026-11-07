@@ -138,6 +138,22 @@ if ($pdo) {
     } catch (Exception $eCol) {
         // Table might not exist or columns already present
     }
+
+    // Auto-migrate schema updates for products table (warehouse, cross_reference, etc.)
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM `products` LIKE 'warehouse'");
+        if ($colCheck && $colCheck->rowCount() === 0) {
+            $pdo->exec("ALTER TABLE `products` 
+                ADD COLUMN `cross_reference` VARCHAR(255) DEFAULT '',
+                ADD COLUMN `measurement` VARCHAR(100) DEFAULT '',
+                ADD COLUMN `warehouse` VARCHAR(100) DEFAULT '',
+                ADD COLUMN `rack` VARCHAR(100) DEFAULT '',
+                ADD COLUMN `shelf` VARCHAR(100) DEFAULT ''
+            ");
+        }
+    } catch (Exception $eProdCol) {
+        // Table might not exist or columns already present
+    }
 }
 
 // Parse request URI and determine endpoint, method, and ID
@@ -322,7 +338,7 @@ $tablesMap = [
     ],
     'products' => [
         'table' => 'products',
-        'fields' => ['id', 'name', 'sku', 'category', 'brand', 'price', 'cost_price', 'stock', 'unit', 'description', 'specs', 'image_url']
+        'fields' => ['id', 'name', 'sku', 'category', 'cross_reference', 'measurement', 'warehouse', 'rack', 'shelf', 'brand', 'price', 'cost_price', 'stock', 'unit', 'description', 'specs', 'image_url']
     ],
     'customers' => [
         'table' => 'customers',

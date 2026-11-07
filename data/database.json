@@ -220,22 +220,14 @@
       "costPrice": 380000,
       "stock": 5,
       "unit": "Sets",
-      "description": "15 HP High-efficiency rotary screw air compressor designed for continuous industrial operations.",
-      "specs": [
-        {
-          "label": "Power",
-          "value": "15 HP (11 kW)"
-        },
-        {
-          "label": "Pressure",
-          "value": "0.85 MPa (8.5 Bar)"
-        },
-        {
-          "label": "Flow Rate",
-          "value": "1.65 m³/min"
-        }
-      ],
-      "imageUrl": "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"
+      "description": "15 HP",
+      "specs": [],
+      "imageUrl": "",
+      "crossReference": "OSP-15S5ARN",
+      "measurement": "L: 1200mm x W: 850mm x H: 1400mm",
+      "warehouse": "Warehouse-1 (Main)",
+      "rack": "Rack-A",
+      "shelf": "Bay-01"
     },
     {
       "id": "prod-2",
@@ -262,7 +254,12 @@
           "value": "220V / 50Hz"
         }
       ],
-      "imageUrl": "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
+      "imageUrl": "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80",
+      "crossReference": "RD-20A / 02250155-709",
+      "measurement": "L: 750mm x W: 600mm x H: 850mm",
+      "warehouse": "Warehouse-1 (Main)",
+      "rack": "Rack-B",
+      "shelf": "Shelf-02"
     },
     {
       "id": "prod-3",
@@ -285,7 +282,12 @@
           "value": "10 Micron"
         }
       ],
-      "imageUrl": "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=800&q=80"
+      "imageUrl": "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=800&q=80",
+      "crossReference": "1622 3142 00 / 1613 6105 00",
+      "measurement": "OD: 96mm x H: 212mm x Thread: 1-12 UNF",
+      "warehouse": "Showroom Store",
+      "rack": "Rack-03",
+      "shelf": "Shelf-05"
     }
   ],
   "customers": [

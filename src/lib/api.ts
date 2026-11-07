@@ -81,6 +81,11 @@ function normalizeProduct(p: any): Product {
     ...p,
     imageUrl: p.imageUrl || p.image_url || '',
     costPrice: p.costPrice !== undefined ? p.costPrice : (p.cost_price !== undefined ? p.cost_price : 0),
+    crossReference: p.crossReference || p.cross_reference || '',
+    measurement: p.measurement || '',
+    warehouse: p.warehouse || '',
+    rack: p.rack || '',
+    shelf: p.shelf || '',
   };
 }
 

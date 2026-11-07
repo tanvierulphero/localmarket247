@@ -16,6 +16,11 @@ CREATE TABLE `products` (
   `name` VARCHAR(255) NOT NULL,
   `sku` VARCHAR(100) NOT NULL,
   `category` VARCHAR(100) NOT NULL,
+  `cross_reference` VARCHAR(255) DEFAULT '',
+  `measurement` VARCHAR(100) DEFAULT '',
+  `warehouse` VARCHAR(100) DEFAULT '',
+  `rack` VARCHAR(100) DEFAULT '',
+  `shelf` VARCHAR(100) DEFAULT '',
   `brand` VARCHAR(100) NOT NULL,
   `price` DOUBLE NOT NULL DEFAULT 0,
   `cost_price` DOUBLE NOT NULL DEFAULT 0,
@@ -273,3 +278,4 @@ INSERT INTO field_dispatches (id, date, staffName, companyName, billNo, billAmou
 INSERT INTO `field_dispatches` (`id`, `date`, `staff_name`, `company_name`, `bill_no`, `bill_amount`, `paid_amount`, `due_amount`, `expense_amount`, `payment_status`, `payment_method`, `status`, `description`) VALUES ('disp-demo-test', '2026-11-07', 'Abdullah Al Kafi', 'Mim Design Ltd', 'BIL-2026-001', 5000, 5000, 0, 350, 'Paid', 'Cash', 'Completed', 'Compressor oil change and general inspection') ON DUPLICATE KEY UPDATE id=id;
 DELETE FROM field_dispatches WHERE id = 'test-disp-1';
 DELETE FROM field_dispatches WHERE id = 'disp-demo-test';
+INSERT INTO `products` (`id`, `name`, `sku`, `category`, `cross_reference`, `measurement`, `warehouse`, `rack`, `shelf`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES ('prod-1', 'Hitachi Screw Air Compressor 15 HP', 'HIT-15HP-01', 'Screw Air Compressor', 'OSP-15S5ARN', 'L: 1200mm x W: 850mm x H: 1400mm', 'Warehouse-1 (Main)', 'Rack-A', 'Bay-01', 'Hitachi', 450000, 380000, 5, 'Sets', '15 HP', '[]', '') ON DUPLICATE KEY UPDATE id=id;

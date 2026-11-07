@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- JUBAYER MACHINERIES ERP - FULL RECOVERY DUMP FOR CPANEL (PHPMYADMIN)
--- Generated: 2026-11-07T10:39:15.306Z
+-- Generated: 2026-11-07T12:22:41.609Z
 -- ==============================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -69,6 +69,11 @@ CREATE TABLE `products` (
   `name` VARCHAR(255) NOT NULL,
   `sku` VARCHAR(100) NOT NULL,
   `category` VARCHAR(100) NOT NULL,
+  `cross_reference` VARCHAR(255) DEFAULT "",
+  `measurement` VARCHAR(100) DEFAULT "",
+  `warehouse` VARCHAR(100) DEFAULT "",
+  `rack` VARCHAR(100) DEFAULT "",
+  `shelf` VARCHAR(100) DEFAULT "",
   `brand` VARCHAR(100) NOT NULL,
   `price` DOUBLE NOT NULL DEFAULT 0,
   `cost_price` DOUBLE NOT NULL DEFAULT 0,
@@ -80,9 +85,9 @@ CREATE TABLE `products` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `products` (`id`, `name`, `sku`, `category`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES ('prod-1', 'Hitachi Screw Air Compressor 15 HP', 'HIT-15HP-01', 'Screw Air Compressor', 'Hitachi', 450000, 380000, 5, 'Sets', '15 HP High-efficiency rotary screw air compressor designed for continuous industrial operations.', '[{"label":"Power","value":"15 HP (11 kW)"},{"label":"Pressure","value":"0.85 MPa (8.5 Bar)"},{"label":"Flow Rate","value":"1.65 m³/min"}]', 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80') ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
-INSERT INTO `products` (`id`, `name`, `sku`, `category`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES ('prod-2', 'Sullair Industrial Air Dryer 20 HP', 'SUL-DRY-20', 'Air Dryer', 'Sullair', 120000, 95000, 8, 'Pcs', 'Refrigerated compressed air dryer with ultra-low pressure drop and eco-friendly R410a refrigerant.', '[{"label":"Capacity","value":"2.5 m³/min"},{"label":"Refrigerant","value":"R410A Eco"},{"label":"Voltage","value":"220V / 50Hz"}]', 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80') ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
-INSERT INTO `products` (`id`, `name`, `sku`, `category`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES ('prod-3', 'Atlas Copco Oil Filter Element', 'ATL-FLT-88', 'Spare Parts', 'Atlas Copco', 8500, 5500, 25, 'Pcs', 'Genuine spin-on oil filter element for Atlas Copco GA series compressors.', '[{"label":"Part Number","value":"1622 3142 00"},{"label":"Filtration","value":"10 Micron"}]', 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=800&q=80') ON DUPLICATE KEY UPDATE `name`=VALUES(`name`);
+INSERT INTO `products` (`id`, `name`, `sku`, `category`, `cross_reference`, `measurement`, `warehouse`, `rack`, `shelf`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES ('prod-1', 'Hitachi Screw Air Compressor 15 HP', 'HIT-15HP-01', 'Screw Air Compressor', 'OSP-15S5ARN', 'L: 1200mm x W: 850mm x H: 1400mm', 'Warehouse-1 (Main)', 'Rack-A', 'Bay-01', 'Hitachi', 450000, 380000, 5, 'Sets', '15 HP', '[]', '') ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `cross_reference`=VALUES(`cross_reference`), `warehouse`=VALUES(`warehouse`);
+INSERT INTO `products` (`id`, `name`, `sku`, `category`, `cross_reference`, `measurement`, `warehouse`, `rack`, `shelf`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES ('prod-2', 'Sullair Industrial Air Dryer 20 HP', 'SUL-DRY-20', 'Air Dryer', 'RD-20A / 02250155-709', 'L: 750mm x W: 600mm x H: 850mm', 'Warehouse-1 (Main)', 'Rack-B', 'Shelf-02', 'Sullair', 120000, 95000, 8, 'Pcs', 'Refrigerated compressed air dryer with ultra-low pressure drop and eco-friendly R410a refrigerant.', '[{"label":"Capacity","value":"2.5 m³/min"},{"label":"Refrigerant","value":"R410A Eco"},{"label":"Voltage","value":"220V / 50Hz"}]', 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80') ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `cross_reference`=VALUES(`cross_reference`), `warehouse`=VALUES(`warehouse`);
+INSERT INTO `products` (`id`, `name`, `sku`, `category`, `cross_reference`, `measurement`, `warehouse`, `rack`, `shelf`, `brand`, `price`, `cost_price`, `stock`, `unit`, `description`, `specs`, `image_url`) VALUES ('prod-3', 'Atlas Copco Oil Filter Element', 'ATL-FLT-88', 'Spare Parts', '1622 3142 00 / 1613 6105 00', 'OD: 96mm x H: 212mm x Thread: 1-12 UNF', 'Showroom Store', 'Rack-03', 'Shelf-05', 'Atlas Copco', 8500, 5500, 25, 'Pcs', 'Genuine spin-on oil filter element for Atlas Copco GA series compressors.', '[{"label":"Part Number","value":"1622 3142 00"},{"label":"Filtration","value":"10 Micron"}]', 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=800&q=80') ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `cross_reference`=VALUES(`cross_reference`), `warehouse`=VALUES(`warehouse`);
 
 DROP TABLE IF EXISTS `customers`;
 CREATE TABLE `customers` (
@@ -200,7 +205,6 @@ CREATE TABLE `field_dispatches` (
   `created_at` VARCHAR(50) DEFAULT ""
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `field_dispatches` (`id`, `dispatch_number`, `date`, `staff_id`, `staff_name`, `customer_id`, `customer_name`, `customer_company`, `company_name`, `address`, `customer_phone`, `phone`, `purpose`, `description`, `dispatch_date`, `return_date`, `bill_no`, `bill_amount`, `paid_amount`, `due_amount`, `expense_amount`, `expense_details`, `payment_status`, `payment_method`, `status`, `notes`, `items`, `created_at`) VALUES ('test-disp-1', 'BIL-2026-999', '2026-11-07', '', 'Test Staff', '', '', '', 'Test Co', '', '', '', '', '', '', NULL, 'BIL-2026-999', 1000, 500, 0, 0, '', 'Paid', 'Cash', 'Completed', '', '[]', '') ON DUPLICATE KEY UPDATE `bill_no`=VALUES(`bill_no`);
 
 DROP TABLE IF EXISTS `suppliers`;
 CREATE TABLE `suppliers` (

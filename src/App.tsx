@@ -638,7 +638,10 @@ export default function App() {
     const list = [p, ...products];
     setProducts(list);
     try {
-      await apiSaveProduct(p);
+      const saved = await apiSaveProduct(p);
+      if (saved && saved.id) {
+        setProducts(prev => prev.map(item => item.id === (saved.id || p.id) ? { ...item, ...saved } : item));
+      }
     } catch (e: any) {
       console.warn('Backend sync warning:', e);
     }
@@ -648,7 +651,10 @@ export default function App() {
     const list = products.map(item => item.id === p.id ? p : item);
     setProducts(list);
     try {
-      await apiSaveProduct(p);
+      const saved = await apiSaveProduct(p);
+      if (saved && saved.id) {
+        setProducts(prev => prev.map(item => item.id === (saved.id || p.id) ? { ...item, ...saved } : item));
+      }
     } catch (e: any) {
       console.warn('Backend sync warning:', e);
     }
