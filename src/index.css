@@ -7,113 +7,180 @@
 
 @page {
   size: A4 portrait;
-  margin: 0mm !important;
+  margin: 10mm 12mm;
 }
 
-@layer utilities {
-  @media print {
-    /* Hide specific navigation/interactive blocks on all printed views */
-    .no-print, nav, header, aside, footer, button, input, select, textarea, .action-buttons, .search-bar, .modal-backdrop, [role="tablist"], .tab-buttons {
-      display: none !important;
-    }
+@media print {
+  /* Force exact color/background rendering in print dialogs */
+  html,
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
-    /* Force exact color/background rendering in print dialogs */
-    html, body {
-      background-color: #ffffff !important;
-      color: #0f172a !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+  /* Hide specific navigation/interactive blocks on all printed views */
+  .no-print,
+  nav,
+  header,
+  aside,
+  footer,
+  button,
+  input,
+  select,
+  textarea,
+  .action-buttons,
+  .search-bar,
+  .modal-backdrop,
+  [role="tablist"],
+  .tab-buttons {
+    display: none !important;
+  }
 
-    /* Page setup for A4 with 0 margin so browser headers (site title, URL, timestamp) are suppressed */
-    @page {
-      size: A4 portrait;
-      margin: 0 !important;
-    }
+  /* IF PRINTING A SPECIFIC DOCUMENT / STATEMENT (#printable-area exists):
+     Collapse everything outside #printable-area and flatten all ancestors
+     (such as fixed modal overlays, flex containers, max-h, overflow-hidden)
+     into normal static document flow so multi-page reports paginate cleanly
+     with zero overlapping layers or extra blank pages. */
+  body:has(#printable-area) *:not(#printable-area):not(:has(#printable-area)):not(#printable-area *) {
+    display: none !important;
+  }
 
-    /* IF PRINTING A SPECIFIC DOCUMENT LETTERHEAD (#printable-area exists) */
-    body:has(#printable-area) {
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 210mm !important;
-    }
+  body:has(#printable-area) *:has(#printable-area) {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    animation: none !important;
+    transition: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
 
-    body:has(#printable-area) * {
-      visibility: hidden !important;
-    }
+  body:has(#printable-area) #printable-area {
+    visibility: visible !important;
+    position: relative !important;
+    display: block !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
-    body:has(#printable-area) #printable-area,
-    body:has(#printable-area) #printable-area * {
-      visibility: visible !important;
-    }
+  /* Single-page letterhead documents (PrintDocument.tsx) fit within A4 minus @page margins */
+  body:has(#printable-area) #printable-area.print-container {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-height: 274mm !important;
+  }
 
-    body:has(#printable-area) #printable-area {
-      visibility: visible !important;
-      position: absolute !important;
-      left: 0 !important;
-      top: 0 !important;
-      width: 210mm !important;
-      min-height: 297mm !important;
-      max-width: 210mm !important;
-      box-sizing: border-box !important;
-      padding: 10mm 12mm !important;
-      margin: 0 !important;
-      box-shadow: none !important;
-      border: none !important;
-      background: white !important;
-      overflow: visible !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+  /* Keep explicitly hidden sections inside #printable-area hidden */
+  body:has(#printable-area) #printable-area .no-print {
+    display: none !important;
+  }
 
-    /* IF PRINTING REGULAR DASHBOARD (no #printable-area) */
-    body:not(:has(#printable-area)) {
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 10px !important;
-    }
+  /* Never clip or break multi-page tables inside scroll wrappers */
+  #printable-area .overflow-x-auto,
+  #printable-area .overflow-y-auto,
+  #printable-area .overflow-hidden {
+    overflow: visible !important;
+  }
 
-    body:not(:has(#printable-area)) * {
-      visibility: visible !important;
-    }
+  /* IF PRINTING REGULAR DASHBOARD (no #printable-area) */
+  body:not(:has(#printable-area)) {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
-    body:not(:has(#printable-area)) main {
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
+  body:not(:has(#printable-area)) main {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
-    body:not(:has(#printable-area)) .p-6,
-    body:not(:has(#printable-area)) .p-8 {
-      padding: 0 !important;
-    }
+  body:not(:has(#printable-area)) .p-6,
+  body:not(:has(#printable-area)) .p-8 {
+    padding: 0 !important;
+  }
 
-    /* Ensure tables print beautifully */
-    table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-    }
+  /* Ensure multi-page tables paginate cleanly with repeating headers */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
 
-    th, td {
-      border: 1px solid #cbd5e1 !important;
-      padding: 6px 10px !important;
-      font-size: 11px !important;
-      color: #000000 !important;
-    }
+  thead {
+    display: table-header-group !important;
+  }
 
-    #printable-area thead th,
-    #printable-area thead tr {
-      background-color: #1e3a8a !important;
-      color: #ffffff !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+  tfoot {
+    display: table-footer-group !important;
+  }
 
-    /* Prevent breaking inside tables and signature blocks */
-    tr, table, .signature-block, .totals-block, .print-card {
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    color: #000000 !important;
+  }
+
+  #printable-area thead th,
+  #printable-area thead tr {
+    background-color: #1e3a8a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Prevent breaking inside individual signature blocks, totals blocks, and summary cards */
+  .signature-block,
+  .totals-block,
+  .print-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 

@@ -2899,8 +2899,8 @@ export default function DueLedger({
           : openingBalance;
 
         return (
-          <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+          <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:static print:block print:bg-transparent print:p-0">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:block print:max-w-none print:max-h-none print:overflow-visible print:border-none print:shadow-none">
               
               {/* Modal Top Control Bar (no-print) */}
               <div className="bg-slate-950 text-white px-5 py-3.5 flex flex-wrap justify-between items-center gap-3 no-print shrink-0 border-b border-slate-800">
@@ -3013,7 +3013,7 @@ export default function DueLedger({
               </div>
 
               {/* Printable Statement Body */}
-              <div id="printable-area" className="overflow-y-auto flex-1 p-6 sm:p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-5">
+              <div id={!recentReceipt ? "printable-area" : undefined} className="overflow-y-auto flex-1 p-6 sm:p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-5">
                 
                 {/* Official Showroom Header */}
                 <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-4 gap-3 sm:gap-0">
@@ -3046,7 +3046,7 @@ export default function DueLedger({
                 </div>
 
                 {/* Customer Profile Box */}
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs print-card">
                   <div>
                     <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Client / Company Information</span>
                     <h3 className="font-extrabold text-sm text-slate-900 mt-0.5">{cust.company || 'Private Client'}</h3>
@@ -3062,7 +3062,7 @@ export default function DueLedger({
                 </div>
 
                 {/* Summary Balance Metric Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className={`grid gap-3 print-card ${openingBalance > 0 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
                   {openingBalance > 0 && (
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-1">
                       <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Opening Due</span>
@@ -3156,8 +3156,8 @@ export default function DueLedger({
                     </span>
                   </div>
 
-                  <div className="border border-slate-300 rounded-lg overflow-x-auto">
-                    <table className="w-full text-left text-[11px] border-collapse min-w-[500px]">
+                  <div className="border border-slate-300 rounded-lg overflow-x-auto print:overflow-visible print:border-none print:rounded-none">
+                    <table className="w-full text-left text-[11px] border-collapse min-w-[500px] print:min-w-0">
                       <thead>
                         <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[9px]">
                           <th className="py-2.5 px-3">Date</th>
@@ -3225,7 +3225,7 @@ export default function DueLedger({
                 </div>
 
                 {/* Signatures */}
-                <div className="grid grid-cols-2 gap-8 sm:gap-16 pt-8 text-center text-[9px] sm:text-[10px] font-bold text-slate-500">
+                <div className="grid grid-cols-2 gap-8 sm:gap-16 pt-8 text-center text-[9px] sm:text-[10px] font-bold text-slate-500 signature-block">
                   <div className="space-y-1">
                     <div className="border-t border-slate-400 pt-1.5 w-32 sm:w-48 mx-auto text-slate-800">
                       Customer Signature
@@ -3251,8 +3251,8 @@ export default function DueLedger({
 
       {/* MODAL 7: INDIVIDUAL SUPPLIER STATEMENT */}
       {viewingSupplierReport && (
-        <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:bg-transparent print:p-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:max-h-none print:border-none print:shadow-none">
+        <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in no-print-backdrop print:static print:block print:bg-transparent print:p-0">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[85vh] sm:max-h-[88vh] my-auto overflow-hidden animate-slide-up print:block print:max-w-none print:max-h-none print:overflow-visible print:border-none print:shadow-none">
             <div className="bg-slate-950 text-white px-5 py-3.5 flex justify-between items-center gap-4 no-print shrink-0 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-amber-400 shrink-0" />
@@ -3282,7 +3282,7 @@ export default function DueLedger({
               </div>
             </div>
 
-            <div id="printable-area" className="overflow-y-auto flex-1 p-6 sm:p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-5">
+            <div id={!recentVoucher ? "printable-area" : undefined} className="overflow-y-auto flex-1 p-6 sm:p-8 bg-white text-slate-900 font-sans relative select-none print:overflow-visible print:p-0 space-y-5">
               <div className="text-center space-y-1 pb-4 border-b-2 border-slate-900">
                 <div className="text-xl font-black text-slate-900 font-display uppercase">
                   {settings?.name || 'Jubayer Machineries'}
@@ -3326,7 +3326,7 @@ export default function DueLedger({
                 </div>
               </div>
 
-              <div className="border border-slate-300 rounded-lg overflow-x-auto">
+              <div className="border border-slate-300 rounded-lg overflow-x-auto print:overflow-visible print:border-none print:rounded-none">
                 <table className="w-full text-left text-[11px] border-collapse">
                   <thead>
                     <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 uppercase tracking-wider text-[9px]">
