@@ -97,6 +97,7 @@ export default function DocumentCreator({
   const [discount, setDiscount] = useState(0);
   const [hasDiscount, setHasDiscount] = useState(false);
   const [terms, setTerms] = useState(settings.terms);
+  const [termsEnabled, setTermsEnabled] = useState(true);
   const [notes, setNotes] = useState(editingDocument?.notes || '');
   const [signatureName, setSignatureName] = useState(() => {
     return editingDocument?.signatureName || loggedInSigName;
@@ -132,6 +133,7 @@ export default function DocumentCreator({
       setItems(editingDocument.items || []);
       setTaxRate(editingDocument.taxRate);
       setVatEnabled(editingDocument.vatEnabled !== false && editingDocument.vatEnabled !== 0);
+      setTermsEnabled(editingDocument.termsEnabled !== false && editingDocument.termsEnabled !== 0);
       setDiscount(editingDocument.discount);
       setHasDiscount(editingDocument.discount > 0);
       setTerms(editingDocument.terms);
@@ -206,36 +208,84 @@ export default function DocumentCreator({
     const nextNumber = generateNextDocNumber(type, documents || [], settings);
     setDocNumber(nextNumber);
 
+    const baseDate = currentDate ? new Date(`${currentDate}T00:00:00`) : new Date();
+    const safeBaseDate = isNaN(baseDate.getTime()) ? new Date() : baseDate;
+
     if (type === 'OFFER_LETTER') {
       setStatus('Active');
+      setSalutation('Dear Sir,');
       setSubject('Offer Letter for Genuine Compressor Spares & Consumables');
       setOpeningParagraph('We refer to your requirement for compressed air system maintenance parts. Jubayer Machineries is highly pleased to submit our offer letter detailing our capability to supply genuine filters and service components to keep your factory running at peak efficiency.');
       setClosingParagraph('We trust that our proposal matches your machinery parameters. Looking forward to your valued work order to establish our sustainable partnership.');
+      setTerms(settings.terms);
+      setTaxRate(settings.taxRate);
+      setVatEnabled(true);
     } else if (type === 'QUOTATION') {
-      setStatus('Sent');
-      setSubject('Quotation for Supply and Commissioning of Screw Air Compressor System');
-      setOpeningParagraph('Thank you for giving us the opportunity to quote our high-performance industrial compressed air products. Below, please find our most competitive quotation for the supply, delivery, and setup of premium machinery.');
-      setClosingParagraph('We hope this quotation is satisfactory and matches your budget rules. Feel free to contact our technical sales desk for any further explanations.');
+      const validityDays = Math.max(1, Number(settings.quoteValidityDays) || 15);
+      const validUntil = new Date(safeBaseDate.getTime() + validityDays * 86400000);
+      setDueDate(validUntil.toISOString().split('T')[0]);
+      setStatus(settings.quoteDefaultStatus === 'Draft' ? 'Draft' : 'Sent');
+      setSalutation(settings.quoteDefaultSalutation || 'Dear Sir,');
+      setSubject(
+        settings.quoteDefaultSubject?.trim() ||
+        'Quotation for Supply and Commissioning of Screw Air Compressor System'
+      );
+      setOpeningParagraph(
+        settings.quoteOpeningParagraph?.trim() ||
+        'Thank you for giving us the opportunity to quote our high-performance industrial compressed air products. Below, please find our most competitive quotation for the supply, delivery, and setup of premium machinery.'
+      );
+      setClosingParagraph(
+        settings.quoteClosingParagraph?.trim() ||
+        'We hope this quotation is satisfactory and matches your budget rules. Feel free to contact our technical sales desk for any further explanations.'
+      );
+      setTerms(settings.quoteTerms?.trim() || settings.terms);
+      const quoteVatOn = settings.quoteVatEnabled !== undefined && settings.quoteVatEnabled !== null
+        ? (settings.quoteVatEnabled !== false && settings.quoteVatEnabled !== 0)
+        : true;
+      setVatEnabled(quoteVatOn);
+      const qRate = settings.quoteTaxRate !== undefined && settings.quoteTaxRate !== null
+        ? Number(settings.quoteTaxRate)
+        : Number(settings.taxRate || 0);
+      setTaxRate(Number.isFinite(qRate) ? qRate : 0);
     } else if (type === 'CHALLAN') {
       setStatus('Active');
+      setSalutation('Dear Sir,');
       setSubject('Delivery Challan for Machinery & Spare Parts');
       setOpeningParagraph('Please receive the following genuine spare parts and equipment in good condition as per work order.');
       setClosingParagraph('Received the above goods in sound and complete condition.');
+      setTerms(settings.terms);
+      setTaxRate(settings.taxRate);
+      setVatEnabled(true);
     } else if (type === 'BILL') {
+      const defaultDue = new Date(safeBaseDate);
+      defaultDue.setMonth(defaultDue.getMonth() + 1);
+      setDueDate(defaultDue.toISOString().split('T')[0]);
       setStatus('Unpaid');
+      setSalutation('Dear Sir,');
       setSubject('Sales Bill for Machinery Spares & Services');
       setOpeningParagraph('Please find our formal sales bill for the supplied equipment and genuine maintenance parts.');
       setClosingParagraph('Thank you for your business. Please arrange payment at your earliest convenience.');
+      setTerms(settings.terms);
+      setTaxRate(settings.taxRate);
+      setVatEnabled(true);
     } else if (type === 'INVOICE') {
+      const defaultDue = new Date(safeBaseDate);
+      defaultDue.setMonth(defaultDue.getMonth() + 1);
+      setDueDate(defaultDue.toISOString().split('T')[0]);
       setStatus('Unpaid');
+      setSalutation('Dear Sir,');
       setSubject('Sales Invoice for Machinery & Spares');
       setOpeningParagraph('Please find our commercial sales invoice for the supplied machinery, spare parts, and associated services.');
       setClosingParagraph('Thank you for your business. Please settle the invoice as per the agreed payment terms.');
+      setTerms(settings.terms);
+      setTaxRate(settings.taxRate);
+      setVatEnabled(true);
     } else {
       setStatus('Unpaid');
       setSubject('');
       setOpeningParagraph('');
       setClosingParagraph('');
+      setTerms(settings.terms);
     }
   };
 
@@ -1370,16 +1420,33 @@ export default function DocumentCreator({
               Document Terms & Signatures
             </h3>
 
-            {/* Terms and conditions block */}
-            <div className="space-y-1.5">
-              <label className="font-bold text-slate-700">Terms & Conditions of Supply</label>
-              <textarea
-                rows={4}
-                value={terms}
-                onChange={(e) => setTerms(e.target.value)}
-                placeholder="Specify delivery, warranty, payments, etc..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:bg-white focus:outline-hidden font-mono text-[10px] leading-relaxed"
-              />
+            {/* Terms and conditions block with enable checkbox */}
+            <div className="space-y-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={termsEnabled}
+                  onChange={(e) => setTermsEnabled(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-900 focus:ring-blue-900 accent-blue-900 cursor-pointer"
+                />
+                <span className="font-bold text-slate-800 text-[11px]">
+                  Include Terms & Conditions?
+                </span>
+              </label>
+
+              {termsEnabled ? (
+                <div className="space-y-1.5 pt-2 border-t border-slate-200/60 animate-fade-in">
+                  <textarea
+                    rows={4}
+                    value={terms}
+                    onChange={(e) => setTerms(e.target.value)}
+                    placeholder="Specify delivery, warranty, payments, etc..."
+                    className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:bg-white focus:outline-hidden font-mono text-[10px] leading-relaxed"
+                  />
+                </div>
+              ) : (
+                <p className="text-[10px] text-slate-400 italic">Terms & Conditions excluded from document</p>
+              )}
             </div>
 
             {/* Signature name & designation */}

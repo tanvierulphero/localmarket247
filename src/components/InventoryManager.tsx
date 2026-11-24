@@ -23,7 +23,9 @@ import {
   Package,
   Layers,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 
 interface InventoryManagerProps {
@@ -51,6 +53,24 @@ export default function InventoryManager({
 }: InventoryManagerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [stockFilter, setStockFilter] = useState<'all' | 'lowest' | 'out' | 'low' | 'adequate'>('all');
+  const [sortBy, setSortBy] = useState<'default' | 'stock_asc' | 'stock_desc' | 'name_asc' | 'price_desc'>('default');
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem('jm_low_stock_threshold'));
+      return Number.isFinite(saved) && saved >= 1 ? saved : 5;
+    } catch {
+      return 5;
+    }
+  });
+
+  const handleThresholdChange = (val: number) => {
+    const clean = Math.max(1, Math.min(9999, Math.floor(val) || 1));
+    setLowStockThreshold(clean);
+    try {
+      localStorage.setItem('jm_low_stock_threshold', String(clean));
+    } catch {}
+  };
   
   // Modal / Form States
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -316,10 +336,35 @@ export default function InventoryManager({
     setIsAddingNewBrand(false);
   };
 
-  // Filtering products (defensive)
+  // Stock status summary counts
+  const stockStats = useMemo(() => {
+    const list = Array.isArray(products) ? products.filter(Boolean) : [];
+    let outCount = 0;
+    let lowCount = 0;
+    let adequateCount = 0;
+    for (const p of list) {
+      const qty = Number(p.stock) || 0;
+      if (qty <= 0) {
+        outCount += 1;
+      } else if (qty <= lowStockThreshold) {
+        lowCount += 1;
+      } else {
+        adequateCount += 1;
+      }
+    }
+    return {
+      total: list.length,
+      lowestTotal: outCount + lowCount,
+      outCount,
+      lowCount,
+      adequateCount,
+    };
+  }, [products, lowStockThreshold]);
+
+  // Filtering and sorting products (defensive)
   const filteredProducts = useMemo(() => {
     if (!Array.isArray(products)) return [];
-    return products.filter(p => {
+    const matched = products.filter(p => {
       if (!p) return false;
       const pName = String(p.name || '').toLowerCase();
       const pSku = String(p.sku || '').toLowerCase();
@@ -330,6 +375,7 @@ export default function InventoryManager({
       const pRack = String(p.rack || '').toLowerCase();
       const pShelf = String(p.shelf || '').toLowerCase();
       const query = String(searchQuery || '').toLowerCase().trim();
+      const qty = Number(p.stock) || 0;
 
       const matchSearch = !query || 
         pName.includes(query) || 
@@ -341,9 +387,35 @@ export default function InventoryManager({
         pRack.includes(query) ||
         pShelf.includes(query);
       const matchBrandOrCat = selectedCategory === 'All' || p.brand === selectedCategory || p.category === selectedCategory || p.warehouse === selectedCategory;
-      return matchSearch && matchBrandOrCat;
+
+      let matchStock = true;
+      if (stockFilter === 'lowest') {
+        matchStock = qty <= lowStockThreshold;
+      } else if (stockFilter === 'out') {
+        matchStock = qty <= 0;
+      } else if (stockFilter === 'low') {
+        matchStock = qty > 0 && qty <= lowStockThreshold;
+      } else if (stockFilter === 'adequate') {
+        matchStock = qty > lowStockThreshold;
+      }
+
+      return matchSearch && matchBrandOrCat && matchStock;
     });
-  }, [products, searchQuery, selectedCategory]);
+
+    if (sortBy === 'stock_asc') {
+      return [...matched].sort((a, b) => (Number(a.stock) || 0) - (Number(b.stock) || 0));
+    }
+    if (sortBy === 'stock_desc') {
+      return [...matched].sort((a, b) => (Number(b.stock) || 0) - (Number(a.stock) || 0));
+    }
+    if (sortBy === 'name_asc') {
+      return [...matched].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    }
+    if (sortBy === 'price_desc') {
+      return [...matched].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    }
+    return matched;
+  }, [products, searchQuery, selectedCategory, stockFilter, sortBy, lowStockThreshold]);
 
   // Handle + / - Quick Stock Adjustments
   const handleQuickStock = (product: Product, delta: number) => {
@@ -467,12 +539,101 @@ export default function InventoryManager({
   };
 
   return (
-    <div className="space-y-6 text-xs">
+    <div className="space-y-5 text-xs">
+      {/* Stock Level Quick Filter Cards (with Lowest Stock Alert) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            setStockFilter('all');
+          }}
+          className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            stockFilter === 'all'
+              ? 'bg-blue-50/70 border-blue-900 ring-1 ring-blue-900/20 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">All Stock Items</span>
+            <span className="text-xl font-black text-slate-900 font-display">{stockStats.total}</span>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+            <Package className="w-4 h-4" />
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStockFilter('lowest');
+            setSortBy('stock_asc');
+          }}
+          className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            stockFilter === 'lowest'
+              ? 'bg-amber-50 border-amber-500 ring-1 ring-amber-500/30 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-amber-300 shadow-2xs'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 block">
+              Lowest Stock (&le; {lowStockThreshold})
+            </span>
+            <span className="text-xl font-black text-amber-700 font-display">{stockStats.lowestTotal}</span>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+            <TrendingDown className="w-4 h-4" />
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStockFilter('out');
+            setSortBy('stock_asc');
+          }}
+          className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            stockFilter === 'out'
+              ? 'bg-rose-50 border-rose-500 ring-1 ring-rose-500/30 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-rose-300 shadow-2xs'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 block">Out of Stock (0)</span>
+            <span className="text-xl font-black text-rose-700 font-display">{stockStats.outCount}</span>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStockFilter('adequate');
+          }}
+          className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+            stockFilter === 'adequate'
+              ? 'bg-emerald-50 border-emerald-600 ring-1 ring-emerald-600/20 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-emerald-300 shadow-2xs'
+          }`}
+        >
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">
+              Adequate (&gt; {lowStockThreshold})
+            </span>
+            <span className="text-xl font-black text-emerald-700 font-display">{stockStats.adequateCount}</span>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+        </button>
+      </div>
+
       {/* Upper toolbar controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 p-4 rounded-xl shadow-2xs">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-white border border-slate-200 p-4 rounded-xl shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Search */}
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -492,12 +653,84 @@ export default function InventoryManager({
             <option value="All">All Brands</option>
             {brands.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
+
+          {/* Stock Level Filter Dropdown */}
+          <select
+            value={stockFilter}
+            onChange={(e) => {
+              const next = e.target.value as 'all' | 'lowest' | 'out' | 'low' | 'adequate';
+              setStockFilter(next);
+              if (next === 'lowest' || next === 'low' || next === 'out') {
+                setSortBy('stock_asc');
+              }
+            }}
+            className={`p-2 border rounded-lg font-semibold focus:outline-hidden cursor-pointer ${
+              stockFilter === 'lowest' || stockFilter === 'low'
+                ? 'bg-amber-50 border-amber-300 text-amber-900'
+                : stockFilter === 'out'
+                ? 'bg-rose-50 border-rose-300 text-rose-900'
+                : 'bg-slate-50 border-slate-200 text-slate-700'
+            }`}
+          >
+            <option value="all">All Stock Levels</option>
+            <option value="lowest">Lowest Stock (&le; {lowStockThreshold})</option>
+            <option value="out">Out of Stock (0)</option>
+            <option value="low">Low Stock Only (1–{lowStockThreshold})</option>
+            <option value="adequate">Adequate Stock (&gt; {lowStockThreshold})</option>
+          </select>
+
+          {/* Sort By Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'default' | 'stock_asc' | 'stock_desc' | 'name_asc' | 'price_desc')}
+            className={`p-2 border rounded-lg font-semibold focus:outline-hidden cursor-pointer ${
+              sortBy === 'stock_asc'
+                ? 'bg-blue-50 border-blue-300 text-blue-900'
+                : 'bg-slate-50 border-slate-200 text-slate-700'
+            }`}
+          >
+            <option value="default">Sort: Default</option>
+            <option value="stock_asc">Sort: Lowest Stock First</option>
+            <option value="stock_desc">Sort: Highest Stock First</option>
+            <option value="name_asc">Sort: Name (A–Z)</option>
+            <option value="price_desc">Sort: Highest Price</option>
+          </select>
+
+          {/* Low Stock Threshold Setting */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5" title="Set minimum quantity threshold for Low Stock alert">
+            <span className="text-[10px] font-bold text-slate-500 uppercase whitespace-nowrap">Low Limit &le;</span>
+            <input
+              type="number"
+              min={1}
+              max={9999}
+              value={lowStockThreshold}
+              onChange={(e) => handleThresholdChange(Number(e.target.value))}
+              className="w-12 bg-white border border-slate-300 rounded px-1.5 py-0.5 text-center font-mono font-bold text-slate-900 focus:outline-hidden focus:border-blue-900"
+            />
+          </div>
+
+          {(stockFilter !== 'all' || sortBy !== 'default' || selectedCategory !== 'All' || searchQuery.trim() !== '') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('All');
+                setStockFilter('all');
+                setSortBy('default');
+              }}
+              className="px-2.5 py-2 text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+              title="Reset all filters and sorting"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </button>
+          )}
         </div>
 
         {/* Add Product Button */}
         <button
           onClick={handleOpenAdd}
-          className="px-4 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 cursor-pointer shadow-2xs"
+          className="px-4 py-2.5 bg-blue-900 hover:bg-blue-950 text-white font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
         >
           <Plus className="w-4 h-4" />
           Add Catalog Product
@@ -515,7 +748,23 @@ export default function InventoryManager({
                 <th className="py-3 px-3">Warehouse / Rack / Shelf</th>
                 <th className="py-3 px-3">Brand</th>
                 <th className="py-3 px-3 text-right">Selling &amp; Cost Price</th>
-                <th className="py-3 px-4 text-center">Stock Volume</th>
+                <th className="py-3 px-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setSortBy(prev => prev === 'stock_asc' ? 'stock_desc' : 'stock_asc')}
+                    className="inline-flex items-center gap-1 hover:text-blue-900 transition-colors cursor-pointer uppercase font-bold"
+                    title="Click to sort by Lowest / Highest Stock"
+                  >
+                    Stock Volume
+                    {sortBy === 'stock_asc' ? (
+                      <ArrowUp className="w-3.5 h-3.5 text-blue-900" />
+                    ) : sortBy === 'stock_desc' ? (
+                      <ArrowDown className="w-3.5 h-3.5 text-blue-900" />
+                    ) : (
+                      <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                  </button>
+                </th>
                 <th className="py-3 px-3 text-center">Status</th>
                 <th className="py-3 px-4 text-right">Operations</th>
               </tr>
@@ -528,7 +777,7 @@ export default function InventoryManager({
                   const prodPrice = Number(product.price) || 0;
                   const prodCost = Number(product.costPrice) || Math.round(prodPrice * 0.75);
                   const prodUnit = product.unit || 'Pcs';
-                  const isLowStock = prodStock < 5;
+                  const isLowStock = prodStock > 0 && prodStock <= lowStockThreshold;
 
                   return (
                     <tr key={product.id || Math.random()} className="hover:bg-slate-50/50 transition-colors">
@@ -626,7 +875,7 @@ export default function InventoryManager({
                       <td className="py-3.5 px-4 text-center">
                         <div className="inline-flex flex-col items-center">
                           <span className={`px-2.5 py-1 rounded-lg font-black text-xs font-mono border ${
-                            prodStock === 0 ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                            prodStock <= 0 ? 'bg-rose-50 text-rose-700 border-rose-200' :
                             isLowStock ? 'bg-amber-50 text-amber-700 border-amber-200 font-display' :
                             'bg-slate-100 text-slate-900 border-slate-200'
                           }`}>
@@ -637,7 +886,7 @@ export default function InventoryManager({
 
                       {/* Stock Status badges */}
                       <td className="py-3.5 px-3 text-center">
-                        {prodStock === 0 ? (
+                        {prodStock <= 0 ? (
                           <span className="inline-block bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider">
                             Out of stock
                           </span>

@@ -2765,6 +2765,151 @@ export default function App() {
                           </div>
                         </div>
 
+                        {/* Quotation Maker Default Settings */}
+                        <div className="border-t border-slate-200 pt-5 mt-2 space-y-4">
+                          <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-4 space-y-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/70 pb-2.5">
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-blue-900 shrink-0" />
+                                <div>
+                                  <h4 className="font-extrabold text-xs text-blue-950 uppercase tracking-wider">
+                                    Quotation Maker Settings
+                                  </h4>
+                                  <p className="text-[10px] text-slate-600 font-medium">
+                                    Configure default prefix, validity, VAT, subject, paragraphs, and terms automatically applied when creating a new Quotation.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Row A: Prefix, Default Status, Validity Days, Default VAT Rate */}
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                              <div className="space-y-1">
+                                <label className="font-bold text-slate-700">Quotation Prefix</label>
+                                <input
+                                  type="text"
+                                  value={settingsForm.quotePrefix || ''}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, quotePrefix: e.target.value })}
+                                  placeholder="JM/QT/2026/"
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden font-mono text-[11px]"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="font-bold text-slate-700">Default Status</label>
+                                <select
+                                  value={settingsForm.quoteDefaultStatus || 'Sent'}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, quoteDefaultStatus: e.target.value as 'Sent' | 'Draft' })}
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden font-semibold text-slate-800 cursor-pointer"
+                                >
+                                  <option value="Sent">Sent</option>
+                                  <option value="Draft">Draft</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="font-bold text-slate-700">Validity Period (Days)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={365}
+                                  value={settingsForm.quoteValidityDays ?? 15}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, quoteValidityDays: Math.max(1, Number(e.target.value) || 15) })}
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden font-mono font-bold text-slate-900"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="font-bold text-slate-700">Quotation VAT (%)</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  step="any"
+                                  value={settingsForm.quoteTaxRate === undefined || settingsForm.quoteTaxRate === null ? settingsForm.taxRate : settingsForm.quoteTaxRate}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, quoteTaxRate: e.target.value === '' ? 0 : Number(e.target.value) })}
+                                  placeholder="0"
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden font-mono font-bold text-slate-900"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Row B: Default VAT toggle & Salutation */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                              <label className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={settingsForm.quoteVatEnabled !== false && settingsForm.quoteVatEnabled !== 0}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, quoteVatEnabled: e.target.checked ? 1 : 0 })}
+                                  className="w-4 h-4 rounded border-slate-300 text-blue-900 accent-blue-900 cursor-pointer"
+                                />
+                                <span className="font-bold text-slate-800 text-[11px]">
+                                  Include VAT by Default on Quotations
+                                </span>
+                              </label>
+
+                              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div className="space-y-1">
+                                  <label className="font-bold text-slate-700">Default Salutation</label>
+                                  <input
+                                    type="text"
+                                    value={settingsForm.quoteDefaultSalutation ?? 'Dear Sir,'}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, quoteDefaultSalutation: e.target.value })}
+                                    placeholder="Dear Sir,"
+                                    className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden font-semibold"
+                                  />
+                                </div>
+                                <div className="sm:col-span-2 space-y-1">
+                                  <label className="font-bold text-slate-700">Default Quotation Subject Line</label>
+                                  <input
+                                    type="text"
+                                    value={settingsForm.quoteDefaultSubject ?? ''}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, quoteDefaultSubject: e.target.value })}
+                                    placeholder="Quotation for Supply and Commissioning of Screw Air Compressor System"
+                                    className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden font-semibold"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Row C: Default Opening & Closing Paragraphs */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <label className="font-bold text-slate-700">Default Opening Paragraph</label>
+                                <textarea
+                                  rows={3}
+                                  value={settingsForm.quoteOpeningParagraph ?? ''}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, quoteOpeningParagraph: e.target.value })}
+                                  placeholder="Introductory paragraph shown above the Quotation table..."
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden text-[11px] leading-relaxed"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="font-bold text-slate-700">Default Closing Paragraph</label>
+                                <textarea
+                                  rows={3}
+                                  value={settingsForm.quoteClosingParagraph ?? ''}
+                                  onChange={(e) => setSettingsForm({ ...settingsForm, quoteClosingParagraph: e.target.value })}
+                                  placeholder="Closing note shown below the Quotation items..."
+                                  className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden text-[11px] leading-relaxed"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Row D: Default Quotation Terms & Conditions */}
+                            <div className="space-y-1">
+                              <label className="font-bold text-slate-700">Default Quotation Terms &amp; Conditions</label>
+                              <textarea
+                                rows={3}
+                                value={settingsForm.quoteTerms ?? ''}
+                                onChange={(e) => setSettingsForm({ ...settingsForm, quoteTerms: e.target.value })}
+                                placeholder="Leave blank to use the global Default Terms & Conditions above..."
+                                className="w-full bg-white border border-slate-200 rounded-lg p-2 focus:border-blue-900 focus:outline-hidden font-mono text-[10px] leading-relaxed"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Feedback messages */}
                         {settingsSavedFeedback && (
                           <p className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-center flex items-center justify-center gap-2">

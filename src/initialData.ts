@@ -127,7 +127,16 @@ export const DEFAULT_SETTINGS: BusinessSettings = {
   whatsapp: "01715-994956",
   messengerUrl: "https://m.me/hitachiairsolutioncenter",
   facebookUrl: "https://www.facebook.com/hitachiairsolutioncenter",
-  telegramUrl: "https://t.me/hitachiairsolution"
+  telegramUrl: "https://t.me/hitachiairsolution",
+  quoteDefaultStatus: "Sent",
+  quoteValidityDays: 15,
+  quoteVatEnabled: 1,
+  quoteTaxRate: 5,
+  quoteDefaultSubject: "Quotation for Supply and Commissioning of Screw Air Compressor System",
+  quoteDefaultSalutation: "Dear Sir,",
+  quoteOpeningParagraph: "Thank you for giving us the opportunity to quote our high-performance industrial compressed air products. Below, please find our most competitive quotation for the supply, delivery, and setup of premium machinery.",
+  quoteClosingParagraph: "We hope this quotation is satisfactory and matches your budget rules. Feel free to contact our technical sales desk for any further explanations.",
+  quoteTerms: "1. Delivery: Within 7 working days upon receipt of work order.\n2. Payment: 50% advance with work order & 50% upon delivery.\n3. Warranty: 1 Year comprehensive brand warranty.\n4. Validity of this quotation is 15 days."
 };
 
 export const INITIAL_PRODUCTS: Product[] = [

@@ -1226,7 +1226,7 @@ ${rawBase64Logo}
             <div className="grid grid-cols-2 gap-4 mt-3 border-t border-slate-200 pt-4 text-xs sm:text-sm relative z-10 flex-1">
               {/* Left side: Terms and Receiver Signature */}
               <div className="flex flex-col justify-between items-start text-left h-full min-h-[120px]">
-                {document.terms ? (
+                {(document.termsEnabled !== false && document.terms) ? (
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-300 w-full mb-3">
                     <h4 className="font-black text-slate-800 uppercase tracking-widest mb-1.5 border-b border-slate-200 pb-1 text-[10px] sm:text-xs">
                       Terms & Notes:

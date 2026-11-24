@@ -165,13 +165,42 @@ export const apiSaveStaff = (staff: StaffUser): Promise<StaffUser> =>
 export const apiDeleteStaff = (id: string): Promise<{ success: boolean }> =>
   fetchJson<{ success: boolean }>(`/api/staff/${id}`, { method: 'DELETE' });
 
+// Helper to normalize BusinessSettings keys between MySQL (snake_case) and JSON/Frontend (camelCase)
+function normalizeSettings(s: any): BusinessSettings {
+  if (!s || typeof s !== 'object') return s;
+  const rawQuoteVat = s.quoteVatEnabled !== undefined ? s.quoteVatEnabled : s.quote_vat_enabled;
+  const rawQuoteTax = s.quoteTaxRate !== undefined ? s.quoteTaxRate : s.quote_tax_rate;
+  const rawValidity = s.quoteValidityDays !== undefined ? s.quoteValidityDays : s.quote_validity_days;
+  return {
+    ...s,
+    quoteDefaultStatus: s.quoteDefaultStatus || s.quote_default_status || 'Sent',
+    quoteValidityDays: rawValidity !== undefined && rawValidity !== null && rawValidity !== '' ? Number(rawValidity) : 15,
+    quoteVatEnabled: rawQuoteVat !== undefined && rawQuoteVat !== null ? (rawQuoteVat !== false && rawQuoteVat !== 0 && rawQuoteVat !== '0') : true,
+    quoteTaxRate: rawQuoteTax !== undefined && rawQuoteTax !== null && rawQuoteTax !== '' ? Number(rawQuoteTax) : (Number(s.taxRate ?? s.tax_rate) || 0),
+    quoteDefaultSubject: s.quoteDefaultSubject ?? s.quote_default_subject ?? '',
+    quoteDefaultSalutation: s.quoteDefaultSalutation ?? s.quote_default_salutation ?? 'Dear Sir,',
+    quoteOpeningParagraph: s.quoteOpeningParagraph ?? s.quote_opening_paragraph ?? '',
+    quoteClosingParagraph: s.quoteClosingParagraph ?? s.quote_closing_paragraph ?? '',
+    quoteTerms: s.quoteTerms ?? s.quote_terms ?? '',
+  };
+}
+
 // Settings API
-export const apiGetSettings = (): Promise<BusinessSettings> => fetchJson<BusinessSettings>('/api/settings');
-export const apiSaveSettings = (settings: BusinessSettings): Promise<BusinessSettings> =>
-  fetchJson<BusinessSettings>('/api/settings', {
+export const apiGetSettings = async (): Promise<BusinessSettings> => {
+  const data = await fetchJson<BusinessSettings>('/api/settings');
+  return normalizeSettings(data);
+};
+export const apiSaveSettings = async (settings: BusinessSettings): Promise<BusinessSettings> => {
+  const payload = {
+    ...settings,
+    quoteVatEnabled: settings.quoteVatEnabled === false || settings.quoteVatEnabled === 0 ? 0 : 1,
+  };
+  const data = await fetchJson<BusinessSettings>('/api/settings', {
     method: 'POST',
-    body: JSON.stringify(settings),
+    body: JSON.stringify(payload),
   });
+  return normalizeSettings(data);
+};
 
 // Field Dispatches API
 export const apiGetFieldDispatches = (): Promise<FieldDispatch[]> => fetchJson<FieldDispatch[]>('/api/field-dispatches');

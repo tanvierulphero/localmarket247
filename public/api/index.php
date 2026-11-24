@@ -154,6 +154,32 @@ if ($pdo) {
     } catch (Exception $eProdCol) {
         // Table might not exist or columns already present
     }
+
+    // Auto-migrate schema updates for documents table (terms_enabled)
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM `documents` LIKE 'terms_enabled'");
+        if ($colCheck && $colCheck->rowCount() === 0) {
+            $pdo->exec("ALTER TABLE `documents` ADD COLUMN `terms_enabled` TINYINT(1) DEFAULT 1");
+        }
+    } catch (Exception $eDocCol) {}
+    try {
+        $colCheck = $pdo->query("SHOW COLUMNS FROM `settings` LIKE 'quote_default_subject'");
+        if ($colCheck && $colCheck->rowCount() === 0) {
+            $pdo->exec("ALTER TABLE `settings`
+                ADD COLUMN `quote_default_status` VARCHAR(30) DEFAULT 'Sent',
+                ADD COLUMN `quote_validity_days` INT DEFAULT 15,
+                ADD COLUMN `quote_vat_enabled` TINYINT(1) DEFAULT 1,
+                ADD COLUMN `quote_tax_rate` DOUBLE DEFAULT 5,
+                ADD COLUMN `quote_default_subject` VARCHAR(255) DEFAULT '',
+                ADD COLUMN `quote_default_salutation` VARCHAR(100) DEFAULT 'Dear Sir,',
+                ADD COLUMN `quote_opening_paragraph` TEXT,
+                ADD COLUMN `quote_closing_paragraph` TEXT,
+                ADD COLUMN `quote_terms` TEXT
+            ");
+        }
+    } catch (Exception $eSetCol) {
+        // Table might not exist or columns already present
+    }
 }
 
 // Parse request URI and determine endpoint, method, and ID
@@ -354,7 +380,7 @@ $tablesMap = [
     ],
     'documents' => [
         'table' => 'documents',
-        'fields' => ['id', 'type', 'doc_number', 'date', 'due_date', 'customer_id', 'customer_name', 'customer_company', 'customer_phone', 'customer_email', 'customer_address', 'subject', 'salutation', 'opening_paragraph', 'closing_paragraph', 'items', 'subtotal', 'tax_rate', 'tax_amount', 'discount', 'total', 'paid_amount', 'due_amount', 'status', 'terms', 'notes', 'signature_label', 'signature_name', 'vat_enabled']
+        'fields' => ['id', 'type', 'doc_number', 'date', 'due_date', 'customer_id', 'customer_name', 'customer_company', 'customer_phone', 'customer_email', 'customer_address', 'subject', 'salutation', 'opening_paragraph', 'closing_paragraph', 'items', 'subtotal', 'tax_rate', 'tax_amount', 'discount', 'total', 'paid_amount', 'due_amount', 'status', 'terms', 'notes', 'signature_label', 'signature_name', 'vat_enabled', 'terms_enabled']
     ],
     'staff' => [
         'table' => 'staff_users',
@@ -362,7 +388,7 @@ $tablesMap = [
     ],
     'settings' => [
         'table' => 'settings',
-        'fields' => ['id', 'name', 'slogan', 'address', 'phone1', 'phone2', 'email', 'website', 'invoice_prefix', 'quote_prefix', 'offer_prefix', 'bill_prefix', 'tax_rate', 'terms', 'signature_name', 'signature_label', 'logo_url', 'public_logo_url', 'watermark_url', 'favicon_url', 'challan_prefix', 'watermark_opacity', 'show_watermark', 'whatsapp', 'messenger_url', 'facebook_url', 'telegram_url']
+        'fields' => ['id', 'name', 'slogan', 'address', 'phone1', 'phone2', 'email', 'website', 'invoice_prefix', 'quote_prefix', 'offer_prefix', 'bill_prefix', 'tax_rate', 'terms', 'signature_name', 'signature_label', 'logo_url', 'public_logo_url', 'watermark_url', 'favicon_url', 'challan_prefix', 'watermark_opacity', 'show_watermark', 'whatsapp', 'messenger_url', 'facebook_url', 'telegram_url', 'quote_default_status', 'quote_validity_days', 'quote_vat_enabled', 'quote_tax_rate', 'quote_default_subject', 'quote_default_salutation', 'quote_opening_paragraph', 'quote_closing_paragraph', 'quote_terms']
     ],
     'dispatches' => [
         'table' => 'field_dispatches',
@@ -416,6 +442,8 @@ function mapJsToDb($item, $fieldsList) {
             $val = $item[$camel];
             if (is_array($val) || is_object($val)) {
                 $dbItem[$f] = json_encode($val, JSON_UNESCAPED_UNICODE);
+            } elseif (is_bool($val)) {
+                $dbItem[$f] = $val ? 1 : 0;
             } else {
                 $dbItem[$f] = $val;
             }
@@ -423,6 +451,8 @@ function mapJsToDb($item, $fieldsList) {
             $val = $item[$f];
             if (is_array($val) || is_object($val)) {
                 $dbItem[$f] = json_encode($val, JSON_UNESCAPED_UNICODE);
+            } elseif (is_bool($val)) {
+                $dbItem[$f] = $val ? 1 : 0;
             } else {
                 $dbItem[$f] = $val;
             }

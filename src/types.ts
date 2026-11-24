@@ -303,6 +303,7 @@ export interface Document {
   signatureLabel: string;
   signatureName: string;
   vatEnabled?: boolean | number;
+  termsEnabled?: boolean | number;
 }
 
 export interface BusinessSettings {
@@ -333,4 +334,14 @@ export interface BusinessSettings {
   messengerUrl?: string; // e.g. https://m.me/yourpage or page URL
   facebookUrl?: string;  // e.g. https://facebook.com/yourpage
   telegramUrl?: string;  // e.g. https://t.me/yourusername
+  // Quotation Maker Default Settings (configured in Showroom Settings)
+  quoteDefaultStatus?: 'Sent' | 'Draft';
+  quoteValidityDays?: number;
+  quoteVatEnabled?: boolean | number;
+  quoteTaxRate?: number;
+  quoteDefaultSubject?: string;
+  quoteDefaultSalutation?: string;
+  quoteOpeningParagraph?: string;
+  quoteClosingParagraph?: string;
+  quoteTerms?: string;
 }
